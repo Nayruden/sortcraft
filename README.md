@@ -1,56 +1,196 @@
-# Bulk Sorter
+# SortCraft
 
-Bulk Sorter is a Fabric mod for Minecraft 1.21+ that allows players to automatically sort items into nearby chests based on customizable categories.
+**SortCraft** is a powerful, configurable bulk sorting mod for Minecraft Fabric. It organizes your chests with intuitive, customizable categories to keep your world neat and efficient.
 
-## Features
+---
 
-- **Automatic Sorting:** Sorts items from an input chest into destination chests based on item category.
-- **Recursive Container Support:** Opens and sorts contents of shulker boxes and bundles, then sorts the empty containers themselves.
-- **Smart Chest Stack Detection:** Sorts into vertically stacked chests from bottom to top, unless a chest in the stack belongs to a different category.
-- **Diagnostics & Previews:** Provides command-line previews and diagnostics of storage usage.
-- **WhereIs Command:** Locates stored items and highlights their chest locations with particle effects.
+## 📦 **How It Works**
 
-## Usage
+SortCraft uses **signs to label chests** and sorts items into them based on categories you define in a YAML config.
 
-### Setting Up
+### 📝 **Chest Labeling**
 
-1. Place a `[input]` sign on a block next to a chest. This chest becomes the input chest.
-2. Place signs on blocks next to other chests using `[category]` where `category` is one of the supported item categories (e.g. `[ores]`, `[wood_oak]`, `[tools_swords]`, `[containers]`).
-3. Run the `/sort input` command while near the input chest.
+* **Input Chest:** Place a sign on a chest with `[input]` on the first line. This chest acts as the **source of items** to sort.
+* **Category Chests:** Place a sign on a chest with the **category name** (matching your YAML) in **square brackets**. For example:
 
-### Commands
+```
+[input]
+```
 
-All commands use the `/sort` base.
+```
+[gear]
+```
 
-- `/sort help` - Show help and usage info.
-- `/sort input` - Trigger the sorting logic for the nearest `[input]` chest.
-- `/sort preview` - Preview what categories and item counts would be sorted.
-- `/sort diagnostics` - Output a `sortdiag.yaml` file with item counts, storage locations, and slot usage.
-- `/sort whereis <item_id>` - Locate where a specific item is stored, with particle indicators.
-- `/sort category <item_id>` - Output the category of an item.
+```
+[armor_helmets]
+```
 
-### Example Categories
+### 📚 **Stacking and Fill Logic**
 
-- `containers`: Bundles, shulker boxes, chests
-- `tools_swords`: All sword types
-- `wood_oak`, `wood_spruce`, etc.: Organized by wood type
-- `lights`: Torches, lanterns, candles
-- `cooked_food`, `raw_food`, `farming`, `ores`, `redstone`, etc.
+When you have **multiple chests labeled with the same category**, SortCraft fills them in **stack fashion**:
 
-Over 40 categories are supplied by default. The full list is maintained in a YAML config.
+✅ **Bottom-up fill order.**
+If you stack chests vertically with the same category sign, it will fill the **lowest chest first**, then the one above, and so on.
 
-## Installation
+---
 
-1. Install [Fabric Loader](https://fabricmc.net/).
-2. Place this mod's JAR file into the `mods/` folder.
-3. Launch Minecraft with the Fabric profile.
+## ⚙️ **Commands**
 
-## Configuration
+### `/sort help`
 
-- Category mappings are defined in a YAML file placed in the `config/sorter/` folder.
-- Use `/sort diagnostics` to generate a report showing current item distributions.
+Shows help and usage information for all SortCraft commands.
 
-## Known Limitations
+---
 
-- Only supports nearby chests (within a radius of 64 blocks from the input sign).
-- Only supports wall signs (not standing signs) for category labeling.
+### `/sort input`
+
+Triggers the sorting logic for the **nearest `[input]` chest**, scanning its contents and distributing items into destination chests based on your YAML category definitions.
+
+✔ **Example usage:**
+
+```
+/sort input
+```
+
+Sorts all items in your `[input]` chest into their category chests.
+
+---
+
+### `/sort preview`
+
+Previews what items will be sorted where, **without actually moving them**.
+
+✔ **Example usage:**
+
+```
+/sort preview
+```
+
+Outputs a categorized list showing:
+
+* Which items will go to which category
+* Item counts per category
+
+---
+
+### `/sort diagnostics`
+
+Generates a **`sortdiag.yaml` file** in your config folder with:
+
+* Current item counts
+* Storage locations
+* Slot usage by category
+
+✔ **Use this to audit storage utilization** and plan expansions.
+
+---
+
+### `/sort whereis <item_id>`
+
+Locates where a specific item is stored. Displays the chest locations in chat and shows **particle indicators** in the world for easy navigation.
+
+✔ **Example usage:**
+
+```
+/sort whereis minecraft:diamond_sword
+```
+
+Finds where your diamond sword is stored.
+
+---
+
+### `/sort category <item_id>`
+
+Outputs the **categories assigned to an item** based on your YAML configuration.
+
+✔ **Example usage:**
+
+```
+/sort category minecraft:diamond_sword
+```
+
+Returns: `swords, gear, weapons`
+
+---
+
+## 🛠️ **YAML Configuration**
+
+SortCraft uses a **YAML config** to define categories, priorities, and filters. Here's a **short example**:
+
+```yaml
+# Priority for each category defaults to '10' if unspecified
+armor_boots:
+  items:
+  - minecraft:diamond_boots
+  - minecraft:golden_boots
+  - minecraft:iron_boots
+
+armor_helmets:
+  items:
+  - minecraft:diamond_helmet
+  - minecraft:golden_helmet
+  - minecraft:iron_helmet
+
+armor:
+  priority: 20
+  includes:
+  - armor_boots
+  - armor_helmets
+
+bows:
+  items:
+  - minecraft:bow
+
+swords:
+  items:
+  - minecraft:diamond_sword
+  - minecraft:golden_sword
+  - minecraft:iron_sword
+
+weapons:
+  priority: 20
+  includes:
+  - bows
+  - swords
+
+gear:
+  includes:
+  - armor
+  - weapons
+
+gear_greater:
+  priority: 5
+  filters:
+  - enchantment: max
+  includes:
+  - gear
+```
+
+### ⚠️ **Notes on Filters**
+
+* **Filters are ANDed together.** Items must match **all filters** to qualify for a category.
+* Supported filters include:
+  * `enchantment`: `max`, `any`, specific enchantment names, or `!enchantment` to negate
+
+---
+
+## 🚀 **Example Sorting Flow**
+
+1. Place an `[input]` sign on your input chest.
+2. Place category signs like `[gear]`, `[armor_helmets]`, etc. on destination chests.
+3. Run:
+
+```
+/sort input
+```
+
+All items will be sorted into their proper chests, filling from the **bottom up** for stacked chests.
+
+---
+
+## 🚀 **Start Sorting Your World Today**
+
+SortCraft brings **peace and order** to your Minecraft storage chaos. Configure your categories, place your signs, and let SortCraft handle the rest.
+
+---
+

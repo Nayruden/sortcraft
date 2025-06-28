@@ -50,8 +50,6 @@ processResources {
 shadowJar {
     configurations = [project.configurations.shade]
     archiveClassifier.set('dev-shadow')
-    //relocate 'org.yaml.snakeyaml', 'com.example.bulksorter.shadow.snakeyaml' // optional
-    //exclude('net/bulksorter/**')
 }
 
 remapJar {
