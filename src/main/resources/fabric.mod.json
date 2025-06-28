@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "bulksorter",
+  "version": "1.0.0",
+  "name": "Bulk Sorter",
+  "description": "Sorts items into categories using labeled chests.",
+  "authors": [
+    "ChatGPT"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.bulksorter.BulkSorter"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "fabric": "*",
+    "minecraft": "1.21.x"
+  }
+}
