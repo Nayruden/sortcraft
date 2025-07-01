@@ -18,6 +18,8 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.Registries;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -76,7 +78,7 @@ public class SortCraft implements ModInitializer {
 
   @SuppressWarnings("unchecked")
   private void loadCategoriesConfig(MinecraftServer server) {
-    Path configPath = FabricLoader.getInstance().getConfigDir().resolve("sorter").resolve("categories.yaml");
+    Path configPath = FabricLoader.getInstance().getConfigDir().resolve("sortcraft").resolve("categories.yaml");
     try {
       if (!Files.exists(configPath)) {
         Files.createDirectories(configPath.getParent());
@@ -213,7 +215,53 @@ public class SortCraft implements ModInitializer {
             .executes(ctx -> executeSortCategory(ctx))))
         .then(CommandManager.literal("help")
           .executes(this::executeSortHelp))
+        .then(CommandManager.literal("dump")
+            .executes(this::dumpItemTags))
     );
+  }
+
+
+  private int dumpItemTags(CommandContext<ServerCommandSource> context) {
+    try {
+      Map<String, List<String>> itemsToTags = new HashMap<>();
+      Map<String, List<String>> tagsToItems = new HashMap<>();
+
+      for (Identifier id : Registries.ITEM.getIds()) {
+        Item item = Registries.ITEM.get(id);
+        RegistryEntry<Item> entry = Registries.ITEM.getEntry(item);
+
+        Collection<TagKey<Item>> tags = entry.streamTags().toList();
+        List<String> tagList = new ArrayList<>();
+
+        for (TagKey<Item> tag : tags) {
+          String tagStr = tag.id().toString();
+          tagList.add(tagStr);
+
+          // Build tagsToItems reverse map
+          tagsToItems.computeIfAbsent(tagStr, k -> new ArrayList<>()).add(id.toString());
+        }
+
+        itemsToTags.put(id.toString(), tagList);
+      }
+
+      // Write items_to_tags.json
+      Path itemsToTagsPath = FabricLoader.getInstance().getConfigDir().resolve("sortcraft").resolve("items_to_tags.json");
+      try (FileWriter writer = new FileWriter(itemsToTagsPath.toFile())) {
+        writer.write(new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(itemsToTags));
+      }
+
+      // Write tags_to_items.json
+      Path tagsToItemsPath = FabricLoader.getInstance().getConfigDir().resolve("sortcraft").resolve("tags_to_items.json");
+      try (FileWriter writer = new FileWriter(tagsToItemsPath.toFile())) {
+        writer.write(new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(tagsToItems));
+      }
+
+      context.getSource().sendFeedback(() -> Text.literal("Dumped items_to_tags.json and tags_to_items.json"), false);
+    } catch (Exception e) {
+      e.printStackTrace();
+      context.getSource().sendError(Text.literal("Error dumping item tags: " + e.getMessage()));
+    }
+    return 1;
   }
 
   private int executeSortHelp(CommandContext<ServerCommandSource> context) {
@@ -636,7 +684,7 @@ public class SortCraft implements ModInitializer {
     }
 
     try {
-      File file = new File(FabricLoader.getInstance().getConfigDir().toFile(), "sorter/sortdiag.yaml");
+      File file = new File(FabricLoader.getInstance().getConfigDir().toFile(), "sortcraft/sortdiag.yaml");
       file.getParentFile().mkdirs();
 
       DumperOptions options = new DumperOptions();
@@ -648,11 +696,11 @@ public class SortCraft implements ModInitializer {
         yaml.dump(finalYaml, writer);
       }
     } catch (IOException e) {
-      source.sendError(Text.literal("Failed to write sorter/sortdiag.yaml: " + e.getMessage()));
+      source.sendError(Text.literal("Failed to write sortcraft/sortdiag.yaml: " + e.getMessage()));
       return 0;
     }
 
-    source.sendFeedback(() -> Text.literal("Sorter diagnostic written to sorter/sortdiag.yaml"), false);
+    source.sendFeedback(() -> Text.literal("Sorter diagnostic written to sortcraft/sortdiag.yaml"), false);
     return 1;
   }
 
