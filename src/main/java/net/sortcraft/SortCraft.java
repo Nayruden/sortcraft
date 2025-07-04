@@ -44,7 +44,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -106,14 +105,15 @@ public class SortCraft implements ModInitializer {
     try {
       if (!Files.exists(configPath)) {
         Files.createDirectories(configPath.getParent());
-        String example = "# Example categories configuration\n"
+        String example = ""
                  + "example_category:\n"
                  + "  items:\n"
                  + "  - minecraft:iron_ingot\n"
                  + "  - minecraft:gold_ingot\n";
-        Files.write(configPath, example.getBytes(StandardCharsets.UTF_8));
+        Files.writeString(configPath, example);
         LOGGER.warn("Category config not found, created example at {}", configPath);
       }
+
       Yaml yaml = new Yaml();
       try (InputStream in = Files.newInputStream(configPath)) {
         Object data = yaml.load(in);

@@ -1,9 +1,9 @@
 # gradle
 
-.gradle/
-build/
-out/
-classes/
+/.gradle
+/build
+/out
+/classes
 
 # eclipse
 
@@ -25,12 +25,10 @@ bin/
 .project
 
 # macos
-
 *.DS_Store
 
 # fabric
-
-run/
+/run
 
 # java
 
