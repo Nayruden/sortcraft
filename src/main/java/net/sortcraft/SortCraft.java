@@ -51,6 +51,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -63,6 +64,7 @@ public class SortCraft implements ModInitializer {
   private static final String signPrefix = "[";
   private static final String signSuffix = "]";
   private static final String inputSignText = signPrefix + "input" + signSuffix;
+  protected MinecraftServer server;
 
   @Override
   public void onInitialize() {
@@ -102,6 +104,7 @@ public class SortCraft implements ModInitializer {
 
   @SuppressWarnings("unchecked")
   private void loadCategoriesConfig(MinecraftServer server) {
+    this.server = server;
     Path configPath = FabricLoader.getInstance().getConfigDir().resolve("sortcraft").resolve("categories.yaml");
     try {
       if (!Files.exists(configPath)) {
@@ -123,55 +126,158 @@ public class SortCraft implements ModInitializer {
         }
         Map<String, Object> map_root = (Map<String, Object>) data;
         for (Map.Entry<String, Object> entry : map_root.entrySet()) {
-          String category = entry.getKey();
+          String categoryName = entry.getKey();
           Object value_raw = entry.getValue();
           if (!(value_raw instanceof Map)) {
-            LOGGER.warn("Category '{}' has a non-map value in YAML, skipping", category);
+            LOGGER.warn("Category '{}' has a non-map value in YAML, skipping", categoryName);
             continue;
           }
-
-          CategoryNode categoryNode = new CategoryNode();
-          categoryNode.name = category;
-
-          Map<String, Object> map_category = (Map<String, Object>) value_raw;
-
-          Object items_raw = map_category.get("items");
-          if (items_raw instanceof List items) {
-            for (Object obj : items) {
-              if (obj == null) continue;
-              String itemIdStr = obj.toString();
-              Identifier id = Identifier.tryParse(itemIdStr);
-              if (id != null) {
-                categoryNode.itemIds.add(id);
-              } else {
-                LOGGER.warn("Invalid item identifier '{}' in category '{}'", itemIdStr, category);
-              }
-            }
+          CategoryNode categoryNode = this._parseCategory(categoryName, value_raw);
+          if ( categoryNode != null ) {
+            categories.put(categoryName, categoryNode);
           }
-
-          Object include_raw = map_category.get("includes");
-          if (include_raw instanceof List) categoryNode.includes = new HashSet<>((List<String>) include_raw);
-
-          Object filters_raw = map_category.get("filters");
-          if (filters_raw instanceof List filters) {
-            for (Object filter_raw : filters) {
-              if (filter_raw instanceof Map filter_map) {
-                Map<String, String> filter = filter_map;
-                for (Map.Entry<String, String> filter_entry : filter.entrySet())
-                  categoryNode.filters.add(FilterRuleFactory.fromYaml(server, filter_entry.getKey(), filter_entry.getValue()));
-              }
-            }
-          }
-
-          Object priority_raw = map_category.get("priority");
-          if (priority_raw instanceof Integer) categoryNode.priority = (int) priority_raw;
-
-          categories.put(category, categoryNode);
         }
       }
       LOGGER.info("Loaded {} categories from config", categories.size());
-    } catch (IOException e) {
-      LOGGER.error("Failed to load categories.yaml: {}", e.getMessage());
+    }
+    catch ( IOException err ) {
+      LOGGER.error("IO error while loading categories.yaml", err);
+    }
+    catch ( Exception err ) {
+      LOGGER.error("Fatal error while loading categories.yaml", err);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private CategoryNode _parseCategory(String categoryName, Object value_raw) {
+    try {
+      CategoryNode categoryNode = new CategoryNode();
+      categoryNode.name = categoryName;
+
+      // category must be dictionary
+      if ( !(value_raw instanceof Map<?,?>) ) {
+        LOGGER.warn("Cannot parse category '{}', not a dictionary type", value_raw);
+        return null;
+      }
+      Map<String, Object> category_conf = (Map<String, Object>) value_raw;
+
+
+      // parse item patterns.
+      // patterns naming a filter will be intersected (AND-ed) with other filters
+      // other pattens will be unioned (OR'd) together.
+      boolean anyFilter = false;
+      var filteredItems = new HashSet<>(Registries.ITEM.getIds());
+      Object itempatterns_value = category_conf.get("items");
+      if ( itempatterns_value instanceof List<?> itempatterns ) {
+        for ( var pattern_raw : itempatterns ) {
+          switch ( pattern_raw ) {
+            //
+            // regex pattern as string
+            case String pattern_str
+              when (
+              pattern_str.charAt(0) == '/' && pattern_str.charAt(pattern_str.length()-1) == '/'
+            ) -> {
+              var pattern = Pattern.compile(pattern_str.substring(1,pattern_str.length()-1));
+
+              // clunky: constantly converting identifier to string before matching regexp
+              Registries.ITEM.getIds().stream()
+                .filter( item_id -> pattern.matcher(item_id.toString()).find() )
+                .forEach(categoryNode.itemIds::add);
+            }
+
+            //
+            // identifier as string
+            case String item_name -> {
+              Identifier id = Identifier.tryParse(item_name);
+              if ( id != null ) {
+                categoryNode.itemIds.add(id);
+              }
+              else {
+                LOGGER.warn("Invalid item identifier '{}' in category '{}'", item_name, categoryName);
+              }
+            }
+
+            //
+            // complex filter as object
+            case Map<?,?> filter_attrs -> {
+              anyFilter = true;
+              var filters = (
+                filter_attrs.entrySet().stream()
+                  .map((entry) -> FilterRuleFactory.fromYaml(this.server, (String)entry.getKey(), (String) entry.getValue()))
+                  .toList()
+              );
+
+              // clunky: allocating an ItemStack for every entry
+              filteredItems = (
+                filteredItems.stream()
+                  .filter(id ->
+                    filters.stream()
+                      .allMatch( f -> f.matches(new ItemStack(Registries.ITEM.getEntry(id).orElseThrow())))
+                  )
+                  .collect(Collectors.toCollection(HashSet::new))
+              );
+            }
+
+
+            default -> LOGGER.warn("Unhandled item pattern type '{}' in category '{}'", pattern_raw, categoryName);
+
+          }
+        }
+      }
+      else if ( itempatterns_value != null ) {
+        LOGGER.warn("Category '{}' has unrecognized 'items' type '{}'", categoryName, itempatterns_value.getClass().getName());
+      }
+
+      // post item-patterns:
+      if ( anyFilter && !filteredItems.isEmpty() ) {
+        categoryNode.itemIds.addAll(filteredItems);
+      }
+      else if ( anyFilter ) {
+        LOGGER.warn("Item patterns in category '{}' filtered out all items!", categoryName);
+      }
+
+      //
+      // category includes
+      Object include_raw = category_conf.get("includes");
+      if ( include_raw instanceof List<?> include_categories ) {
+        categoryNode.includes = new HashSet<>((List<String>) include_categories);
+      }
+      else if ( include_raw != null ) {
+        LOGGER.warn("Category '{}' has unrecognized includes type {}", categoryName, include_raw.getClass().getName());
+      }
+
+
+      //
+      // dynamic filters
+      Object filters_raw = category_conf.get("filters");
+      if (filters_raw instanceof List<?> filters) {
+        for (Object filter_raw : filters) {
+          if (filter_raw instanceof Map<?,?> filter_map) {
+            var filter = (Map<String, String>) filter_map;
+            for (Map.Entry<String, String> filter_entry : filter.entrySet())
+              categoryNode.filters.add(FilterRuleFactory.fromYaml(this.server, filter_entry.getKey(), filter_entry.getValue()));
+          }
+        }
+      }
+      else if ( filters_raw != null ) {
+        LOGGER.warn("Category '{}' has unrecognized filter type {}", categoryName, filters_raw.getClass().getName());
+      }
+
+      //
+      // priority
+      Object priority_raw = category_conf.get("priority");
+      if ( priority_raw instanceof Integer priority ) {
+        categoryNode.priority = (int) priority;
+      }
+      else if ( priority_raw != null ) {
+        LOGGER.warn("Category '{}' has unrecognized priority type {}", categoryName, priority_raw.getClass().getName());
+      }
+
+      return categoryNode;
+    }
+    catch ( Exception err ) {
+      LOGGER.warn(String.format("Failed to parse category '%s'", categoryName), err);
+      return null;
     }
   }
 
