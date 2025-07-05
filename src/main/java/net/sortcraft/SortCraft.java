@@ -217,6 +217,8 @@ public class SortCraft implements ModInitializer {
           .executes(this::executeSortHelp))
         .then(CommandManager.literal("dump")
             .executes(this::dumpItemTags))
+        .then(CommandManager.literal("reload")
+          .executes(this::executeSortReload))
     );
   }
 
@@ -278,6 +280,26 @@ public class SortCraft implements ModInitializer {
       """;
     context.getSource().sendFeedback(() -> Text.literal(helpMessage), false);
     return 1;
+  }
+
+  private int executeSortReload(CommandContext<ServerCommandSource> context) {
+    ServerCommandSource source = context.getSource();
+    MinecraftServer server = source.getServer();
+
+    try {
+      categories.clear();
+      itemCategoryMap.clear();
+      loadCategoriesConfig(server);
+      flattenCategories();
+
+      source.sendFeedback(() -> Text.literal("SortCraft categories reloaded successfully."), false);
+      LOGGER.info("[sortreload] Categories reloaded successfully.");
+      return 1;
+    } catch (Exception e) {
+      source.sendError(Text.literal("Error reloading categories: " + e.getMessage()));
+      LOGGER.error("[sortreload] Failed to reload categories.", e);
+      return 0;
+    }
   }
 
   private String findTextOnSign(SignBlockEntity sign, String text) {

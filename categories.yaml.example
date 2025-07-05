@@ -1,20 +1,28 @@
 earth: # E A1
   items:
   # Grassy
+  - biomesoplenty:origin_grass_block
   - minecraft:grass_block
   - minecraft:mycelium
   - minecraft:podzol
 
   # Sand
+  - biomesoplenty:black_sand
+  - biomesoplenty:orange_sand
   - minecraft:red_sand
   - minecraft:sand
+  - biomesoplenty:white_sand
+
 
   - minecraft:gravel
+
+  - biomesoplenty:dried_salt
 
   # Dirt
   - minecraft:rooted_dirt
   - minecraft:coarse_dirt
   - minecraft:dirt
+
 
 masonry: # E A2
   items:
@@ -53,13 +61,15 @@ sandstone: # E A3
   - minecraft:sandstone_stairs
   - minecraft:sandstone_slab
   - minecraft:sandstone_wall
-  - minecraft:cut_sandstone
 
   - minecraft:smooth_sandstone
   - minecraft:smooth_sandstone_stairs
   - minecraft:smooth_sandstone_slab
   - minecraft:chiseled_sandstone
+
+  - minecraft:cut_sandstone
   - minecraft:cut_sandstone_slab
+
 
   - minecraft:red_sandstone
   - minecraft:red_sandstone_stairs
@@ -73,6 +83,48 @@ sandstone: # E A3
 
   - minecraft:cut_red_sandstone
   - minecraft:cut_red_sandstone_slab
+
+
+  - biomesoplenty:orange_sandstone
+  - biomesoplenty:orange_sandstone_stairs
+  - biomesoplenty:orange_sandstone_slab
+  - biomesoplenty:orange_sandstone_wall
+
+  - biomesoplenty:smooth_orange_sandstone
+  - biomesoplenty:smooth_orange_sandstone_stairs
+  - biomesoplenty:smooth_orange_sandstone_slab
+  - biomesoplenty:chiseled_orange_sandstone
+
+  - biomesoplenty:cut_orange_sandstone
+  - biomesoplenty:cut_orange_sandstone_slab
+
+
+  - biomesoplenty:black_sandstone
+  - biomesoplenty:black_sandstone_stairs
+  - biomesoplenty:black_sandstone_slab
+  - biomesoplenty:black_sandstone_wall
+
+  - biomesoplenty:smooth_black_sandstone
+  - biomesoplenty:smooth_black_sandstone_stairs
+  - biomesoplenty:smooth_black_sandstone_slab
+  - biomesoplenty:chiseled_black_sandstone
+
+  - biomesoplenty:cut_black_sandstone
+  - biomesoplenty:cut_black_sandstone_slab
+
+
+  - biomesoplenty:white_sandstone
+  - biomesoplenty:white_sandstone_stairs
+  - biomesoplenty:white_sandstone_slab
+  - biomesoplenty:white_sandstone_wall
+
+  - biomesoplenty:smooth_white_sandstone
+  - biomesoplenty:smooth_white_sandstone_stairs
+  - biomesoplenty:smooth_white_sandstone_slab
+  - biomesoplenty:chiseled_white_sandstone
+
+  - biomesoplenty:cut_white_sandstone
+  - biomesoplenty:cut_white_sandstone_slab
 
 stone: # E A4
   items:
@@ -177,7 +229,6 @@ caves: # E B2
   - minecraft:sculk_shrieker
   - minecraft:sculk_vein
 
-  - minecraft:disc_fragment_5
   - minecraft:echo_shard
 
   - minecraft:dripstone_block
@@ -343,6 +394,10 @@ ocean: # E C3
 
   - minecraft:magma_block
 
+  - biomesoplenty:huge_lily_pad
+  - biomesoplenty:waterlily
+  - minecraft:lily_pad
+
 # E C4 + C5
 copper:
   items:
@@ -427,71 +482,27 @@ copper:
   - minecraft:waxed_oxidized_copper_door
   - minecraft:waxed_oxidized_copper_trapdoor
 
-# N A1
-wood_crimson:
+# N A3
+wood_acacia:
   items:
-  - minecraft:crimson_stem
-  - minecraft:crimson_hyphae
+  - minecraft:acacia_log
+  - minecraft:acacia_wood
 
-  - minecraft:stripped_crimson_stem
-  - minecraft:stripped_crimson_hyphae
+  - minecraft:stripped_acacia_log
+  - minecraft:stripped_acacia_wood
 
-  - minecraft:crimson_planks
-  - minecraft:crimson_stairs
-  - minecraft:crimson_slab
-  - minecraft:crimson_sign
-  - minecraft:crimson_hanging_sign
+  - minecraft:acacia_planks
+  - minecraft:acacia_stairs
+  - minecraft:acacia_slab
+  - minecraft:acacia_sign
+  - minecraft:acacia_hanging_sign
 
-  - minecraft:crimson_fence
-  - minecraft:crimson_fence_gate
-  - minecraft:crimson_trapdoor
-  - minecraft:crimson_pressure_plate
-  - minecraft:crimson_door
-  - minecraft:crimson_button
-
-# N A1
-wood_warped:
-  items:
-  - minecraft:warped_stem
-  - minecraft:warped_hyphae
-
-  - minecraft:stripped_warped_stem
-  - minecraft:stripped_warped_hyphae
-
-  - minecraft:warped_planks
-  - minecraft:warped_stairs
-  - minecraft:warped_slab
-  - minecraft:warped_sign
-  - minecraft:warped_hanging_sign
-
-  - minecraft:warped_fence
-  - minecraft:warped_fence_gate
-  - minecraft:warped_trapdoor
-  - minecraft:warped_pressure_plate
-  - minecraft:warped_door
-  - minecraft:warped_button
-
-# N A1
-wood_birch:
-  items:
-  - minecraft:birch_log
-  - minecraft:birch_wood
-
-  - minecraft:stripped_birch_log
-  - minecraft:stripped_birch_wood
-
-  - minecraft:birch_planks
-  - minecraft:birch_stairs
-  - minecraft:birch_slab
-  - minecraft:birch_sign
-  - minecraft:birch_hanging_sign
-
-  - minecraft:birch_fence
-  - minecraft:birch_fence_gate
-  - minecraft:birch_trapdoor
-  - minecraft:birch_pressure_plate
-  - minecraft:birch_door
-  - minecraft:birch_button
+  - minecraft:acacia_fence
+  - minecraft:acacia_fence_gate
+  - minecraft:acacia_trapdoor
+  - minecraft:acacia_pressure_plate
+  - minecraft:acacia_door
+  - minecraft:acacia_button
 
 # N A2
 wood_bamboo:
@@ -516,27 +527,198 @@ wood_bamboo:
   - minecraft:bamboo_mosaic_stairs
   - minecraft:bamboo_mosaic_slab
 
-# N A2
-wood_spruce:
+# N A1
+wood_birch:
   items:
-  - minecraft:spruce_log
-  - minecraft:spruce_wood
+  - minecraft:birch_log
+  - minecraft:birch_wood
 
-  - minecraft:stripped_spruce_log
-  - minecraft:stripped_spruce_wood
+  - minecraft:stripped_birch_log
+  - minecraft:stripped_birch_wood
 
-  - minecraft:spruce_planks
-  - minecraft:spruce_stairs
-  - minecraft:spruce_slab
-  - minecraft:spruce_sign
-  - minecraft:spruce_hanging_sign
+  - minecraft:birch_planks
+  - minecraft:birch_stairs
+  - minecraft:birch_slab
+  - minecraft:birch_sign
+  - minecraft:birch_hanging_sign
 
-  - minecraft:spruce_fence
-  - minecraft:spruce_fence_gate
-  - minecraft:spruce_trapdoor
-  - minecraft:spruce_pressure_plate
-  - minecraft:spruce_door
-  - minecraft:spruce_button
+  - minecraft:birch_fence
+  - minecraft:birch_fence_gate
+  - minecraft:birch_trapdoor
+  - minecraft:birch_pressure_plate
+  - minecraft:birch_door
+  - minecraft:birch_button
+
+# N A3
+wood_cherry:
+  items:
+  - minecraft:cherry_log
+  - minecraft:cherry_wood
+
+  - minecraft:stripped_cherry_log
+  - minecraft:stripped_cherry_wood
+
+  - minecraft:cherry_planks
+  - minecraft:cherry_stairs
+  - minecraft:cherry_slab
+  - minecraft:cherry_sign
+  - minecraft:cherry_hanging_sign
+
+  - minecraft:cherry_fence
+  - minecraft:cherry_fence_gate
+  - minecraft:cherry_trapdoor
+  - minecraft:cherry_pressure_plate
+  - minecraft:cherry_door
+  - minecraft:cherry_button
+
+# N A1
+wood_crimson:
+  items:
+  - minecraft:crimson_stem
+  - minecraft:crimson_hyphae
+
+  - minecraft:stripped_crimson_stem
+  - minecraft:stripped_crimson_hyphae
+
+  - minecraft:crimson_planks
+  - minecraft:crimson_stairs
+  - minecraft:crimson_slab
+  - minecraft:crimson_sign
+  - minecraft:crimson_hanging_sign
+
+  - minecraft:crimson_fence
+  - minecraft:crimson_fence_gate
+  - minecraft:crimson_trapdoor
+  - minecraft:crimson_pressure_plate
+  - minecraft:crimson_door
+  - minecraft:crimson_button
+
+# N A4
+wood_dark_oak:
+  items:
+  - minecraft:dark_oak_log
+  - minecraft:dark_oak_wood
+
+  - minecraft:stripped_dark_oak_log
+  - minecraft:stripped_dark_oak_wood
+
+  - minecraft:dark_oak_planks
+  - minecraft:dark_oak_stairs
+  - minecraft:dark_oak_slab
+  - minecraft:dark_oak_sign
+  - minecraft:dark_oak_hanging_sign
+
+  - minecraft:dark_oak_fence
+  - minecraft:dark_oak_fence_gate
+  - minecraft:dark_oak_trapdoor
+  - minecraft:dark_oak_pressure_plate
+  - minecraft:dark_oak_door
+  - minecraft:dark_oak_button
+
+wood_dead:
+  items:
+  - biomesoplenty:dead_log
+  - biomesoplenty:dead_wood
+
+  - biomesoplenty:stripped_dead_log
+  - biomesoplenty:stripped_dead_wood
+
+  - biomesoplenty:dead_planks
+  - biomesoplenty:dead_stairs
+  - biomesoplenty:dead_slab
+  - biomesoplenty:dead_sign
+  - biomesoplenty:dead_hanging_sign
+
+  - biomesoplenty:dead_fence
+  - biomesoplenty:dead_fence_gate
+  - biomesoplenty:dead_trapdoor
+  - biomesoplenty:dead_pressure_plate
+  - biomesoplenty:dead_door
+  - biomesoplenty:dead_button
+
+wood_empyreal:
+  items:
+  - biomesoplenty:empyreal_log
+  - biomesoplenty:empyreal_wood
+
+  - biomesoplenty:stripped_empyreal_log
+  - biomesoplenty:stripped_empyreal_wood
+
+  - biomesoplenty:empyreal_planks
+  - biomesoplenty:empyreal_stairs
+  - biomesoplenty:empyreal_slab
+  - biomesoplenty:empyreal_sign
+  - biomesoplenty:empyreal_hanging_sign
+
+  - biomesoplenty:empyreal_fence
+  - biomesoplenty:empyreal_fence_gate
+  - biomesoplenty:empyreal_trapdoor
+  - biomesoplenty:empyreal_pressure_plate
+  - biomesoplenty:empyreal_door
+  - biomesoplenty:empyreal_button
+
+wood_fir:
+  items:
+  - biomesoplenty:fir_log
+  - biomesoplenty:fir_wood
+
+  - biomesoplenty:stripped_fir_log
+  - biomesoplenty:stripped_fir_wood
+
+  - biomesoplenty:fir_planks
+  - biomesoplenty:fir_stairs
+  - biomesoplenty:fir_slab
+  - biomesoplenty:fir_sign
+  - biomesoplenty:fir_hanging_sign
+
+  - biomesoplenty:fir_fence
+  - biomesoplenty:fir_fence_gate
+  - biomesoplenty:fir_trapdoor
+  - biomesoplenty:fir_pressure_plate
+  - biomesoplenty:fir_door
+  - biomesoplenty:fir_button
+
+wood_hellbark:
+  items:
+  - biomesoplenty:hellbark_log
+  - biomesoplenty:hellbark_wood
+
+  - biomesoplenty:stripped_hellbark_log
+  - biomesoplenty:stripped_hellbark_wood
+
+  - biomesoplenty:hellbark_planks
+  - biomesoplenty:hellbark_stairs
+  - biomesoplenty:hellbark_slab
+  - biomesoplenty:hellbark_sign
+  - biomesoplenty:hellbark_hanging_sign
+
+  - biomesoplenty:hellbark_fence
+  - biomesoplenty:hellbark_fence_gate
+  - biomesoplenty:hellbark_trapdoor
+  - biomesoplenty:hellbark_pressure_plate
+  - biomesoplenty:hellbark_door
+  - biomesoplenty:hellbark_button
+
+wood_jacar:
+  items:
+  - biomesoplenty:jacaranda_log
+  - biomesoplenty:jacaranda_wood
+
+  - biomesoplenty:stripped_jacaranda_log
+  - biomesoplenty:stripped_jacaranda_wood
+
+  - biomesoplenty:jacaranda_planks
+  - biomesoplenty:jacaranda_stairs
+  - biomesoplenty:jacaranda_slab
+  - biomesoplenty:jacaranda_sign
+  - biomesoplenty:jacaranda_hanging_sign
+
+  - biomesoplenty:jacaranda_fence
+  - biomesoplenty:jacaranda_fence_gate
+  - biomesoplenty:jacaranda_trapdoor
+  - biomesoplenty:jacaranda_pressure_plate
+  - biomesoplenty:jacaranda_door
+  - biomesoplenty:jacaranda_button
 
 # N A2
 wood_jungle:
@@ -560,27 +742,47 @@ wood_jungle:
   - minecraft:jungle_door
   - minecraft:jungle_button
 
-# N A3
-wood_cherry:
+wood_magic:
   items:
-  - minecraft:cherry_log
-  - minecraft:cherry_wood
+  - biomesoplenty:magic_log
+  - biomesoplenty:magic_wood
 
-  - minecraft:cherry_stripped_cherry_log
-  - minecraft:cherry_stripped_cherry_wood
+  - biomesoplenty:stripped_magic_log
+  - biomesoplenty:stripped_magic_wood
 
-  - minecraft:cherry_planks
-  - minecraft:cherry_stairs
-  - minecraft:cherry_slab
-  - minecraft:cherry_sign
-  - minecraft:cherry_hanging_sign
+  - biomesoplenty:magic_planks
+  - biomesoplenty:magic_stairs
+  - biomesoplenty:magic_slab
+  - biomesoplenty:magic_sign
+  - biomesoplenty:magic_hanging_sign
 
-  - minecraft:cherry_fence
-  - minecraft:cherry_fence_gate
-  - minecraft:cherry_trapdoor
-  - minecraft:cherry_pressure_plate
-  - minecraft:cherry_door
-  - minecraft:cherry_button
+  - biomesoplenty:magic_fence
+  - biomesoplenty:magic_fence_gate
+  - biomesoplenty:magic_trapdoor
+  - biomesoplenty:magic_pressure_plate
+  - biomesoplenty:magic_door
+  - biomesoplenty:magic_button
+
+wood_mahogany:
+  items:
+  - biomesoplenty:mahogany_log
+  - biomesoplenty:mahogany_wood
+
+  - biomesoplenty:stripped_mahogany_log
+  - biomesoplenty:stripped_mahogany_wood
+
+  - biomesoplenty:mahogany_planks
+  - biomesoplenty:mahogany_stairs
+  - biomesoplenty:mahogany_slab
+  - biomesoplenty:mahogany_sign
+  - biomesoplenty:mahogany_hanging_sign
+
+  - biomesoplenty:mahogany_fence
+  - biomesoplenty:mahogany_fence_gate
+  - biomesoplenty:mahogany_trapdoor
+  - biomesoplenty:mahogany_pressure_plate
+  - biomesoplenty:mahogany_door
+  - biomesoplenty:mahogany_button
 
 # N A3
 wood_mangrove:
@@ -588,8 +790,8 @@ wood_mangrove:
   - minecraft:mangrove_log
   - minecraft:mangrove_wood
 
-  - minecraft:mangrove_stripped_mangrove_log
-  - minecraft:mangrove_stripped_mangrove_wood
+  - minecraft:stripped_mangrove_log
+  - minecraft:stripped_mangrove_wood
 
   - minecraft:mangrove_planks
   - minecraft:mangrove_stairs
@@ -604,49 +806,26 @@ wood_mangrove:
   - minecraft:mangrove_door
   - minecraft:mangrove_button
 
-# N A3
-wood_acacia:
+wood_maple:
   items:
-  - minecraft:acacia_log
-  - minecraft:acacia_wood
+  - biomesoplenty:maple_log
+  - biomesoplenty:maple_wood
 
-  - minecraft:acacia_stripped_acacia_log
-  - minecraft:acacia_stripped_acacia_wood
+  - biomesoplenty:stripped_maple_log
+  - biomesoplenty:stripped_maple_wood
 
-  - minecraft:acacia_planks
-  - minecraft:acacia_stairs
-  - minecraft:acacia_slab
-  - minecraft:acacia_sign
-  - minecraft:acacia_hanging_sign
+  - biomesoplenty:maple_planks
+  - biomesoplenty:maple_stairs
+  - biomesoplenty:maple_slab
+  - biomesoplenty:maple_sign
+  - biomesoplenty:maple_hanging_sign
 
-  - minecraft:acacia_fence
-  - minecraft:acacia_fence_gate
-  - minecraft:acacia_trapdoor
-  - minecraft:acacia_pressure_plate
-  - minecraft:acacia_door
-  - minecraft:acacia_button
-
-# N A4
-wood_dark_oak:
-  items:
-  - minecraft:dark_oak_log
-  - minecraft:dark_oak_wood
-
-  - minecraft:dark_oak_stripped_dark_oak_log
-  - minecraft:dark_oak_stripped_dark_oak_wood
-
-  - minecraft:dark_oak_planks
-  - minecraft:dark_oak_stairs
-  - minecraft:dark_oak_slab
-  - minecraft:dark_oak_sign
-  - minecraft:dark_oak_hanging_sign
-
-  - minecraft:dark_oak_fence
-  - minecraft:dark_oak_fence_gate
-  - minecraft:dark_oak_trapdoor
-  - minecraft:dark_oak_pressure_plate
-  - minecraft:dark_oak_door
-  - minecraft:dark_oak_button
+  - biomesoplenty:maple_fence
+  - biomesoplenty:maple_fence_gate
+  - biomesoplenty:maple_trapdoor
+  - biomesoplenty:maple_pressure_plate
+  - biomesoplenty:maple_door
+  - biomesoplenty:maple_button
 
 # N A4
 wood_oak:
@@ -654,8 +833,8 @@ wood_oak:
   - minecraft:oak_log
   - minecraft:oak_wood
 
-  - minecraft:oak_stripped_oak_log
-  - minecraft:oak_stripped_oak_wood
+  - minecraft:stripped_oak_log
+  - minecraft:stripped_oak_wood
 
   - minecraft:oak_planks
   - minecraft:oak_stairs
@@ -676,8 +855,8 @@ wood_pale_oak:
   - minecraft:pale_oak_log
   - minecraft:pale_oak_wood
 
-  - minecraft:pale_oak_stripped_pale_oak_log
-  - minecraft:pale_oak_stripped_pale_oak_wood
+  - minecraft:stripped_pale_oak_log
+  - minecraft:stripped_pale_oak_wood
 
   - minecraft:pale_oak_planks
   - minecraft:pale_oak_stairs
@@ -692,22 +871,194 @@ wood_pale_oak:
   - minecraft:pale_oak_door
   - minecraft:pale_oak_button
 
+wood_palm:
+  items:
+  - biomesoplenty:palm_log
+  - biomesoplenty:palm_wood
+
+  - biomesoplenty:stripped_palm_log
+  - biomesoplenty:stripped_palm_wood
+
+  - biomesoplenty:palm_planks
+  - biomesoplenty:palm_stairs
+  - biomesoplenty:palm_slab
+  - biomesoplenty:palm_sign
+  - biomesoplenty:palm_hanging_sign
+
+  - biomesoplenty:palm_fence
+  - biomesoplenty:palm_fence_gate
+  - biomesoplenty:palm_trapdoor
+  - biomesoplenty:palm_pressure_plate
+  - biomesoplenty:palm_door
+  - biomesoplenty:palm_button
+
+wood_pine:
+  items:
+  - biomesoplenty:pine_log
+  - biomesoplenty:pine_wood
+
+  - biomesoplenty:stripped_pine_log
+  - biomesoplenty:stripped_pine_wood
+
+  - biomesoplenty:pine_planks
+  - biomesoplenty:pine_stairs
+  - biomesoplenty:pine_slab
+  - biomesoplenty:pine_sign
+  - biomesoplenty:pine_hanging_sign
+
+  - biomesoplenty:pine_fence
+  - biomesoplenty:pine_fence_gate
+  - biomesoplenty:pine_trapdoor
+  - biomesoplenty:pine_pressure_plate
+  - biomesoplenty:pine_door
+  - biomesoplenty:pine_button
+
+wood_redwood:
+  items:
+  - biomesoplenty:redwood_log
+  - biomesoplenty:redwood_wood
+
+  - biomesoplenty:stripped_redwood_log
+  - biomesoplenty:stripped_redwood_wood
+
+  - biomesoplenty:redwood_planks
+  - biomesoplenty:redwood_stairs
+  - biomesoplenty:redwood_slab
+  - biomesoplenty:redwood_sign
+  - biomesoplenty:redwood_hanging_sign
+
+  - biomesoplenty:redwood_fence
+  - biomesoplenty:redwood_fence_gate
+  - biomesoplenty:redwood_trapdoor
+  - biomesoplenty:redwood_pressure_plate
+  - biomesoplenty:redwood_door
+  - biomesoplenty:redwood_button
+
+# N A2
+wood_spruce:
+  items:
+  - minecraft:spruce_log
+  - minecraft:spruce_wood
+
+  - minecraft:stripped_spruce_log
+  - minecraft:stripped_spruce_wood
+
+  - minecraft:spruce_planks
+  - minecraft:spruce_stairs
+  - minecraft:spruce_slab
+  - minecraft:spruce_sign
+  - minecraft:spruce_hanging_sign
+
+  - minecraft:spruce_fence
+  - minecraft:spruce_fence_gate
+  - minecraft:spruce_trapdoor
+  - minecraft:spruce_pressure_plate
+  - minecraft:spruce_door
+  - minecraft:spruce_button
+
+wood_umbran:
+  items:
+  - biomesoplenty:umbran_log
+  - biomesoplenty:umbran_wood
+
+  - biomesoplenty:stripped_umbran_log
+  - biomesoplenty:stripped_umbran_wood
+
+  - biomesoplenty:umbran_planks
+  - biomesoplenty:umbran_stairs
+  - biomesoplenty:umbran_slab
+  - biomesoplenty:umbran_sign
+  - biomesoplenty:umbran_hanging_sign
+
+  - biomesoplenty:umbran_fence
+  - biomesoplenty:umbran_fence_gate
+  - biomesoplenty:umbran_trapdoor
+  - biomesoplenty:umbran_pressure_plate
+  - biomesoplenty:umbran_door
+  - biomesoplenty:umbran_button
+
+# N A1
+wood_warped:
+  items:
+  - minecraft:warped_stem
+  - minecraft:warped_hyphae
+
+  - minecraft:stripped_warped_stem
+  - minecraft:stripped_warped_hyphae
+
+  - minecraft:warped_planks
+  - minecraft:warped_stairs
+  - minecraft:warped_slab
+  - minecraft:warped_sign
+  - minecraft:warped_hanging_sign
+
+  - minecraft:warped_fence
+  - minecraft:warped_fence_gate
+  - minecraft:warped_trapdoor
+  - minecraft:warped_pressure_plate
+  - minecraft:warped_door
+  - minecraft:warped_button
+
+wood_willow:
+  items:
+  - biomesoplenty:willow_log
+  - biomesoplenty:willow_wood
+
+  - biomesoplenty:stripped_willow_log
+  - biomesoplenty:stripped_willow_wood
+
+  - biomesoplenty:willow_planks
+  - biomesoplenty:willow_stairs
+  - biomesoplenty:willow_slab
+  - biomesoplenty:willow_sign
+  - biomesoplenty:willow_hanging_sign
+
+  - biomesoplenty:willow_fence
+  - biomesoplenty:willow_fence_gate
+  - biomesoplenty:willow_trapdoor
+  - biomesoplenty:willow_pressure_plate
+  - biomesoplenty:willow_door
+  - biomesoplenty:willow_button
+
 # N C2
 foliage_blocks:
   items:
   - minecraft:flowering_azalea_leaves
   - minecraft:azalea_leaves
 
-  - minecraft:pale_oak_leaves
-  - minecraft:cherry_leaves
   - minecraft:mangrove_roots
+
+  - minecraft:acacia_leaves
+  - minecraft:azalea_leaves
+  - minecraft:birch_leaves
+  - minecraft:cherry_leaves
+  - biomesoplenty:cypress_leaves
+  - minecraft:dark_oak_leaves
+  - biomesoplenty:dead_leaves
+  - biomesoplenty:empyreal_leaves
+  - biomesoplenty:fir_leaves
+  - minecraft:flowering_azalea_leaves
+  - biomesoplenty:flowering_oak_leaves
+  - biomesoplenty:hellbark_leaves
+  - biomesoplenty:jacaranda_leaves
+  - minecraft:jungle_leaves
+  - biomesoplenty:magic_leaves
+  - biomesoplenty:mahogany_leaves
   - minecraft:mangrove_leaves
   - minecraft:oak_leaves
-  - minecraft:acacia_leaves
-  - minecraft:jungle_leaves
-  - minecraft:birch_leaves
-  - minecraft:dark_oak_leaves
+  - biomesoplenty:orange_maple_leaves
+  - biomesoplenty:origin_leaves
+  - minecraft:pale_oak_leaves
+  - biomesoplenty:palm_leaves
+  - biomesoplenty:pine_leaves
+  - biomesoplenty:rainbow_birch_leaves
+  - biomesoplenty:red_maple_leaves
+  - biomesoplenty:redwood_leaves
+  - biomesoplenty:snowblossom_leaves
   - minecraft:spruce_leaves
+  - biomesoplenty:umbran_leaves
+  - biomesoplenty:willow_leaves
+  - biomesoplenty:yellow_maple_leaves
 
   - minecraft:leaf_litter
 
@@ -826,6 +1177,8 @@ farming:
   - minecraft:warped_fungus
   - minecraft:brown_mushroom
   - minecraft:red_mushroom
+  - biomesoplenty:toadstool
+  - biomesoplenty:glowshroom
 
   - minecraft:creaking_heart
 
@@ -1030,7 +1383,6 @@ mob_drops:
   - minecraft:ender_pearl
   - minecraft:ender_eye
   - minecraft:bone
-  - minecraft:white_banner
   - minecraft:ominous_bottle
   - minecraft:prismarine_crystals
   - minecraft:prismarine_shard
@@ -1083,7 +1435,6 @@ grass:
   - minecraft:seagrass
   - minecraft:vine
   - minecraft:pitcher_plant
-  - minecraft:lily_pad
   - minecraft:pale_hanging_moss
   - minecraft:twisting_vines
   - minecraft:weeping_vines
@@ -1095,8 +1446,19 @@ grass:
   - minecraft:moss_carpet
   - minecraft:pale_moss_carpet
 
+  - minecraft:short_dry_grass
+  - minecraft:tall_dry_grass
+  - minecraft:tall_grass
+
   - minecraft:bush
   - minecraft:firefly_bush
+
+  - biomesoplenty:dead_grass
+  - biomesoplenty:desert_grass
+  - biomesoplenty:dune_grass
+  - biomesoplenty:high_grass
+  - biomesoplenty:sprout
+  - biomesoplenty:tiny_cactus
 
 flowers:
   items:
@@ -1116,6 +1478,7 @@ flowers:
   - minecraft:dandelion
   - minecraft:wither_rose
   - minecraft:lily_of_the_valley
+  - biomesoplenty:wilted_lily
   - minecraft:pink_petals
   - minecraft:rose_bush
   - minecraft:lilac
@@ -1127,6 +1490,23 @@ flowers:
   - minecraft:cactus_flower
   - minecraft:flowering_azalea
   - minecraft:wildflowers
+
+  - biomesoplenty:burning_blossom
+  - biomesoplenty:pink_hibiscus
+  - biomesoplenty:goldenrod
+  - biomesoplenty:tall_white_lavender
+  - biomesoplenty:glowflower
+  - biomesoplenty:violet
+  - biomesoplenty:icy_iris
+  - biomesoplenty:purple_wildflowers
+  - biomesoplenty:endbloom
+  - biomesoplenty:tall_lavender
+  - biomesoplenty:pink_daffodil
+  - biomesoplenty:lavender
+  - biomesoplenty:rose
+  - biomesoplenty:white_lavender
+  - biomesoplenty:orange_cosmos
+  - biomesoplenty:blue_hydrangea
 
 # W A1
 dyes:
@@ -1349,15 +1729,31 @@ wool:
   - minecraft:white_carpet
   - minecraft:yellow_carpet
 
-###
-
-horse_gear:
+mount_gear:
   items:
   - minecraft:leather_horse_armor
   - minecraft:diamond_horse_armor
   - minecraft:golden_horse_armor
   - minecraft:iron_horse_armor
   - minecraft:saddle
+
+  - minecraft:dried_ghast
+  - minecraft:black_harness
+  - minecraft:blue_harness
+  - minecraft:brown_harness
+  - minecraft:cyan_harness
+  - minecraft:gray_harness
+  - minecraft:green_harness
+  - minecraft:light_blue_harness
+  - minecraft:light_gray_harness
+  - minecraft:lime_harness
+  - minecraft:magenta_harness
+  - minecraft:orange_harness
+  - minecraft:pink_harness
+  - minecraft:purple_harness
+  - minecraft:red_harness
+  - minecraft:white_harness
+  - minecraft:yellow_harness
 
 sticks:
   items:
@@ -1409,26 +1805,140 @@ containers:
 
 music_discs:
   items:
-  - minecraft:music_disc_11
-  - minecraft:music_disc_13
-  - minecraft:music_disc_5
-  - minecraft:music_disc_blocks
-  - minecraft:music_disc_cat
-  - minecraft:music_disc_chirp
-  - minecraft:music_disc_creator
-  - minecraft:music_disc_creator_music_box
-  - minecraft:music_disc_far
+  - minecraft:disc_fragment_5
+  - morediscs:music_disc_blazetrap
+  - morediscs:music_disc_ancienttheme
+  - morediscs:music_disc_left_shift
+  - minecraft:music_disc_stal
+  - morediscs:music_disc_omen
+  - minecraft:music_disc_relic
+  - morediscs:music_disc_warden
+  - morediscs:music_disc_krushearzt
+  - morediscs:music_disc_spiral
+  - morediscs:music_disc_chill
   - minecraft:music_disc_mall
-  - minecraft:music_disc_mellohi
-  - minecraft:music_disc_otherside
+  - morediscs:music_disc_passion
+  - morediscs:music_disc_aether
+  - morediscs:music_disc_drowned_anthem
+  - morediscs:music_disc_intothejungle
+  - morediscs:music_disc_sound
+  - morediscs:music_disc_range
+  - minecraft:music_disc_strad
+  - morediscs:music_disc_deeperhouses
+  - biomesoplenty:music_disc_wanderer
   - minecraft:music_disc_pigstep
   - minecraft:music_disc_precipice
-  - minecraft:music_disc_relic
-  - minecraft:music_disc_stal
-  - minecraft:music_disc_strad
-  - minecraft:music_disc_tears
-  - minecraft:music_disc_wait
+  - morediscs:music_disc_chorus
+  - minecraft:music_disc_creator
+  - morediscs:music_disc_dear_diary
+  - minecraft:music_disc_chirp
+  - morediscs:music_disc_before
+  - minecraft:music_disc_cat
+  - morediscs:music_disc_wuird
+  - morediscs:music_disc_dive
+  - minecraft:music_disc_13
+  - morediscs:music_disc_corrupte
+  - minecraft:music_disc_11
+  - morediscs:music_disc_thesyndicate
+  - morediscs:music_disc_quithere
+  - morediscs:music_disc_disc
+  - morediscs:music_disc_turfufact
+  - morediscs:music_disc_rainbows
+  - morediscs:music_disc_becomeadestructor
+  - morediscs:music_disc_shallow
+  - minecraft:music_disc_mellohi
+  - morediscs:music_disc_technobladeneverdiesatleastinourhearts
+  - morediscs:music_disc_extrauosert
+  - morediscs:music_disc_sky
+  - minecraft:music_disc_otherside
+  - morediscs:music_disc_weepingsouls
+  - morediscs:music_disc_flight_of_the_voids_ship
+  - morediscs:music_disc_vengeful
+  - morediscs:music_disc_squiggles
+  - morediscs:music_disc_42
+  - morediscs:music_disc_submerge
+  - morediscs:music_disc_forest
+  - morediscs:music_disc_potion_of_swiftness
+  - morediscs:music_disc_amethyzied
+  - morediscs:music_disc_activate
+  - morediscs:music_disc_mangrove_swamp
+  - morediscs:music_disc_extrauoser
+  - morediscs:music_disc_yarona
+  - morediscs:music_disc_ucrism
+  - morediscs:music_disc_raid
+  - morediscs:music_disc_rain
+  - minecraft:music_disc_creator_music_box
+  - morediscs:music_disc_stridehop
+  - morediscs:music_disc_thelostsoul
+  - minecraft:music_disc_far
+  - morediscs:music_disc_vixized
+  - morediscs:music_disc_axcktale
+  - morediscs:music_disc_xziniron
+  - morediscs:music_disc_reloaded
+  - morediscs:music_disc_scopophobia
+  - morediscs:music_disc_glitshymonum
+  - morediscs:music_disc_justyhebeginning
+  - morediscs:music_disc_jungler
+  - morediscs:music_disc_tide
+  - morediscs:music_disc_phonikpace
+  - morediscs:music_disc_theunfinishedsymphony
+  - morediscs:music_disc_seeds
+  - morediscs:music_disc_warped_forest
+  - morediscs:music_disc_ancientruins
+  - morediscs:music_disc_dreams
+  - morediscs:music_disc_mush_roam
+  - morediscs:music_disc_void
+  - morediscs:music_disc_droopylovesjean
+  - morediscs:music_disc_tearsofjoy
+  - morediscs:music_disc_jungle
+  - morediscs:music_disc_alternatedimension
+  - minecraft:music_disc_blocks
+  - morediscs:music_disc_zayz
+  - morediscs:music_disc_sand
+  - morediscs:music_disc_stowchip
+  - morediscs:music_disc_retri
+  - morediscs:music_disc_antiremake
+  - morediscs:music_disc_desert
+  - morediscs:music_disc_ravage
+  - morediscs:music_disc_planettech
+  - morediscs:music_disc_castle
+  - morediscs:music_disc_strikethemdown
+  - morediscs:music_disc_lgm
+  - morediscs:music_disc_galacticloose
+  - morediscs:music_disc_anchores
+  - morediscs:music_disc_squidly
+  - morediscs:music_disc_azometrall
+  - morediscs:music_disc_thedarkside
   - minecraft:music_disc_ward
+  - morediscs:music_disc_mesa_depth
+  - morediscs:music_disc_enderwalk
+  - morediscs:music_disc_avian
+  - morediscs:music_disc_dropclouds
+  - morediscs:music_disc_victory
+  - morediscs:music_disc_sleepz
+  - morediscs:music_disc_scorched
+  - morediscs:music_disc_silence
+  - morediscs:music_disc_shroom
+  - morediscs:music_disc_thebrightside
+  - morediscs:music_disc_nostalg
+  - minecraft:music_disc_wait
+  - morediscs:music_disc_hue
+  - morediscs:music_disc_soul
+  - morediscs:music_disc_waves
+  - morediscs:music_disc_aggressionegression
+  - morediscs:music_disc_wardensprize
+  - minecraft:music_disc_5
+  - morediscs:music_disc_chop
+  - morediscs:music_disc_flyingship
+  - morediscs:music_disc_tragicdecision
+  - morediscs:music_disc_tall
+  - morediscs:music_disc_thespeedrunner
+  - morediscs:music_disc_test
+  - morediscs:music_disc_witherdance
+  - morediscs:music_disc_clouds
+  - morediscs:music_disc_usbefore
+  - morediscs:music_disc_krushearz
+  - morediscs:music_disc_anti
 
 armor_trims:
   items:
@@ -1461,7 +1971,7 @@ armor_boots:
   - minecraft:leather_boots
   - minecraft:netherite_boots
 
-armor_chestplates:
+armor_chest:
   items:
   - minecraft:chainmail_chestplate
   - minecraft:diamond_chestplate
@@ -1489,7 +1999,7 @@ armor_leggings:
   - minecraft:leather_leggings
   - minecraft:netherite_leggings
 
-ranged_weapons:
+range_weapons:
   items:
   - minecraft:spectral_arrow
   - minecraft:tipped_arrow
@@ -1509,27 +2019,52 @@ axes:
 
 boats:
   items:
-  - minecraft:pale_oak_boat
-  - minecraft:bamboo_raft
   - minecraft:acacia_boat
-  - minecraft:birch_boat
-  - minecraft:cherry_boat
-  - minecraft:dark_oak_boat
-  - minecraft:jungle_boat
-  - minecraft:jungle_chest_boat
-  - minecraft:mangrove_boat
-  - minecraft:oak_boat
-  - minecraft:spruce_boat
-
   - minecraft:acacia_chest_boat
   - minecraft:bamboo_chest_raft
-  - minecraft:pale_oak_chest_boat
+  - minecraft:bamboo_raft
+  - minecraft:birch_boat
   - minecraft:birch_chest_boat
+  - minecraft:cherry_boat
   - minecraft:cherry_chest_boat
+  - minecraft:dark_oak_boat
   - minecraft:dark_oak_chest_boat
+  - biomesoplenty:dead_boat
+  - biomesoplenty:dead_chest_boat
+  - biomesoplenty:empyreal_boat
+  - biomesoplenty:empyreal_chest_boat
+  - biomesoplenty:fir_boat
+  - biomesoplenty:fir_chest_boat
+  - biomesoplenty:hellbark_boat
+  - biomesoplenty:hellbark_chest_boat
+  - biomesoplenty:jacaranda_boat
+  - biomesoplenty:jacaranda_chest_boat
+  - minecraft:jungle_boat
+  - minecraft:jungle_chest_boat
+  - biomesoplenty:magic_boat
+  - biomesoplenty:magic_chest_boat
+  - biomesoplenty:mahogany_boat
+  - biomesoplenty:mahogany_chest_boat
+  - minecraft:mangrove_boat
   - minecraft:mangrove_chest_boat
+  - biomesoplenty:maple_boat
+  - biomesoplenty:maple_chest_boat
+  - minecraft:oak_boat
   - minecraft:oak_chest_boat
+  - minecraft:pale_oak_boat
+  - minecraft:pale_oak_chest_boat
+  - biomesoplenty:palm_boat
+  - biomesoplenty:palm_chest_boat
+  - biomesoplenty:pine_boat
+  - biomesoplenty:pine_chest_boat
+  - biomesoplenty:redwood_boat
+  - biomesoplenty:redwood_chest_boat
+  - minecraft:spruce_boat
   - minecraft:spruce_chest_boat
+  - biomesoplenty:umbran_boat
+  - biomesoplenty:umbran_chest_boat
+  - biomesoplenty:willow_boat
+  - biomesoplenty:willow_chest_boat
 
 beds:
   items:
@@ -1580,12 +2115,33 @@ saplings:
   - minecraft:acacia_sapling
   - minecraft:birch_sapling
   - minecraft:cherry_sapling
+  - biomesoplenty:cypress_sapling
   - minecraft:dark_oak_sapling
+  - biomesoplenty:dead_sapling
+  - biomesoplenty:empyreal_sapling
+  - biomesoplenty:fir_sapling
+  - minecraft:flowering_azalea
+  - biomesoplenty:flowering_oak_sapling
+  - biomesoplenty:hellbark_sapling
+  - biomesoplenty:jacaranda_sapling
   - minecraft:jungle_sapling
+  - biomesoplenty:magic_sapling
+  - biomesoplenty:mahogany_sapling
   - minecraft:mangrove_propagule
   - minecraft:oak_sapling
+  - biomesoplenty:orange_maple_sapling
+  - biomesoplenty:origin_sapling
   - minecraft:pale_oak_sapling
+  - biomesoplenty:palm_sapling
+  - biomesoplenty:pine_sapling
+  - biomesoplenty:rainbow_birch_sapling
+  - biomesoplenty:red_maple_sapling
+  - biomesoplenty:redwood_sapling
+  - biomesoplenty:snowblossom_sapling
   - minecraft:spruce_sapling
+  - biomesoplenty:umbran_sapling
+  - biomesoplenty:willow_sapling
+  - biomesoplenty:yellow_maple_sapling
 
 sherds:
   items:
@@ -1725,7 +2281,6 @@ creative:
 
 banners:
   items:
-  - minecraft:flower_banner_pattern
   - minecraft:black_banner
   - minecraft:blue_banner
   - minecraft:bordure_indented_banner_pattern
@@ -1734,6 +2289,7 @@ banners:
   - minecraft:cyan_banner
   - minecraft:field_masoned_banner_pattern
   - minecraft:flow_banner_pattern
+  - minecraft:flower_banner_pattern
   - minecraft:globe_banner_pattern
   - minecraft:gray_banner
   - minecraft:green_banner
@@ -1749,6 +2305,7 @@ banners:
   - minecraft:purple_banner
   - minecraft:red_banner
   - minecraft:skull_banner_pattern
+  - minecraft:white_banner
   - minecraft:yellow_banner
 
 hoes:
@@ -1767,26 +2324,6 @@ minecarts:
   - minecraft:hopper_minecart
   - minecraft:minecart
   - minecraft:tnt_minecart
-
-ghasts:
-  items:
-  - minecraft:dried_ghast
-  - minecraft:black_harness
-  - minecraft:blue_harness
-  - minecraft:brown_harness
-  - minecraft:cyan_harness
-  - minecraft:gray_harness
-  - minecraft:green_harness
-  - minecraft:light_blue_harness
-  - minecraft:light_gray_harness
-  - minecraft:lime_harness
-  - minecraft:magenta_harness
-  - minecraft:orange_harness
-  - minecraft:pink_harness
-  - minecraft:purple_harness
-  - minecraft:red_harness
-  - minecraft:white_harness
-  - minecraft:yellow_harness
 
 misc:
   items:
@@ -1812,13 +2349,10 @@ misc:
   - minecraft:mace
   - minecraft:open_eyeblossom
   - minecraft:pitcher_pod
-  - minecraft:short_dry_grass
   - minecraft:spawner
   - minecraft:spore_blossom
   - minecraft:suspicious_gravel
   - minecraft:suspicious_sand
-  - minecraft:tall_dry_grass
-  - minecraft:tall_grass
   - minecraft:test_block
   - minecraft:test_instance_block
   - minecraft:trial_spawner
@@ -1870,7 +2404,7 @@ armor:
   priority: 20
   includes:
   - armor_boots
-  - armor_chestplates
+  - armor_chest
   - armor_helmets
   - armor_leggings
   - shields
@@ -1885,7 +2419,7 @@ gear:
   - pickaxes
   - shovels
 
-gear_greater:
+greater_gear:
   priority: 5
   filters:
   - enchantment: max

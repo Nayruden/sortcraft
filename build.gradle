@@ -1,14 +1,14 @@
 plugins {
 	id 'fabric-loom' version "${loom_version}"
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
+  id 'com.github.johnrengelman.shadow' version '7.1.2'
 	id 'maven-publish'
 }
 
 configurations {
-    shade {
-        canBeResolved = true
-        canBeConsumed = false
-    }
+  shade {
+    canBeResolved = true
+    canBeConsumed = false
+  }
 }
 
 version = project.mod_version
@@ -19,7 +19,7 @@ base {
 }
 
 repositories {
-	// Add repositories to retrieve artifacts from in here.
+  // Add repositories to retrieve artifacts from in here.
 	// You should only use this when depending on other mods because
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
@@ -35,8 +35,8 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-    shade 'org.yaml:snakeyaml:2.2'
-    implementation 'org.yaml:snakeyaml:2.2'
+  shade 'org.yaml:snakeyaml:2.2'
+  implementation 'org.yaml:snakeyaml:2.2'
 }
 
 processResources {
@@ -48,28 +48,17 @@ processResources {
 }
 
 shadowJar {
-    configurations = [project.configurations.shade]
-    archiveClassifier.set('dev-shadow')
+  configurations = [project.configurations.shade]
+  archiveClassifier.set('dev-shadow')
 }
 
 remapJar {
-    dependsOn shadowJar
-    input.set shadowJar.archiveFile
+  dependsOn shadowJar
+  input.set shadowJar.archiveFile
 }
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.release = 21
-}
-
-sourceSets {
-    main {
-        java {
-            srcDirs = ['src/main/java']
-        }
-        resources {
-            srcDirs = ['src/main/resources']
-        }
-    }
 }
 
 java {
@@ -82,27 +71,15 @@ java {
 	targetCompatibility = JavaVersion.VERSION_21
 }
 
-sourceSets {
-    main {
-        java {
-            srcDirs = ["src/main/java"]
-        }
-        resources {
-            srcDirs = ["src/main/resources"]
-        }
-    }
-}
-
 jar {
-    //from(shadowJar.archiveFile)
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    exclude 'module-info.class'
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  exclude 'module-info.class'
 
-	//inputs.property "archivesName", project.base.archivesName
-
-	// from("LICENSE") {
-	// 	rename { "${it}_${inputs.properties.archivesName}"}
-	// }
+//	inputs.property "archivesName", project.base.archivesName
+//
+//	from("LICENSE") {
+//		rename { "${it}_${inputs.properties.archivesName}"}
+//	}
 }
 
 // configure the maven publication

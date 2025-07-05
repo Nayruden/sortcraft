@@ -1,23 +1,25 @@
 {
-  "schemaVersion": 1,
-  "id": "sortcraft",
-  "version": "1.0.0",
-  "name": "SortCraft",
-  "description": "Sorts items into categories using labeled chests.",
-  "authors": [
-    "ChatGPT"
-  ],
-  "contact": {},
-  "license": "MIT",
-  "environment": "*",
-  "entrypoints": {
-    "main": [
-      "net.sortcraft.SortCraft"
-    ]
-  },
-  "depends": {
-    "fabricloader": ">=0.14.0",
-    "fabric": "*",
-    "minecraft": "1.21.x"
-  }
+	"schemaVersion": 1,
+	"id": "sortcraft",
+	"version": "${version}",
+	"name": "SortCraft",
+	"description": "Sorts items into categories using labeled chests.",
+	"authors": [
+		"Nayruden"
+	],
+	"contact": {},
+	"license": "",
+	"icon": "assets/sortcraft/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"net.sortcraft.SortCraft"
+		]
+	},
+	"mixins": [],
+	"depends": {
+		"fabricloader": ">=0.16.14",
+		"minecraft": "~1.21.5",
+		"fabric-api": "*"
+	}
 }
