@@ -1,19 +1,24 @@
 package net.sortcraft;
 
+import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.ChestBlock;
 import net.minecraft.block.WallSignBlock;
-import net.minecraft.block.entity.BarrelBlockEntity;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.ChestBlockEntity;
-import net.minecraft.block.entity.LootableContainerBlockEntity;
-import net.minecraft.block.entity.ShulkerBoxBlockEntity;
-import net.minecraft.block.entity.SignBlockEntity;
+import net.minecraft.block.entity.*;
 import net.minecraft.block.enums.ChestType;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.BundleContentsComponent;
+import net.minecraft.component.type.ContainerComponent;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
@@ -23,47 +28,41 @@ import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ContainerComponent;
-import net.minecraft.component.type.BundleContentsComponent;
-import net.minecraft.util.collection.DefaultedList;
-import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.DumperOptions;
-import java.util.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.metadata.Person;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.Collectors;
-
-import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 
 public class SortCraft implements ModInitializer {
   public static final String MODID = "sortcraft";
   private static final org.apache.logging.log4j.Logger LOGGER = org.apache.logging.log4j.LogManager.getLogger(MODID);
-  private static Map<String, CategoryNode> categories = new HashMap<>();
-  private static Map<Identifier, Set<CategoryNode>> itemCategoryMap = new HashMap<>();
+  private static final Map<String, CategoryNode> categories = new HashMap<>();
+  private static final Map<Identifier, Set<CategoryNode>> itemCategoryMap = new HashMap<>();
+
+  private static final String signPrefix = "[";
+  private static final String signSuffix = "]";
+  private static final String inputSignText = signPrefix + "input" + signSuffix;
 
   @Override
   public void onInitialize() {
@@ -71,8 +70,33 @@ public class SortCraft implements ModInitializer {
       loadCategoriesConfig(server);
       flattenCategories();
     });
+
     CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
       registerSortCommand(dispatcher);
+    });
+
+    UseBlockCallback.EVENT.register((player, world, hand, hitResult) -> {
+      if (!(player instanceof ServerPlayerEntity serverPlayer)) return ActionResult.PASS;
+
+      BlockPos pos = hitResult.getBlockPos();
+      BlockState state = world.getBlockState(pos);
+      if (!(state.getBlock() instanceof WallSignBlock)) return ActionResult.PASS;
+
+      BlockEntity be = world.getBlockEntity(pos);
+      if (!(be instanceof SignBlockEntity signBe)) return ActionResult.PASS;
+
+      if (findTextOnSign(signBe, inputSignText) != null) {
+        ServerCommandSource source = serverPlayer.getCommandSource();
+        try {
+          this.executeSortInput(source, false);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+
+        return ActionResult.SUCCESS;
+      }
+
+      return ActionResult.PASS;
     });
   }
 
@@ -189,9 +213,9 @@ public class SortCraft implements ModInitializer {
     dispatcher.register(
       CommandManager.literal("sort")
         .then(CommandManager.literal("input")
-          .executes(ctx -> executeSortInput(ctx, false)))
+          .executes(ctx -> executeSortInput(ctx.getSource(), false)))
         .then(CommandManager.literal("preview")
-          .executes(ctx -> executeSortInput(ctx, true)))
+          .executes(ctx -> executeSortInput(ctx.getSource(), true)))
         .then(CommandManager.literal("diagnostics")
           .executes(this::executeSortDiag))
         .then(CommandManager.literal("whereis")
@@ -267,17 +291,17 @@ public class SortCraft implements ModInitializer {
   }
 
   private int executeSortHelp(CommandContext<ServerCommandSource> context) {
-    String helpMessage = """
+    String helpMessage = String.format("""
       Sort Command Help:
-      /sort input         - Sorts items from the nearby [input] chest
-      /sort preview       - Shows a preview of what will be sorted and where
-      /sort diagnostics   - Generates a diagnostics report as YAML
-      /sort whereis <item> - Finds chests that contain the specified item
+      /sort input           - Sorts items from the closest input chest (chest must have a sign with '%s')
+      /sort preview         - Shows a preview of what will be sorted and where
+      /sort diagnostics     - Generates a diagnostics report as YAML
+      /sort whereis <item>  - Finds chests that contain the specified item
       /sort category <item> - Shows the sorting category for the specified item
-      /sort help          - Shows this help message
+      /sort help            - Shows this help message
 
       All commands support autocomplete. Use TAB for suggestions.
-      """;
+      """, inputSignText);
     context.getSource().sendFeedback(() -> Text.literal(helpMessage), false);
     return 1;
   }
@@ -350,11 +374,18 @@ public class SortCraft implements ModInitializer {
     return closestSign;
   }
 
+  List<CategoryNode> getMatchingCategoriesNoFilter(Identifier itemId) {
+    Set<CategoryNode> categoriesRaw = itemCategoryMap.get(itemId);
+    if (categoriesRaw == null) return new ArrayList<>();
+    List<CategoryNode> categories = new ArrayList<>(categoriesRaw);
+    Collections.sort(categories);
+    return categories;
+  }
+
   List<CategoryNode> getMatchingCategories(ItemStack stack) {
     Identifier itemId = Registries.ITEM.getId(stack.getItem());
     List<CategoryNode> filteredCategories = new ArrayList<>();
-    Set<CategoryNode> categories = itemCategoryMap.get(itemId);
-    if (categories == null) return filteredCategories;
+    List<CategoryNode> categories = getMatchingCategoriesNoFilter(itemId);
 
     for (CategoryNode category : categories) {
       if (category.filters.stream().allMatch(f -> f.matches(stack))) filteredCategories.add(category);
@@ -362,6 +393,28 @@ public class SortCraft implements ModInitializer {
 
     Collections.sort(filteredCategories);
     return filteredCategories;
+  }
+
+  private Identifier getSingleItemIfUniformAndMeetsThreshold(Iterable<ItemStack> stacks, int threshold) {
+    Identifier singleItem = null;
+    int count = 0;
+
+    for (ItemStack stack : stacks) {
+      if (stack.isEmpty()) continue;
+      Identifier itemId = Registries.ITEM.getId(stack.getItem());
+
+      if (singleItem == null) {
+        singleItem = itemId;
+      } else if (!singleItem.equals(itemId)) {
+        return null; // Different items detected
+      }
+      count++;
+    }
+
+    if (count >= threshold) {
+      return singleItem;
+    }
+    return null;
   }
 
   private SortingResults sortStacks(ServerWorld world,
@@ -377,6 +430,16 @@ public class SortCraft implements ModInitializer {
 
       Iterable<ItemStack> inner_stacks = getStacksIfContainer(stack);
       if (inner_stacks != null) {
+        // Check for uniform stacks optimization
+        Identifier uniformItem = getSingleItemIfUniformAndMeetsThreshold(inner_stacks, 10);
+        if (uniformItem != null) {
+          LOGGER.info("[sortinput] Container has >=10 stacks of same item '{}'. Sorting container itself into that category.", uniformItem);
+
+          List<CategoryNode> categories = getMatchingCategoriesNoFilter(uniformItem);
+          sortStack(world, inputPos, preview, stack, categories, uniformItem, sortingResults);
+          continue; // Skip inner sorting
+        }
+
         LOGGER.info("[sortinput] Item is a container. Sorting contents of container.");
         SortingResults innerSortingResults = sortStacks(world, inputPos, inner_stacks, preview);
         sortingResults.sorted += innerSortingResults.sorted;
@@ -411,53 +474,51 @@ public class SortCraft implements ModInitializer {
 
       Identifier itemId = Registries.ITEM.getId(stack.getItem());
       List<CategoryNode> categories = getMatchingCategories(stack);
-      if (categories.isEmpty()) {
-        LOGGER.info("[sortinput] No categories found for item: {}", itemId);
-        sortingResults.unknownItems.add(itemId.toString());
-        sortingResults.leftovers.add(stack);
-        continue;
-      }
-
-      int stackSize = stack.getCount();
-      int totalMoved = 0;
-      String categoriesStr = CategoryNode.categoriesToStr(categories);
-      for (int i = 0; i < categories.size(); i++) {
-        CategoryNode category = categories.get(i);
-        boolean isLast = (i+1) >= categories.size();
-
-        List<ChestRef> categoryChests = findCategoryChests(world, inputPos, category.name);
-        if (categoryChests.isEmpty()) {
-          continue;
-        }
-
-        int moved = distributeToChests(stack, categoryChests, preview);
-        totalMoved += moved;
-        if (moved > 0) {
-          sortingResults.sorted += moved;
-          Map<String, Integer> counts = sortingResults.categoryCounts;
-          counts.put(category.name, counts.getOrDefault(category.name, 0) + moved);
-          LOGGER.info("[sortinput] Moved {} of item {}", moved, itemId);
-
-          if (preview && totalMoved >= stackSize) break;
-        }
-      }
-
-      if (totalMoved < stackSize) {
-        LOGGER.warn("[sortinput] Overflow: Could not store (all of) item '{}' -> categories '{}'", itemId, categoriesStr);
-        sortingResults.overflowCategories.add(categories.getFirst().name);
-        sortingResults.leftovers.add(stack);
-      }
+      sortStack(world, inputPos, preview, stack, categories, itemId, sortingResults);
     }
     return sortingResults;
   }
 
-  private int executeSortInput(CommandContext<ServerCommandSource> context, boolean preview) throws CommandSyntaxException {
-    ServerCommandSource source = context.getSource();
+  private void sortStack(ServerWorld world, BlockPos inputPos, boolean preview, ItemStack stack, List<CategoryNode> categories, Identifier itemId, SortingResults sortingResults) {
+    if (categories.isEmpty()) {
+      LOGGER.info("[sortinput] No categories found for item: {}", itemId);
+      sortingResults.unknownItems.add(itemId.toString());
+      sortingResults.leftovers.add(stack);
+      return;
+    }
+
+    int stackSize = stack.getCount();
+    int totalMoved = 0;
+    String categoriesStr = CategoryNode.categoriesToStr(categories);
+    for (CategoryNode category : categories) {
+      List<ChestRef> categoryChests = findCategoryChests(world, inputPos, category.name);
+      if (categoryChests.isEmpty()) continue;
+
+      int moved = distributeToChests(stack, categoryChests, preview);
+      totalMoved += moved;
+      if (moved > 0) {
+        sortingResults.sorted += moved;
+        Map<String, Integer> counts = sortingResults.categoryCounts;
+        counts.put(category.name, counts.getOrDefault(category.name, 0) + moved);
+        LOGGER.info("[sortinput] Moved {} of item {}", moved, itemId);
+
+        if (preview && totalMoved >= stackSize) break;
+      }
+    }
+
+    if (totalMoved < stackSize) {
+      LOGGER.warn("[sortinput] Overflow: Could not store (all of) item '{}' -> categories '{}'", itemId, categoriesStr);
+      sortingResults.overflowCategories.add(categories.getFirst().name);
+      sortingResults.leftovers.add(stack);
+    }
+  }
+
+  private int executeSortInput(ServerCommandSource source, boolean preview) throws CommandSyntaxException {
     ServerWorld world = source.getWorld();
     BlockPos playerPos = source.getPlayer().getBlockPos();
     LOGGER.info("[sortinput] Starting sort near {}", playerPos);
 
-    SignBlockEntity inputSign = findClosestSignWithText(world, playerPos, "[input]", 20);
+    SignBlockEntity inputSign = findClosestSignWithText(world, playerPos, inputSignText, 20);
 
     if (inputSign == null) {
       source.sendFeedback(() -> Text.literal("No input sign found nearby."), false);
@@ -872,7 +933,7 @@ public class SortCraft implements ModInitializer {
   private List<ChestRef> findCategoryChests(ServerWorld world, BlockPos nearPos, String categoryName) {
     LOGGER.info("[findCategoryChests] Searching signs near {} for category '{}'", nearPos, categoryName);
 
-    SignBlockEntity targetSign = findClosestSignWithText(world, nearPos, "[" + categoryName + "]", 64);
+    SignBlockEntity targetSign = findClosestSignWithText(world, nearPos, signPrefix + categoryName + signSuffix, 64);
 
     if (targetSign == null) {
       LOGGER.info("[findCategoryChests] No matching sign found for category '{}'", categoryName);
