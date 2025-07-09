@@ -12,7 +12,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import net.minecraft.component.DataComponentTypes;
@@ -127,24 +129,36 @@ class EnchantmentFilterRule implements FilterRule {
 
   @Override
   public boolean matches(ItemStack stack) {
+    // Get both ENCHANTMENTS and STORED_ENCHANTMENTS
     ItemEnchantmentsComponent enchantmentsComponent = stack.get(DataComponentTypes.ENCHANTMENTS);
-    if (enchantmentsComponent == null || enchantmentsComponent.getEnchantments().isEmpty()) {
-      return false;
-    }
+    ItemEnchantmentsComponent storedEnchantmentsComponent = stack.get(DataComponentTypes.STORED_ENCHANTMENTS);
 
-    Set<RegistryEntry<Enchantment>> enchantments = enchantmentsComponent.getEnchantments();
+    // Combine both sets
+    List<ItemEnchantmentsComponent> components = List.of(enchantmentsComponent, storedEnchantmentsComponent);
+
+    // Flatten into a single set of enchantments
+    List<RegistryEntry<Enchantment>> allEnchantments = components.stream()
+      .filter(Objects::nonNull)
+      .flatMap(c -> c.getEnchantments().stream())
+      .toList();
+
+    if (allEnchantments.isEmpty()) return false;
 
     return switch (matchType) {
       case ANY -> true;
       case MAX -> {
-        for (RegistryEntry<Enchantment> entry : enchantments) {
-          int level = enchantmentsComponent.getLevel(entry);
-          if (level == entry.value().getMaxLevel()) yield true;
+        for (ItemEnchantmentsComponent component : components) {
+          if (component != null) {
+            for (RegistryEntry<Enchantment> entry : component.getEnchantments()) {
+              int level = component.getLevel(entry);
+              if (level == entry.value().getMaxLevel()) yield true;
+            }
+          }
         }
         yield false;
       }
       case SINGLE -> {
-        for (RegistryEntry<Enchantment> entry : enchantments) {
+        for (RegistryEntry<Enchantment> entry : allEnchantments) {
           if (entry.value() == singleEnchantment) yield true;
         }
         yield false;
