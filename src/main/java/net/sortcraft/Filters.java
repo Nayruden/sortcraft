@@ -12,10 +12,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
@@ -133,16 +130,10 @@ class EnchantmentFilterRule implements FilterRule {
     ItemEnchantmentsComponent enchantmentsComponent = stack.get(DataComponentTypes.ENCHANTMENTS);
     ItemEnchantmentsComponent storedEnchantmentsComponent = stack.get(DataComponentTypes.STORED_ENCHANTMENTS);
 
-    // Combine both sets
-    List<ItemEnchantmentsComponent> components = List.of(enchantmentsComponent, storedEnchantmentsComponent);
-
-    // Flatten into a single set of enchantments
-    List<RegistryEntry<Enchantment>> allEnchantments = components.stream()
-      .filter(Objects::nonNull)
-      .flatMap(c -> c.getEnchantments().stream())
-      .toList();
-
-    if (allEnchantments.isEmpty()) return false;
+    List<ItemEnchantmentsComponent> components = new ArrayList<>();
+    if (enchantmentsComponent != null) components.add(enchantmentsComponent);
+    if (storedEnchantmentsComponent != null) components.add(storedEnchantmentsComponent);
+    if (components.isEmpty()) return false;
 
     return switch (matchType) {
       case ANY -> true;
@@ -158,8 +149,12 @@ class EnchantmentFilterRule implements FilterRule {
         yield false;
       }
       case SINGLE -> {
-        for (RegistryEntry<Enchantment> entry : allEnchantments) {
-          if (entry.value() == singleEnchantment) yield true;
+        for (ItemEnchantmentsComponent component : components) {
+          for (RegistryEntry<Enchantment> entry : component.getEnchantments()) {
+            if (entry.value() == singleEnchantment) {
+              yield true;
+            }
+          }
         }
         yield false;
       }
