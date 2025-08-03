@@ -553,12 +553,12 @@ public class SortCraft implements ModInitializer {
 
     SortingResults results = sortStacks(world, chestPos, inputInv, preview);
 
-    for (String cat : results.overflowCategories) {
-      source.sendFeedback(() -> Text.literal("⚠ Storage overflow in category: " + cat), false);
-    }
-
-    for (String itemId : results.unknownItems) {
-      source.sendFeedback(() -> Text.literal("⚠ No category found for item: " + itemId), false);
+    String message = "";
+    message += summarize(results.overflowCategories, "⚠ Storage overflow in following categories:");
+    message += summarize(results.unknownItems, "⚠ No category found for following items:");
+    if ( !message.isEmpty() ) {
+      final var copy = Text.literal(message);
+      source.sendFeedback(() -> copy, false);
     }
 
     if (preview) {
@@ -963,6 +963,21 @@ public class SortCraft implements ModInitializer {
       this.pos = pos;
       this.inventory = inv;
     }
+  }
+
+  private static String summarize(Set<String> names, String message) {
+    if ( names == null || names.isEmpty() ) {
+      return "";
+    }
+
+    return (
+      "\n"
+      + message + "\n"
+      + names.stream().sorted()
+        .map(name -> "- "+name)
+        .collect(Collectors.joining("\n"))
+      + "\n"
+    );
   }
 
   private static class SortingResults {
