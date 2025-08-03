@@ -1,12 +1,8 @@
 package net.sortcraft;
 
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.BuiltinRegistries;
-import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.RegistryLoader;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
@@ -33,16 +29,19 @@ class FilterRuleFactory {
 
     var registries = server.getRegistryManager();
 
-    switch (key.toLowerCase()) {
-      case "enchantment" -> {
-        return new EnchantmentFilterRule(value, registries.getOrThrow(RegistryKeys.ENCHANTMENT));
-      }
-      case "custom_name" -> {
-        return new NameFilterRule(value);
-      }
-      // types of potions
-      default -> throw new IllegalArgumentException("Unknown filter key: " + key);
-    }
+    return switch (key.toLowerCase()) {
+      case "enchantment" ->
+        new EnchantmentFilterRule(value, registries.getOrThrow(RegistryKeys.ENCHANTMENT));
+
+      case "custom_name" ->
+        new NameFilterRule(value);
+
+      case "stackable" ->
+        new StackableFilterRule();
+
+      default ->
+        throw new IllegalArgumentException("Unknown filter key: " + key);
+    };
   }
 }
 
@@ -162,3 +161,10 @@ class EnchantmentFilterRule implements FilterRule {
   }
 }
 
+
+class StackableFilterRule implements FilterRule {
+  @Override
+  public boolean matches(ItemStack stack) {
+    return stack != null && !stack.isEmpty() && stack.getItem().getMaxCount() != 1;
+  }
+}
