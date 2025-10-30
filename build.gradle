@@ -55,6 +55,11 @@ shadowJar {
 remapJar {
   dependsOn shadowJar
   input.set shadowJar.archiveFile
+  archiveFileName.set("${project.archives_base_name}-${project.mod_version}-${project.minecraft_version}.jar")
+}
+
+tasks.named("remapSourcesJar") {
+  archiveFileName.set("${project.archives_base_name}-${project.mod_version}-${project.minecraft_version}-sources.jar")
 }
 
 tasks.withType(JavaCompile).configureEach {
