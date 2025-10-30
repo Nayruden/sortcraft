@@ -19,6 +19,7 @@ jobs:
           import json
           import os
           import urllib.request
+          import xml.etree.ElementTree as ET
 
           minecraft_versions = [
               "1.21.5",
@@ -29,9 +30,13 @@ jobs:
               "1.21.10",
           ]
 
-          def fetch(url: str):
+          def fetch_json(url: str):
               with urllib.request.urlopen(url) as response:
                   return json.load(response)
+
+          def fetch_text(url: str):
+              with urllib.request.urlopen(url) as response:
+                  return response.read().decode("utf-8")
 
           def pick_latest(entries, description):
               if not entries:
@@ -42,18 +47,47 @@ jobs:
               return entries[0]["version"]
 
           matrix = {"include": []}
+          fabric_metadata = fetch_text(
+              "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/maven-metadata.xml"
+          )
+          root = ET.fromstring(fabric_metadata)
+          available_fabric_versions = [
+              version.text
+              for version in root.findall("./versioning/versions/version")
+              if version.text
+          ]
+
+          def latest_fabric_for(mc_version: str) -> str:
+              suffix = f"+{mc_version}"
+              matching = [
+                  version for version in available_fabric_versions if version.endswith(suffix)
+              ]
+              if not matching:
+                  raise SystemExit(f"Unable to find Fabric API version for Minecraft {mc_version}")
+
+              def sort_key(version: str):
+                  base, _, _ = version.partition("+")
+                  parts = []
+                  for part in base.split("."):
+                      if part.isdigit():
+                          parts.append(int(part))
+                      else:
+                          parts.append(part)
+                  return parts
+
+              return max(matching, key=sort_key)
+
           for mc_version in minecraft_versions:
-              yarn_entries = fetch(f"https://meta.fabricmc.net/v2/versions/yarn/{mc_version}")
-              fabric_entries = fetch(f"https://meta.fabricmc.net/v2/versions/fabric/{mc_version}")
+              yarn_entries = fetch_json(f"https://meta.fabricmc.net/v2/versions/yarn/{mc_version}")
 
               matrix["include"].append(
                   {
                       "minecraft": mc_version,
                       "yarn": pick_latest(yarn_entries, f"Yarn {mc_version}"),
-                      "fabric": pick_latest(fabric_entries, f"Fabric API {mc_version}"),
+                      "fabric": latest_fabric_for(mc_version),
                   }
               )
-          loader_entries = fetch("https://meta.fabricmc.net/v2/versions/loader")
+          loader_entries = fetch_json("https://meta.fabricmc.net/v2/versions/loader")
           loader_version = pick_latest(loader_entries, "Fabric Loader")
 
           output_path = os.environ["GITHUB_OUTPUT"]
