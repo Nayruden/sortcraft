@@ -1,30 +1,104 @@
-# Automatically build the project and run any configured tests for every push
-# and submitted pull request. This can help catch issues that only occur on
-# certain platforms or Java versions, and provides a first line of defence
-# against bad commits.
-
 name: build
-on: [pull_request, push]
+
+on:
+  push:
+  pull_request:
 
 jobs:
-  build:
+  prepare-matrix:
+    name: Prepare version matrix
     runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+      loader: ${{ steps.generate.outputs.loader }}
     steps:
-      - name: checkout repository
+      - id: generate
+        name: Generate matrix data
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          minecraft_versions = [
+              "1.21.5",
+              "1.21.6",
+              "1.21.7",
+              "1.21.8",
+              "1.21.9",
+              "1.21.10",
+          ]
+
+          def fetch(url: str):
+              with urllib.request.urlopen(url) as response:
+                  return json.load(response)
+
+          yarn_data = fetch("https://meta.fabricmc.net/v2/versions/yarn")
+          fabric_data = fetch("https://meta.fabricmc.net/v2/versions/fabric")
+          loader_data = fetch("https://meta.fabricmc.net/v2/versions/loader")
+
+          def matches_game_version(entry, version):
+              game_version = entry.get("gameVersion")
+              if isinstance(game_version, list):
+                  return version in game_version
+              return game_version == version
+
+          def select_version(data, version):
+              candidates = [entry for entry in data if matches_game_version(entry, version)]
+              if not candidates:
+                  raise SystemExit(f"Unable to find metadata for {version}")
+              for entry in candidates:
+                  if entry.get("stable"):
+                      return entry["version"]
+              return candidates[0]["version"]
+
+          matrix = {"include": []}
+          for mc_version in minecraft_versions:
+              matrix["include"].append(
+                  {
+                      "minecraft": mc_version,
+                      "yarn": select_version(yarn_data, mc_version),
+                      "fabric": select_version(fabric_data, mc_version),
+                  }
+              )
+
+          loader_version = loader_data[0]["version"]
+
+          output_path = os.environ["GITHUB_OUTPUT"]
+          with open(output_path, "a", encoding="utf-8") as fh:
+              fh.write(f"matrix={json.dumps(matrix)}\n")
+              fh.write(f"loader={loader_version}\n")
+          PY
+
+  build:
+    name: Build for Minecraft ${{ matrix.minecraft }}
+    needs: prepare-matrix
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
+    steps:
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - name: validate gradle wrapper
+      - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
-      - name: setup jdk
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
+          distribution: temurin
           java-version: '21'
-          distribution: 'microsoft'
-      - name: make gradle wrapper executable
+      - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
-      - name: build
-        run: ./gradlew build
-      - name: capture build artifacts
+      - name: Build
+        run: ./gradlew clean build
+        env:
+          ORG_GRADLE_PROJECT_minecraft_version: ${{ matrix.minecraft }}
+          ORG_GRADLE_PROJECT_yarn_mappings: ${{ matrix.yarn }}
+          ORG_GRADLE_PROJECT_fabric_version: ${{ matrix.fabric }}
+          ORG_GRADLE_PROJECT_loader_version: ${{ needs.prepare-matrix.outputs.loader }}
+      - name: Capture build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Artifacts
-          path: build/libs/
+          name: sortcraft-${{ matrix.minecraft }}
+          path: build/libs/*.jar
+          if-no-files-found: error
