@@ -1121,7 +1121,7 @@ public class SortCraft implements ModInitializer {
       if (this == o) return true;
       if (!(o instanceof CategoryNode)) return false;
       CategoryNode categoryNode = (CategoryNode) o;
-      return name == categoryNode.name;
+      return Objects.equals(name, categoryNode.name);
     }
 
     @Override
