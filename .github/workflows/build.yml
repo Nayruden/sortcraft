@@ -33,36 +33,28 @@ jobs:
               with urllib.request.urlopen(url) as response:
                   return json.load(response)
 
-          yarn_data = fetch("https://meta.fabricmc.net/v2/versions/yarn")
-          fabric_data = fetch("https://meta.fabricmc.net/v2/versions/fabric")
-          loader_data = fetch("https://meta.fabricmc.net/v2/versions/loader")
-
-          def matches_game_version(entry, version):
-              game_version = entry.get("gameVersion")
-              if isinstance(game_version, list):
-                  return version in game_version
-              return game_version == version
-
-          def select_version(data, version):
-              candidates = [entry for entry in data if matches_game_version(entry, version)]
-              if not candidates:
-                  raise SystemExit(f"Unable to find metadata for {version}")
-              for entry in candidates:
+          def pick_latest(entries, description):
+              if not entries:
+                  raise SystemExit(f"Unable to find metadata for {description}")
+              for entry in entries:
                   if entry.get("stable"):
                       return entry["version"]
-              return candidates[0]["version"]
+              return entries[0]["version"]
 
           matrix = {"include": []}
           for mc_version in minecraft_versions:
+              yarn_entries = fetch(f"https://meta.fabricmc.net/v2/versions/yarn/{mc_version}")
+              fabric_entries = fetch(f"https://meta.fabricmc.net/v2/versions/fabric/{mc_version}")
+
               matrix["include"].append(
                   {
                       "minecraft": mc_version,
-                      "yarn": select_version(yarn_data, mc_version),
-                      "fabric": select_version(fabric_data, mc_version),
+                      "yarn": pick_latest(yarn_entries, f"Yarn {mc_version}"),
+                      "fabric": pick_latest(fabric_entries, f"Fabric API {mc_version}"),
                   }
               )
-
-          loader_version = loader_data[0]["version"]
+          loader_entries = fetch("https://meta.fabricmc.net/v2/versions/loader")
+          loader_version = pick_latest(loader_entries, "Fabric Loader")
 
           output_path = os.environ["GITHUB_OUTPUT"]
           with open(output_path, "a", encoding="utf-8") as fh:
