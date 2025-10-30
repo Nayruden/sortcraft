@@ -126,5 +126,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sortcraft-${{ matrix.minecraft }}
-          path: build/libs/*.jar
+          path: build/libs/*${{ matrix.minecraft }}*.jar
           if-no-files-found: error
