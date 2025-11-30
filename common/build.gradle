@@ -1,0 +1,33 @@
+architectury {
+    common(rootProject.enabled_platforms.split(','))
+}
+
+// Add version-specific source sets
+// For 1.21.4+, use java-1.21.4; for 1.21.1, use java-1.21.1
+// Note: MC 1.21.2 and 1.21.3 are not supported (incompatible API changes)
+def mcVersion = rootProject.minecraft_version
+def versionParts = mcVersion.split('\\.')
+def mcMinor = versionParts[1].toInteger()
+def mcPatch = versionParts.length > 2 ? versionParts[2].toInteger() : 0
+def isVersion1_21_4OrLater = (mcMinor > 21) || (mcMinor == 21 && mcPatch >= 4)
+
+sourceSets {
+    main {
+        java {
+            if (isVersion1_21_4OrLater) {
+                srcDir 'src/main/java-1.21.4'
+            } else {
+                srcDir 'src/main/java-1.21.1'
+            }
+        }
+    }
+}
+
+dependencies {
+    // Architectury API
+    modImplementation "dev.architectury:architectury:${rootProject.architectury_version}"
+
+    // SnakeYAML for config parsing
+    implementation "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
+}
+

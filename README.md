@@ -1,6 +1,6 @@
 # SortCraft
 
-**SortCraft** is a powerful, configurable bulk sorting mod for Minecraft Fabric. It organizes your chests with intuitive, customizable categories to keep your world neat and efficient.
+**SortCraft** is a powerful, configurable bulk sorting mod for Minecraft, supporting both Fabric and NeoForge loaders. It organizes your chests with intuitive, customizable categories to keep your world neat and efficient.
 
 ---
 
@@ -113,6 +113,34 @@ Returns: `swords, gear, weapons`
 
 ---
 
+### `/sort reload`
+
+Reloads all category configurations from the `config/sortcraft/categories/` directory without restarting the server.
+
+✔ **Example usage:**
+
+```
+/sort reload
+```
+
+Useful when editing category YAML files while the server is running.
+
+---
+
+### `/sort dump`
+
+Generates JSON files containing all item tags from the registry. Useful for debugging and discovering available item tags for your category definitions.
+
+✔ **Example usage:**
+
+```
+/sort dump
+```
+
+Output files are placed in the `sortcraft-dump/` directory.
+
+---
+
 ## 🛠️ **YAML Configuration**
 
 SortCraft uses a **YAML config** to define categories, priorities, and filters. Here's a **short example**:
@@ -171,6 +199,8 @@ gear_greater:
 * **Filters are ANDed together.** Items must match **all filters** to qualify for a category.
 * Supported filters include:
   * `enchantment`: `max`, `any`, specific enchantment names, or `!enchantment` to negate
+  * `custom_name`: Matches items with custom names. Use `*` to match any custom name, or a specific string to match exactly
+  * `stackable`: `true` to match items that can stack beyond 1, `false` to match unstackable items
 
 ---
 
@@ -191,6 +221,37 @@ All items will be sorted into their proper chests, filling from the **bottom up*
 ## 🚀 **Start Sorting Your World Today**
 
 SortCraft brings **peace and order** to your Minecraft storage chaos. Configure your categories, place your signs, and let SortCraft handle the rest.
+
+---
+
+## 🔧 **Development & Building**
+
+### Multi-Version Support
+
+SortCraft supports Minecraft versions **1.21.1, 1.21.4 through 1.21.10** (8 versions).
+
+**Note:** MC 1.21.2 and 1.21.3 are not supported due to incompatible API changes in Architectury and Minecraft that would require extensive refactoring. These were transitional versions and most servers/clients use either 1.21.1 or 1.21.4+.
+
+To build for all supported versions, run:
+
+```powershell
+.\build-all-versions.ps1
+```
+
+Built JARs will be placed in `build/libs/all-versions/`.
+
+### Dependency Version Metadata URLs
+
+When updating to new Minecraft versions, use these official metadata sources to find compatible dependency versions:
+
+| Dependency | Metadata URL |
+|------------|--------------|
+| **Fabric API** | `https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/maven-metadata.xml` |
+| **Fabric Loader** | `https://meta.fabricmc.net/v2/versions/loader` |
+| **Fabric Yarn** | `https://meta.fabricmc.net/v2/versions/yarn/{mc_version}` |
+| **NeoForge** | `https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge` |
+| **Architectury API** | `https://maven.architectury.dev/dev/architectury/architectury/maven-metadata.xml` |
+| **Minecraft Versions** | `https://piston-meta.mojang.com/mc/game/version_manifest_v2.json` |
 
 ---
 

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${mod_version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "authors": [
+    "${mod_author}"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/sortcraft/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.sortcraft.fabric.SortCraftFabric"
+    ]
+  },
+  "mixins": [],
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "minecraft": "${supported_minecraft_versions}",
+    "java": ">=21",
+    "fabric-api": "*",
+    "architectury": ">=${architectury_version}"
+  }
+}
+

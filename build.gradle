@@ -1,106 +1,135 @@
 plugins {
-	id 'fabric-loom' version "${loom_version}"
-  id 'com.github.johnrengelman.shadow' version '7.1.2'
-	id 'maven-publish'
+    id 'dev.architectury.loom' version "${architectury_loom_version}" apply false
+    id 'architectury-plugin' version '3.4-SNAPSHOT'
+    id 'com.gradleup.shadow' version '8.3.6' apply false
 }
 
-configurations {
-  shade {
-    canBeResolved = true
-    canBeConsumed = false
-  }
+// Multi-version support: Load version-specific properties
+// Use -Pmc_version=1.21.4 to build for a specific version, defaults to 1.21.5
+// Supported versions: 1.21.1, 1.21.4-1.21.10
+def targetVersion = project.hasProperty('mc_version') ? project.property('mc_version') : '1.21.5'
+def supportedVersions = ['1.21.1', '1.21.4', '1.21.5', '1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10']
+
+// Load version-specific properties from versions directory
+def versionPropsFile = file("versions/${targetVersion}/gradle.properties")
+if (!versionPropsFile.exists()) {
+    throw new GradleException("Version properties file not found: ${versionPropsFile}. Available versions: ${supportedVersions.join(', ')}")
 }
 
-version = project.mod_version
-group = project.maven_group
+def versionProps = new Properties()
+versionPropsFile.withInputStream { versionProps.load(it) }
+versionProps.each { key, value ->
+    ext.set(key, value)
+}
+println "Building for Minecraft ${targetVersion}"
 
-base {
-	archivesName = project.archives_base_name
+// Parse version for comparison
+def versionParts = targetVersion.split('\\.')
+def mcMajor = versionParts[0].toInteger()
+def mcMinor = versionParts[1].toInteger()
+def mcPatch = versionParts.length > 2 ? versionParts[2].toInteger() : 0
+ext.mcVersionCode = mcMajor * 10000 + mcMinor * 100 + mcPatch
+ext.isVersion1_21_4OrLater = (mcMinor > 21) || (mcMinor == 21 && mcPatch >= 4)
+ext.targetMcVersion = targetVersion
+println "MC Version Code: ${ext.mcVersionCode}, isVersion1_21_4OrLater: ${ext.isVersion1_21_4OrLater}"
+
+architectury {
+    minecraft = rootProject.minecraft_version
 }
 
-repositories {
-  // Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
+allprojects {
+    group = rootProject.mod_group
+    // Include Minecraft version in mod version for multi-version builds
+    version = "${rootProject.mod_version}+${rootProject.minecraft_version}"
 }
 
-dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+subprojects {
+    apply plugin: 'dev.architectury.loom'
+    apply plugin: 'architectury-plugin'
+    apply plugin: 'maven-publish'
 
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    base {
+        archivesName = "${rootProject.archives_base_name}-${project.name}"
+    }
 
-  shade 'org.yaml:snakeyaml:2.2'
-  implementation 'org.yaml:snakeyaml:2.2'
+    repositories {
+        mavenCentral()
+        maven { url = 'https://maven.architectury.dev/' }
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://maven.neoforged.net/releases/' }
+    }
+
+    loom {
+        silentMojangMappingsLicense()
+    }
+
+    dependencies {
+        minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
+        mappings loom.officialMojangMappings()
+    }
+
+    java {
+        toolchain.languageVersion = JavaLanguageVersion.of(21)
+        withSourcesJar()
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        it.options.encoding = 'UTF-8'
+        it.options.release = 21
+    }
 }
 
-processResources {
-	inputs.property "version", project.version
+// Task to collect all built JARs into a single directory
+tasks.register('buildAndCollect') {
+    group = 'build'
+    description = 'Builds all loaders and collects JARs to build/libs'
 
-	filesMatching("fabric.mod.json") {
-		expand "version": inputs.properties.version
-	}
+    dependsOn ':fabric:build', ':neoforge:build'
+
+    doLast {
+        def collectDir = file("${rootProject.layout.buildDirectory.get().asFile}/libs")
+        collectDir.mkdirs()
+
+        // Copy Fabric JAR
+        copy {
+            from "${project(':fabric').layout.buildDirectory.get().asFile}/libs"
+            into collectDir
+            include "*-${rootProject.mod_version}+${rootProject.minecraft_version}.jar"
+            exclude "*-sources.jar", "*-dev.jar", "*-shadow.jar"
+        }
+
+        // Copy NeoForge JAR
+        copy {
+            from "${project(':neoforge').layout.buildDirectory.get().asFile}/libs"
+            into collectDir
+            include "*-${rootProject.mod_version}+${rootProject.minecraft_version}.jar"
+            exclude "*-sources.jar", "*-dev.jar", "*-shadow.jar"
+        }
+    }
 }
 
-shadowJar {
-  configurations = [project.configurations.shade]
-  archiveClassifier.set('dev-shadow')
-}
+// Task to show build instructions
+tasks.register('buildAllVersions') {
+    group = 'build'
+    description = 'Shows instructions for building all supported Minecraft versions'
 
-remapJar {
-  dependsOn shadowJar
-  input.set shadowJar.archiveFile
-  archiveFileName.set("${project.archives_base_name}-${project.mod_version}-${project.minecraft_version}.jar")
-}
-
-tasks.named("remapSourcesJar") {
-  archiveFileName.set("${project.archives_base_name}-${project.mod_version}-${project.minecraft_version}-sources.jar")
-}
-
-tasks.withType(JavaCompile).configureEach {
-	it.options.release = 21
-}
-
-java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
-	withSourcesJar()
-
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
-}
-
-jar {
-  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-  exclude 'module-info.class'
-
-//	inputs.property "archivesName", project.base.archivesName
-//
-//	from("LICENSE") {
-//		rename { "${it}_${inputs.properties.archivesName}"}
-//	}
-}
-
-// configure the maven publication
-publishing {
-	publications {
-		create("mavenJava", MavenPublication) {
-			artifactId = project.archives_base_name
-			from components.java
-		}
-	}
-
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
-	}
+    doLast {
+        println ""
+        println "=========================================="
+        println "Multi-Version Build Instructions"
+        println "=========================================="
+        println ""
+        println "Supported Minecraft versions: 1.21.1, 1.21.4-1.21.10"
+        println ""
+        println "To build for a specific version:"
+        println "  ./gradlew build -Pmc_version=1.21.4"
+        println "  ./gradlew build -Pmc_version=1.21.5"
+        println ""
+        println "To build all versions at once:"
+        println "  Windows (PowerShell): ./build-all-versions.ps1"
+        println "  Windows (CMD):        build-all-versions.bat"
+        println ""
+        println "Output JARs will be collected in: build/libs/all-versions/"
+        println ""
+    }
 }

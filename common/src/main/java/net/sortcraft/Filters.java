@@ -1,19 +1,16 @@
 package net.sortcraft;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.sortcraft.compat.RegistryHelper;
 
 import java.util.*;
-
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ItemEnchantmentsComponent;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
 
 
 interface FilterRule {
@@ -27,11 +24,11 @@ class FilterRuleFactory {
       return new NegatedFilterRule(fromYaml(server, key, value));
     }
 
-    var registries = server.getRegistryManager();
+    var registries = server.registryAccess();
 
     return switch (key.toLowerCase()) {
       case "enchantment" ->
-        new EnchantmentFilterRule(value, registries.getOrThrow(RegistryKeys.ENCHANTMENT));
+        new EnchantmentFilterRule(value, registries);
 
       case "custom_name" ->
         new NameFilterRule(value);
@@ -54,8 +51,9 @@ class NegatedFilterRule implements FilterRule {
 
   @Override
   public boolean matches(ItemStack stack) {
-        return !inner.matches(stack);
-    }
+      if (stack == null || stack.isEmpty()) return false;
+      return !inner.matches(stack);
+  }
 }
 
 class NameFilterRule implements FilterRule {
@@ -79,11 +77,12 @@ class NameFilterRule implements FilterRule {
 
   @Override
   public boolean matches(ItemStack stack) {
-    Text name = stack.get(DataComponentTypes.CUSTOM_NAME);
+    if (stack == null || stack.isEmpty()) return false;
+    Component name = stack.get(DataComponents.CUSTOM_NAME);
     if (name == null) return false;
     else if (matchType == MatchType.ANY) return true;
 
-    String displayName = stack.getName().getString();
+    String displayName = stack.getHoverName().getString();
     return displayName.equalsIgnoreCase(expectedName);
   }
 }
@@ -98,7 +97,7 @@ class EnchantmentFilterRule implements FilterRule {
   private final MatchType matchType;
   private final Enchantment singleEnchantment; // Only used if matching a specific enchantment
 
-  public EnchantmentFilterRule(String configValue, Registry<Enchantment> enchantmentRegistry) {
+  public EnchantmentFilterRule(String configValue, net.minecraft.core.RegistryAccess registries) {
     configValue = configValue.toLowerCase();
     switch(configValue) {
       case "*":
@@ -113,11 +112,11 @@ class EnchantmentFilterRule implements FilterRule {
     }
 
     if (matchType == MatchType.SINGLE) {
-      Identifier id = Identifier.tryParse(configValue);
-      if (id == null || !enchantmentRegistry.containsId(id)) {
-        throw new IllegalArgumentException("Unknown enchantment: " + configValue);
+      ResourceLocation id = ResourceLocation.tryParse(configValue);
+      if (id == null) {
+        throw new IllegalArgumentException("Invalid enchantment id: " + configValue);
       }
-      singleEnchantment = enchantmentRegistry.get(id);
+      singleEnchantment = RegistryHelper.getEnchantmentOrThrow(registries, id);
     } else {
       singleEnchantment = null;
     }
@@ -125,11 +124,12 @@ class EnchantmentFilterRule implements FilterRule {
 
   @Override
   public boolean matches(ItemStack stack) {
+    if (stack == null || stack.isEmpty()) return false;
     // Get both ENCHANTMENTS and STORED_ENCHANTMENTS
-    ItemEnchantmentsComponent enchantmentsComponent = stack.get(DataComponentTypes.ENCHANTMENTS);
-    ItemEnchantmentsComponent storedEnchantmentsComponent = stack.get(DataComponentTypes.STORED_ENCHANTMENTS);
+    ItemEnchantments enchantmentsComponent = stack.get(DataComponents.ENCHANTMENTS);
+    ItemEnchantments storedEnchantmentsComponent = stack.get(DataComponents.STORED_ENCHANTMENTS);
 
-    List<ItemEnchantmentsComponent> components = new ArrayList<>();
+    List<ItemEnchantments> components = new ArrayList<>();
     if (enchantmentsComponent != null) components.add(enchantmentsComponent);
     if (storedEnchantmentsComponent != null) components.add(storedEnchantmentsComponent);
     if (components.isEmpty()) return false;
@@ -137,9 +137,9 @@ class EnchantmentFilterRule implements FilterRule {
     return switch (matchType) {
       case ANY -> true;
       case MAX -> {
-        for (ItemEnchantmentsComponent component : components) {
+        for (ItemEnchantments component : components) {
           if (component != null) {
-            for (RegistryEntry<Enchantment> entry : component.getEnchantments()) {
+            for (Holder<Enchantment> entry : component.keySet()) {
               int level = component.getLevel(entry);
               if (level == entry.value().getMaxLevel()) yield true;
             }
@@ -148,8 +148,8 @@ class EnchantmentFilterRule implements FilterRule {
         yield false;
       }
       case SINGLE -> {
-        for (ItemEnchantmentsComponent component : components) {
-          for (RegistryEntry<Enchantment> entry : component.getEnchantments()) {
+        for (ItemEnchantments component : components) {
+          for (Holder<Enchantment> entry : component.keySet()) {
             if (entry.value() == singleEnchantment) {
               yield true;
             }
@@ -165,6 +165,7 @@ class EnchantmentFilterRule implements FilterRule {
 class StackableFilterRule implements FilterRule {
   @Override
   public boolean matches(ItemStack stack) {
-    return stack != null && !stack.isEmpty() && stack.getItem().getMaxCount() != 1;
+    return stack != null && !stack.isEmpty() && stack.getItem().getDefaultMaxStackSize() != 1;
   }
 }
+
