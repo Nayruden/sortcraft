@@ -5,128 +5,56 @@ on:
   pull_request:
 
 jobs:
-  prepare-matrix:
-    name: Prepare version matrix
-    runs-on: ubuntu-24.04
-    outputs:
-      matrix: ${{ steps.generate.outputs.matrix }}
-      loader: ${{ steps.generate.outputs.loader }}
-    steps:
-      - id: generate
-        name: Generate matrix data
-        run: |
-          python - <<'PY'
-          import json
-          import os
-          import urllib.request
-          import xml.etree.ElementTree as ET
-
-          minecraft_versions = [
-              "1.21.1",
-              "1.21.4",
-              "1.21.5",
-              "1.21.6",
-              "1.21.7",
-              "1.21.8",
-              "1.21.9",
-              "1.21.10",
-          ]
-
-          def fetch_json(url: str):
-              with urllib.request.urlopen(url) as response:
-                  return json.load(response)
-
-          def fetch_text(url: str):
-              with urllib.request.urlopen(url) as response:
-                  return response.read().decode("utf-8")
-
-          def pick_latest(entries, description):
-              if not entries:
-                  raise SystemExit(f"Unable to find metadata for {description}")
-              for entry in entries:
-                  if entry.get("stable"):
-                      return entry["version"]
-              return entries[0]["version"]
-
-          matrix = {"include": []}
-          fabric_metadata = fetch_text(
-              "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/maven-metadata.xml"
-          )
-          root = ET.fromstring(fabric_metadata)
-          available_fabric_versions = [
-              version.text
-              for version in root.findall("./versioning/versions/version")
-              if version.text
-          ]
-
-          def latest_fabric_for(mc_version: str) -> str:
-              suffix = f"+{mc_version}"
-              matching = [
-                  version for version in available_fabric_versions if version.endswith(suffix)
-              ]
-              if not matching:
-                  raise SystemExit(f"Unable to find Fabric API version for Minecraft {mc_version}")
-
-              def sort_key(version: str):
-                  base, _, _ = version.partition("+")
-                  parts = []
-                  for part in base.split("."):
-                      if part.isdigit():
-                          parts.append(int(part))
-                      else:
-                          parts.append(part)
-                  return parts
-
-              return max(matching, key=sort_key)
-
-          for mc_version in minecraft_versions:
-              yarn_entries = fetch_json(f"https://meta.fabricmc.net/v2/versions/yarn/{mc_version}")
-
-              matrix["include"].append(
-                  {
-                      "minecraft": mc_version,
-                      "yarn": pick_latest(yarn_entries, f"Yarn {mc_version}"),
-                      "fabric": latest_fabric_for(mc_version),
-                  }
-              )
-          loader_entries = fetch_json("https://meta.fabricmc.net/v2/versions/loader")
-          loader_version = pick_latest(loader_entries, "Fabric Loader")
-
-          output_path = os.environ["GITHUB_OUTPUT"]
-          with open(output_path, "a", encoding="utf-8") as fh:
-              fh.write(f"matrix={json.dumps(matrix)}\n")
-              fh.write(f"loader={loader_version}\n")
-          PY
-
   build:
-    name: Build for Minecraft ${{ matrix.minecraft }}
-    needs: prepare-matrix
+    name: Build for Minecraft ${{ matrix.mc_version }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
-      matrix: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
+      matrix:
+        mc_version:
+          - "1.21.1"
+          - "1.21.4"
+          - "1.21.5"
+          - "1.21.6"
+          - "1.21.7"
+          - "1.21.8"
+          - "1.21.9"
+          - "1.21.10"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
+
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: "21"
+
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
-      - name: Build
-        run: ./gradlew clean build
-        env:
-          ORG_GRADLE_PROJECT_minecraft_version: ${{ matrix.minecraft }}
-          ORG_GRADLE_PROJECT_yarn_mappings: ${{ matrix.yarn }}
-          ORG_GRADLE_PROJECT_fabric_version: ${{ matrix.fabric }}
-          ORG_GRADLE_PROJECT_loader_version: ${{ needs.prepare-matrix.outputs.loader }}
+
+      - name: Clean for ${{ matrix.mc_version }}
+        run: ./gradlew clean "-Pmc_version=${{ matrix.mc_version }}" --no-daemon
+
+      - name: Build for ${{ matrix.mc_version }}
+        run: ./gradlew build "-Pmc_version=${{ matrix.mc_version }}" --no-daemon
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p build/libs/all-versions
+          for dir in fabric/build/libs neoforge/build/libs; do
+            if [ -d "$dir" ]; then
+              find "$dir" -maxdepth 1 -type f -name "*+${{ matrix.mc_version }}.jar" \
+                ! -name "*-sources*" ! -name "*-dev*" -exec cp {} build/libs/all-versions/ \;
+            fi
+          done
+
       - name: Capture build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: sortcraft-${{ matrix.minecraft }}
-          path: build/libs/*${{ matrix.minecraft }}*.jar
+          name: sortcraft-${{ matrix.mc_version }}
+          path: build/libs/all-versions/*+${{ matrix.mc_version }}.jar
           if-no-files-found: error
