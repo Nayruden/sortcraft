@@ -6,11 +6,11 @@
 
 ## 📦 **How It Works**
 
-SortCraft uses **signs to label chests** and sorts items into them based on categories you define in a YAML config.
+SortCraft uses **signs to label chests** and sorts items into them based on categories you define in YAML config files.
 
 ### 📝 **Chest Labeling**
 
-* **Input Chest:** Place a sign on a chest with `[input]` on the first line. This chest acts as the **source of items** to sort.
+* **Input Chest:** Place a sign on a chest with `[input]` on any line. This chest acts as the **source of items** to sort.
 * **Category Chests:** Place a sign on a chest with the **category name** (matching your YAML) in **square brackets**. For example:
 
 ```
@@ -24,6 +24,12 @@ SortCraft uses **signs to label chests** and sorts items into them based on cate
 ```
 [armor_helmets]
 ```
+
+### 🖱️ **Sorting Items**
+
+**Right-click the `[input]` sign** to instantly sort all items from the input chest into their designated category chests. This is the primary way to use SortCraft!
+
+Alternatively, you can use the `/sort input` command if you're near an input chest.
 
 ### 📚 **Stacking and Fill Logic**
 
@@ -46,13 +52,7 @@ Shows help and usage information for all SortCraft commands.
 
 Triggers the sorting logic for the **nearest `[input]` chest**, scanning its contents and distributing items into destination chests based on your YAML category definitions.
 
-✔ **Example usage:**
-
-```
-/sort input
-```
-
-Sorts all items in your `[input]` chest into their category chests.
+💡 **Tip:** Right-clicking the `[input]` sign is usually faster and more convenient!
 
 ---
 
@@ -143,64 +143,227 @@ Output files are placed in the `sortcraft-dump/` directory.
 
 ## 🛠️ **YAML Configuration**
 
-SortCraft uses a **YAML config** to define categories, priorities, and filters. Here's a **short example**:
+SortCraft uses **YAML config files** to define categories, priorities, and filters. Place your category files in `config/sortcraft/categories/` - all `.yaml` files in this directory are loaded automatically.
+
+### 📁 **Category File Structure**
+
+Each YAML file can contain multiple category definitions:
 
 ```yaml
-# Priority for each category defaults to '10' if unspecified
-armor_boots:
-  items:
-  - minecraft:diamond_boots
-  - minecraft:golden_boots
-  - minecraft:iron_boots
-
-armor_helmets:
-  items:
-  - minecraft:diamond_helmet
-  - minecraft:golden_helmet
-  - minecraft:iron_helmet
-
-armor:
-  priority: 20
-  includes:
-  - armor_boots
-  - armor_helmets
-
-bows:
-  items:
-  - minecraft:bow
-
+# Priority determines sort order (lower = checked first, default: 10)
 swords:
   items:
   - minecraft:diamond_sword
-  - minecraft:golden_sword
   - minecraft:iron_sword
+  - /.*:.*_sword/              # Regex pattern to match all swords
+
+pickaxes:
+  items:
+  - /.*:.*_pickaxe/            # Match all pickaxes from any mod
 
 weapons:
-  priority: 20
-  includes:
-  - bows
+  priority: 12                  # Higher priority = checked later
+  includes:                     # Include items from other categories
   - swords
+  - pickaxes
 
-gear:
+# Filter items by properties (e.g., enchantments)
+greater_weapons:
+  priority: 5                   # Lower priority = checked first
+  filters:
+  - enchantment: max            # Only max-level enchanted items
   includes:
-  - armor
   - weapons
+```
 
-gear_greater:
+### 🔢 **Priority System**
+
+Priority determines the order categories are checked when sorting:
+
+| Priority | Use Case                                              |
+|----------|-------------------------------------------------------|
+| 1-4      | Special items (named items, specific enchantments)    |
+| 5        | "Greater" enchanted items (max-level enchantments)    |
+| 10       | Default priority (most categories)                    |
+| 12       | Grouping categories (gear, tools, weapons)            |
+| 20       | Rollup/catch-all categories                           |
+
+**Lower priority = checked first.** If an item matches a priority 5 category, it won't be checked against priority 10 categories.
+
+**Note:** These priority values are suggestions based on the bundled categories. You can use any integer values you want. The only hard-coded value is the **default priority of 10** when no priority is specified.
+
+---
+
+## 🔍 **Regex Patterns**
+
+Regex patterns allow you to match multiple items with a single rule. Patterns must be wrapped in forward slashes (`/pattern/`).
+
+### **Syntax**
+
+```yaml
+items:
+- /regex_pattern_here/
+```
+
+### **How Matching Works**
+
+* Patterns match against the **full item ID** including namespace (e.g., `minecraft:diamond_sword`)
+* Uses Java regex with `find()` - matches if pattern is found **anywhere** in the item ID
+* Use `^` and `$` anchors for exact matching if needed
+
+### **Common Patterns**
+
+| Pattern                  | Description                      | Matches                                                   |
+|--------------------------|----------------------------------|-----------------------------------------------------------|
+| `/.*:.*_sword/`          | All swords from any mod          | `minecraft:diamond_sword`, `twilightforest:ironwood_sword`|
+| `/minecraft:.*_planks/`  | All vanilla planks               | `minecraft:oak_planks`, `minecraft:spruce_planks`         |
+| `/.*_brick.*/`           | Anything with "brick" in name    | `minecraft:bricks`, `minecraft:brick_slab`                |
+| `/^minecraft:diamond_/`  | Vanilla diamond items            | `minecraft:diamond_sword`, `minecraft:diamond_pickaxe`    |
+| `/.*_ore$/`              | Items ending with "_ore"         | `minecraft:iron_ore`, `minecraft:gold_ore`                |
+
+### **Examples**
+
+```yaml
+# Match all wood variants from a mod
+wood_items:
+  items:
+  - /regions_unexplored:(stripped_)?.*_(log|wood|planks|slab|stairs)/
+
+# Match all colored blocks
+colored_glass:
+  items:
+  - /minecraft:.*_stained_glass$/
+  - /minecraft:.*_stained_glass_pane$/
+
+# Combine regex with explicit items
+ranged:
+  items:
+  - /.*:.*bow$/                    # All bows
+  - /.*:.*arrow/                   # All arrows
+  - minecraft:trident              # Explicit item
+```
+
+---
+
+## 🎛️ **Filters**
+
+Filters allow you to sort items based on their **properties** (enchantments, custom names, etc.), not just their item type.
+
+### **Filter Syntax**
+
+Filters can be used in two places:
+
+**1. Category-level filters** (apply to all items in the category):
+```yaml
+greater_swords:
+  filters:
+  - enchantment: max
+  includes:
+  - swords
+```
+
+**2. Item-level filters** (filter all game items, then add matches):
+```yaml
+all_enchanted:
+  items:
+  - enchantment: '*'       # Add ALL enchanted items in the game
+```
+
+### **Filter Negation**
+
+Prefix any filter key with `!` to negate it. When using `!` prefix, you must quote the key in YAML:
+
+```yaml
+filters:
+- "!enchantment": max      # NOT max-level enchanted
+- "!custom_name": '*'      # NOT renamed
+- "!stackable":            # NOT stackable (max stack size = 1)
+```
+
+### **Available Filters**
+
+#### `enchantment`
+
+Matches items with enchantments (works on both equipped items and enchanted books).
+
+| Value                 | Description                                          |
+|-----------------------|------------------------------------------------------|
+| `max`                 | Item has at least one enchantment at its max level   |
+| `*`                   | Item has any enchantment                             |
+| `minecraft:sharpness` | Item has the specific enchantment (any level)        |
+
+```yaml
+# Max-level enchanted books
+greater_books:
   priority: 5
   filters:
   - enchantment: max
+  items:
+  - minecraft:enchanted_book
+
+# Books without max enchantments (using negation)
+lesser_books:
+  priority: 4
+  filters:
+  - "!enchantment": max
+  items:
+  - minecraft:enchanted_book
+```
+
+#### `custom_name`
+
+Matches items that have been renamed (e.g., in an anvil).
+
+| Value      | Description                                       |
+|------------|---------------------------------------------------|
+| `*`        | Item has any custom name                          |
+| `My Sword` | Item's display name matches exactly (case-insens) |
+
+```yaml
+# All renamed gear goes to a special chest
+named_items:
+  priority: 1
+  filters:
+  - custom_name: '*'
   includes:
   - gear
 ```
 
-### ⚠️ **Notes on Filters**
+#### `stackable`
 
-* **Filters are ANDed together.** Items must match **all filters** to qualify for a category.
-* Supported filters include:
-  * `enchantment`: `max`, `any`, specific enchantment names, or `!enchantment` to negate
-  * `custom_name`: Matches items with custom names. Use `*` to match any custom name, or a specific string to match exactly
-  * `stackable`: `true` to match items that can stack beyond 1, `false` to match unstackable items
+Matches items that can stack beyond 1. **This filter takes no value** - the value is ignored.
+
+```yaml
+# Stackable items only
+bulk_items:
+  filters:
+  - stackable:
+  items:
+  - /.*:.*_ingot/
+  - /.*:.*_nugget/
+
+# Non-stackable items (tools, weapons, armor)
+equipment:
+  filters:
+  - "!stackable":
+  includes:
+  - gear
+```
+
+### **Multiple Filters**
+
+When multiple filters are specified, items must match **ALL** filters (AND logic):
+
+```yaml
+# Must be BOTH max-enchanted AND renamed
+prized_weapons:
+  priority: 1
+  filters:
+  - enchantment: max
+  - custom_name: '*'
+  includes:
+  - weapons
+```
 
 ---
 
@@ -208,13 +371,43 @@ gear_greater:
 
 1. Place an `[input]` sign on your input chest.
 2. Place category signs like `[gear]`, `[armor_helmets]`, etc. on destination chests.
-3. Run:
-
-```
-/sort input
-```
+3. **Right-click the `[input]` sign** to sort!
 
 All items will be sorted into their proper chests, filling from the **bottom up** for stacked chests.
+
+---
+
+## ⚙️ **Configuration**
+
+SortCraft configuration is stored in `config/sortcraft/`:
+
+```
+config/sortcraft/
+├── config.yaml          # Main configuration
+└── categories/          # Category definition files
+    ├── 01_materials.yaml
+    ├── 02_tools.yaml
+    └── ...
+```
+
+### **config.yaml**
+
+```yaml
+# SortCraft Configuration
+
+# Log level: TRACE, DEBUG, INFO, WARN, ERROR
+# Default: WARN
+logLevel: WARN
+
+# Search radius for finding signs (in blocks)
+# Default: 64
+searchRadius: 64
+```
+
+| Option         | Default | Description                                                  |
+|----------------|---------|--------------------------------------------------------------|
+| `logLevel`     | `WARN`  | Controls logging verbosity. Use `DEBUG` for troubleshooting. |
+| `searchRadius` | `64`    | Maximum distance (in blocks) to search for category signs.   |
 
 ---
 
@@ -244,14 +437,14 @@ Built JARs will be placed in `build/libs/all-versions/`.
 
 When updating to new Minecraft versions, use these official metadata sources to find compatible dependency versions:
 
-| Dependency | Metadata URL |
-|------------|--------------|
-| **Fabric API** | `https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/maven-metadata.xml` |
-| **Fabric Loader** | `https://meta.fabricmc.net/v2/versions/loader` |
-| **Fabric Yarn** | `https://meta.fabricmc.net/v2/versions/yarn/{mc_version}` |
-| **NeoForge** | `https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge` |
-| **Architectury API** | `https://maven.architectury.dev/dev/architectury/architectury/maven-metadata.xml` |
-| **Minecraft Versions** | `https://piston-meta.mojang.com/mc/game/version_manifest_v2.json` |
+| Dependency             | Metadata URL                                                                       |
+|------------------------|------------------------------------------------------------------------------------|
+| **Fabric API**         | `https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/maven-metadata.xml` |
+| **Fabric Loader**      | `https://meta.fabricmc.net/v2/versions/loader`                                     |
+| **Fabric Yarn**        | `https://meta.fabricmc.net/v2/versions/yarn/{mc_version}`                          |
+| **NeoForge**           | `https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge`   |
+| **Architectury API**   | `https://maven.architectury.dev/dev/architectury/architectury/maven-metadata.xml`  |
+| **Minecraft Versions** | `https://piston-meta.mojang.com/mc/game/version_manifest_v2.json`                  |
 
 ---
 
