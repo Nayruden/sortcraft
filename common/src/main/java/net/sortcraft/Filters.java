@@ -13,33 +13,47 @@ import net.sortcraft.compat.RegistryHelper;
 import java.util.*;
 
 
-interface FilterRule {
-  boolean matches(ItemStack stack);
-}
+/**
+ * Contains filter rule implementations.
+ * The public interface and factory are in separate files.
+ */
+final class Filters {
+    private Filters() {}
 
-class FilterRuleFactory {
-  public static FilterRule fromYaml(MinecraftServer server, String key, String value) {
-    if (key.startsWith("!")) {
-      key = key.substring(1);
-      return new NegatedFilterRule(fromYaml(server, key, value));
+    /**
+     * Creates a filter rule from YAML configuration.
+     * Called by FilterRuleFactory.
+     */
+    static FilterRule createFilterRule(MinecraftServer server, String key, String value) {
+        if (key.startsWith("!")) {
+            key = key.substring(1);
+            return new NegatedFilterRule(createFilterRule(server, key, value));
+        }
+
+        var registries = server.registryAccess();
+
+        return switch (key.toLowerCase()) {
+            case "enchantment" -> {
+                if (value == null || value.isEmpty()) {
+                    throw new IllegalArgumentException("Enchantment filter requires a value");
+                }
+                yield new EnchantmentFilterRule(value, registries);
+            }
+
+            case "custom_name" -> {
+                if (value == null || value.isEmpty()) {
+                    throw new IllegalArgumentException("Custom name filter requires a value");
+                }
+                yield new NameFilterRule(value);
+            }
+
+            case "stackable" ->
+                new StackableFilterRule();
+
+            default ->
+                throw new IllegalArgumentException("Unknown filter key: " + key);
+        };
     }
-
-    var registries = server.registryAccess();
-
-    return switch (key.toLowerCase()) {
-      case "enchantment" ->
-        new EnchantmentFilterRule(value, registries);
-
-      case "custom_name" ->
-        new NameFilterRule(value);
-
-      case "stackable" ->
-        new StackableFilterRule();
-
-      default ->
-        throw new IllegalArgumentException("Unknown filter key: " + key);
-    };
-  }
 }
 
 class NegatedFilterRule implements FilterRule {
@@ -150,7 +164,7 @@ class EnchantmentFilterRule implements FilterRule {
       case SINGLE -> {
         for (ItemEnchantments component : components) {
           for (Holder<Enchantment> entry : component.keySet()) {
-            if (entry.value() == singleEnchantment) {
+            if (entry.value().equals(singleEnchantment)) {
               yield true;
             }
           }
