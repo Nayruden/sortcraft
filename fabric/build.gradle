@@ -19,6 +19,9 @@ configurations {
     compileClasspath.extendsFrom common
     runtimeClasspath.extendsFrom common
     developmentFabric.extendsFrom common
+    // Test classpath needs access to common module
+    testCompileClasspath.extendsFrom common
+    testRuntimeClasspath.extendsFrom common
 
     // For shadowing SnakeYAML
     shadowBundle {
@@ -39,6 +42,37 @@ dependencies {
 
     // Shadow SnakeYAML into the mod jar
     shadowBundle "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
+
+    // Test dependencies - Fabric Loader JUnit for bootstrap tests
+    testImplementation "net.fabricmc:fabric-loader-junit:${rootProject.fabric_loader_version}"
+    // SnakeYAML for category loading tests
+    testImplementation "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
+}
+
+// Configure test task to use JUnit Platform
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = false
+        exceptionFormat "short"
+    }
+}
+
+// Configure Fabric game tests
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = "sortcraft-gametest"
+        enableGameTests = true
+        enableClientGameTests = false  // Start with server-side only
+        eula = true  // By setting this to true, you agree to the Minecraft EULA
+    }
+}
+
+// Add SnakeYAML to gametest runtime (needed because common module references it)
+dependencies {
+    gametestImplementation "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
 }
 
 processResources {

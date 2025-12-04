@@ -22,11 +22,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * Utility methods for working with chests and containers.
  */
 public final class ContainerHelper {
+    private static final Pattern CATEGORY_SIGN_PATTERN = Pattern.compile("\\[.+?]");
     private ContainerHelper() {}
 
     private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
@@ -114,8 +116,7 @@ public final class ContainerHelper {
      * Collects all chests in a vertical stack starting from the given position.
      * Stops when a chest with a category sign is encountered below.
      */
-    public static List<ChestRef> collectChestStack(ServerLevel world, BlockPos startPos,
-                                                    java.util.function.BiFunction<SignBlockEntity, String, String> findTextOnSign) {
+    public static List<ChestRef> collectChestStack(ServerLevel world, BlockPos startPos) {
         List<ChestRef> result = new ArrayList<>();
         BlockPos cur = startPos;
 
@@ -152,7 +153,7 @@ public final class ContainerHelper {
 
                     BlockEntity signBe = world.getBlockEntity(signPos);
                     if (!(signBe instanceof SignBlockEntity sign)) continue;
-                    String line = findTextOnSign.apply(sign, "\\[.+?]");
+                    String line = findCategoryTextOnSign(sign);
                     if (line == null) continue;
 
                     LOGGER.trace("[cheststack] Found category sign at {} - {}. Stopping stack here.", signPos, line);
@@ -172,6 +173,21 @@ public final class ContainerHelper {
 
         Collections.reverse(result);
         return result;
+    }
+
+    /**
+     * Finds category text (text matching [something]) on a sign.
+     * @return The matching text, or null if not found
+     */
+    private static String findCategoryTextOnSign(SignBlockEntity sign) {
+        for (int i = 0; i < 4; i++) {
+            String frontLine = sign.getFrontText().getMessage(i, false).getString().trim();
+            String backLine = sign.getBackText().getMessage(i, false).getString().trim();
+
+            if (CATEGORY_SIGN_PATTERN.matcher(frontLine).find()) return frontLine;
+            if (CATEGORY_SIGN_PATTERN.matcher(backLine).find()) return backLine;
+        }
+        return null;
     }
 }
 

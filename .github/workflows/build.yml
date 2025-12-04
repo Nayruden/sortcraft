@@ -5,9 +5,46 @@ on:
   pull_request:
 
 jobs:
+  # Run tests first - tests are only available for Minecraft 1.21.5
+  test:
+    name: Run Tests
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Clean
+        run: ./gradlew clean "-Pmc_version=1.21.5" --no-daemon
+
+      - name: Run Tests (JUnit + GameTest)
+        run: ./gradlew :fabric:test :common:test "-Pmc_version=1.21.5" --no-daemon
+
+      - name: Upload Test Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports
+          path: |
+            fabric/build/reports/tests/
+            common/build/reports/tests/
+          if-no-files-found: ignore
+
   build:
     name: Build for Minecraft ${{ matrix.mc_version }}
     runs-on: ubuntu-24.04
+    needs: test
     strategy:
       fail-fast: false
       matrix:

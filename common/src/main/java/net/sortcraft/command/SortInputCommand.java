@@ -78,7 +78,7 @@ public final class SortInputCommand {
 
         LOGGER.debug("[sortinput] Input chest inventory loaded. Beginning sort.");
 
-        SortingResults results = SortingEngine.sortStacks(context, world, SortingEngine.containerToIterable(inputInv), preview);
+        SortingResults results = SortingEngine.sortFromContainer(context, world, inputInv, preview);
 
         StringBuilder message = new StringBuilder();
         message.append(SortingEngine.summarize(results.overflowCategories, "⚠ Storage overflow in following categories:"));

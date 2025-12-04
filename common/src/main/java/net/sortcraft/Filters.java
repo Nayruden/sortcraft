@@ -1,10 +1,10 @@
 package net.sortcraft;
 
 import net.minecraft.core.Holder;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
@@ -23,19 +23,25 @@ final class Filters {
     /**
      * Creates a filter rule from YAML configuration.
      * Called by FilterRuleFactory.
+     *
+     * @param registries the registry access (required for enchantment filter)
+     * @param key the filter key
+     * @param value the filter value
+     * @return the created FilterRule
      */
-    static FilterRule createFilterRule(MinecraftServer server, String key, String value) {
+    static FilterRule createFilterRule(RegistryAccess registries, String key, String value) {
         if (key.startsWith("!")) {
             key = key.substring(1);
-            return new NegatedFilterRule(createFilterRule(server, key, value));
+            return new NegatedFilterRule(createFilterRule(registries, key, value));
         }
-
-        var registries = server.registryAccess();
 
         return switch (key.toLowerCase()) {
             case "enchantment" -> {
                 if (value == null || value.isEmpty()) {
                     throw new IllegalArgumentException("Enchantment filter requires a value");
+                }
+                if (registries == null) {
+                    throw new IllegalArgumentException("Enchantment filter requires registry access");
                 }
                 yield new EnchantmentFilterRule(value, registries);
             }

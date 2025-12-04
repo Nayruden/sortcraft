@@ -1,5 +1,6 @@
 package net.sortcraft.category;
 
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -32,7 +33,7 @@ public final class CategoryLoader {
 
     private static final Map<String, CategoryNode> categories = new HashMap<>();
     private static final Map<ResourceLocation, Set<CategoryNode>> itemCategoryMap = new HashMap<>();
-    private static MinecraftServer currentServer;
+    private static RegistryAccess currentRegistries;
 
     public static Map<String, CategoryNode> getCategories() {
         return categories;
@@ -42,12 +43,12 @@ public final class CategoryLoader {
         return itemCategoryMap;
     }
 
-    public static MinecraftServer getCurrentServer() {
-        return currentServer;
+    public static RegistryAccess getCurrentRegistries() {
+        return currentRegistries;
     }
 
-    public static void setCurrentServer(MinecraftServer server) {
-        currentServer = server;
+    public static void setCurrentRegistries(RegistryAccess registries) {
+        currentRegistries = registries;
     }
 
     /**
@@ -56,7 +57,43 @@ public final class CategoryLoader {
     public static void clear() {
         categories.clear();
         itemCategoryMap.clear();
-        currentServer = null;
+        currentRegistries = null;
+    }
+
+    /**
+     * Loads categories from a YAML string. Intended for testing purposes.
+     * Note: Filter-based categories that require server access will fail to parse.
+     * Use this only for categories that use item IDs and regex patterns.
+     *
+     * @param yamlContent the YAML content to parse
+     * @return the number of categories loaded
+     */
+    @SuppressWarnings("unchecked")
+    public static int loadCategoriesFromYaml(String yamlContent) {
+        Yaml yaml = new Yaml();
+        Object data = yaml.load(yamlContent);
+        if (data == null || !(data instanceof Map)) {
+            LOGGER.warn("YAML content does not contain a valid map");
+            return 0;
+        }
+
+        Map<String, Object> mapRoot = (Map<String, Object>) data;
+        int count = 0;
+        for (Map.Entry<String, Object> entry : mapRoot.entrySet()) {
+            String categoryName = entry.getKey();
+            Object valueRaw = entry.getValue();
+            if (!(valueRaw instanceof Map)) {
+                LOGGER.warn("Category '{}' has a non-map value, skipping", categoryName);
+                continue;
+            }
+            CategoryNode categoryNode = parseCategory(categoryName, valueRaw);
+            if (categoryNode != null) {
+                categories.put(categoryName, categoryNode);
+                count++;
+            }
+        }
+        LOGGER.info("Loaded {} categories from YAML string", count);
+        return count;
     }
 
     /**
@@ -64,7 +101,7 @@ public final class CategoryLoader {
      */
     @SuppressWarnings("unchecked")
     public static void loadCategories(MinecraftServer server) {
-        currentServer = server;
+        currentRegistries = server.registryAccess();
         Path categoriesDir = ConfigManager.getConfigPath("categories");
         try {
             if (!Files.exists(categoriesDir)) {
@@ -171,7 +208,7 @@ public final class CategoryLoader {
                         case Map<?, ?> filterAttrs -> {
                             anyFilter = true;
                             List<FilterRule> filters = filterAttrs.entrySet().stream()
-                                    .map((entry) -> FilterRuleFactory.fromYaml(currentServer, (String) entry.getKey(), (String) entry.getValue()))
+                                    .map((entry) -> FilterRuleFactory.fromYaml(currentRegistries, (String) entry.getKey(), (String) entry.getValue()))
                                     .toList();
                             HashSet<ResourceLocation> newFilteredItems = new HashSet<>();
                             for (ResourceLocation id : filteredItems) {
@@ -215,7 +252,7 @@ public final class CategoryLoader {
                     if (filterRaw instanceof Map<?, ?> filterMap) {
                         var filter = (Map<String, String>) filterMap;
                         for (Map.Entry<String, String> filterEntry : filter.entrySet())
-                            categoryNode.filters.add(FilterRuleFactory.fromYaml(currentServer, filterEntry.getKey(), filterEntry.getValue()));
+                            categoryNode.filters.add(FilterRuleFactory.fromYaml(currentRegistries, filterEntry.getKey(), filterEntry.getValue()));
                     }
                 }
             } else if (filtersRaw != null) {
@@ -260,7 +297,13 @@ public final class CategoryLoader {
         category.flattenedItemIds = items;
 
         items.addAll(category.itemIds);
-        for (String childName : category.includes) items.addAll(flattenCategory(childName, visitedCategories));
+        for (String childName : category.includes) {
+            if (!categories.containsKey(childName)) {
+                LOGGER.warn("Category '{}' includes unknown category '{}', skipping", categoryName, childName);
+                continue;
+            }
+            items.addAll(flattenCategory(childName, visitedCategories));
+        }
 
         return items;
     }

@@ -23,8 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Core sorting engine that distributes items to categorized chests.
@@ -36,10 +34,33 @@ public final class SortingEngine {
     private static final int UNIFORM_CONTAINER_THRESHOLD = 10;
 
     /**
-     * Sorts all items from the given iterable into categorized chests.
+     * Sorts all items from the source container into categorized chests.
      * Handles containers (bundles, shulker boxes) recursively.
+     * Automatically cleans up empty stacks in the source container after sorting.
+     *
+     * @param context The sort context with position and search radius
+     * @param world The server level
+     * @param sourceContainer The container to sort items FROM
+     * @param preview If true, only calculate what would be sorted without moving items
+     * @return Results containing counts of sorted items and any overflow/unknown items
      */
-    public static SortingResults sortStacks(SortContext context, ServerLevel world, Iterable<ItemStack> stacks, boolean preview) {
+    public static SortingResults sortFromContainer(SortContext context, ServerLevel world, Container sourceContainer, boolean preview) {
+        SortingResults results = sortStacks(context, world, containerToIterable(sourceContainer), preview);
+
+        // Clean up empty stacks (count=0) left behind by shrink() to prevent chunk save errors
+        if (!preview) {
+            cleanupContainer(sourceContainer);
+        }
+
+        return results;
+    }
+
+    /**
+     * Internal method that sorts items from an iterable into categorized chests.
+     * Handles containers (bundles, shulker boxes) recursively.
+     * Note: Callers must handle cleanup of source containers if using containerToIterable().
+     */
+    private static SortingResults sortStacks(SortContext context, ServerLevel world, Iterable<ItemStack> stacks, boolean preview) {
         SortingResults results = new SortingResults();
 
         for (ItemStack stack : stacks) {
@@ -180,7 +201,7 @@ public final class SortingEngine {
             return Collections.emptyList();
         }
 
-        return ContainerHelper.collectChestStack(world, chestPos, SortingEngine::findTextOnSign);
+        return ContainerHelper.collectChestStack(world, chestPos);
     }
 
     /**
@@ -229,8 +250,9 @@ public final class SortingEngine {
 
     /**
      * Converts a Container to an Iterable of ItemStacks.
+     * Returns actual references to stacks in the container (not copies).
      */
-    public static Iterable<ItemStack> containerToIterable(Container container) {
+    private static Iterable<ItemStack> containerToIterable(Container container) {
         return () -> new Iterator<>() {
             private int index = 0;
             private final int size = container.getContainerSize();
@@ -248,21 +270,17 @@ public final class SortingEngine {
     }
 
     /**
-     * Finds text matching a pattern on a sign.
+     * Cleans up a container after sorting by replacing empty stacks (count=0) with ItemStack.EMPTY.
+     * This is necessary because shrink() can leave stacks with count=0 in the container,
+     * which causes errors when Minecraft tries to save the chunk.
      */
-    public static String findTextOnSign(SignBlockEntity sign, String patternStr) {
-        Pattern pattern = Pattern.compile(patternStr);
-        for (int i = 0; i < 4; i++) {
-            String frontLine = sign.getFrontText().getMessage(i, false).getString().trim();
-            String backLine = sign.getBackText().getMessage(i, false).getString().trim();
-
-            Matcher frontMatcher = pattern.matcher(frontLine);
-            if (frontMatcher.find()) return frontMatcher.group();
-
-            Matcher backMatcher = pattern.matcher(backLine);
-            if (backMatcher.find()) return backMatcher.group();
+    public static void cleanupContainer(Container container) {
+        for (int i = 0; i < container.getContainerSize(); i++) {
+            ItemStack stack = container.getItem(i);
+            if (stack.isEmpty()) {
+                container.setItem(i, ItemStack.EMPTY);
+            }
         }
-        return null;
     }
 
     /**
