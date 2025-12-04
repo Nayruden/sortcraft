@@ -59,20 +59,23 @@ test {
     }
 }
 
-// Configure Fabric game tests
-fabricApi {
-    configureTests {
-        createSourceSet = true
-        modId = "sortcraft-gametest"
-        enableGameTests = true
-        enableClientGameTests = false  // Start with server-side only
-        eula = true  // By setting this to true, you agree to the Minecraft EULA
+// Configure Fabric game tests (only for 1.21.5 - the test version)
+// Other versions may have incompatible GameTest APIs
+if (rootProject.targetMcVersion == '1.21.5') {
+    fabricApi {
+        configureTests {
+            createSourceSet = true
+            modId = "sortcraft-gametest"
+            enableGameTests = true
+            enableClientGameTests = false  // Start with server-side only
+            eula = true  // By setting this to true, you agree to the Minecraft EULA
+        }
     }
-}
 
-// Add SnakeYAML to gametest runtime (needed because common module references it)
-dependencies {
-    gametestImplementation "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
+    // Add SnakeYAML to gametest runtime (needed because common module references it)
+    dependencies {
+        gametestImplementation "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
+    }
 }
 
 processResources {

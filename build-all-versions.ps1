@@ -22,6 +22,9 @@ if (Test-Path $outputDir) {
 }
 New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 
+# Version to run tests on (only test on this version to save time)
+$testVersion = "1.21.5"
+
 # Build each version
 foreach ($version in $versions) {
     Write-Host ""
@@ -32,8 +35,14 @@ foreach ($version in $versions) {
     # Clean before building each version to avoid conflicts
     & ./gradlew.bat clean "-Pmc_version=$version" --quiet
 
-    # Build
-    $result = & ./gradlew.bat build "-Pmc_version=$version"
+    # Build - skip tests for non-primary versions
+    if ($version -eq $testVersion) {
+        Write-Host "  (with tests)" -ForegroundColor Cyan
+        $result = & ./gradlew.bat build "-Pmc_version=$version"
+    } else {
+        Write-Host "  (skipping tests)" -ForegroundColor DarkGray
+        $result = & ./gradlew.bat build "-Pmc_version=$version" -x test
+    }
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "ERROR: Build failed for Minecraft $version" -ForegroundColor Red

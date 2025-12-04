@@ -8,7 +8,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.monster.Shulker;
+import net.minecraft.world.entity.monster.MagmaCube;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
 import net.sortcraft.compat.EntityHelper;
@@ -21,7 +21,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manages glowing chest highlights using invisible Shulker entities.
+ * Manages glowing chest highlights using invisible MagmaCube entities.
+ * Uses MagmaCubes instead of Shulkers to avoid blocking chest interaction.
  * Highlights are visible through walls.
  */
 public final class ChestHighlighter {
@@ -42,18 +43,22 @@ public final class ChestHighlighter {
     }
 
     private static void spawnHighlightMarker(ServerLevel world, BlockPos pos, int durationTicks, ChatFormatting color) {
-        Shulker marker = EntityHelper.create(EntityType.SHULKER, world);
+        MagmaCube marker = EntityHelper.create(EntityType.MAGMA_CUBE, world);
         if (marker == null) return;
 
+        // Size 1 is the smallest MagmaCube size, giving a small hitbox that doesn't block chest interaction
+        marker.setSize(1, false);
         marker.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
         marker.setInvisible(true);
         marker.setInvulnerable(true);
         marker.setNoAi(true);
         marker.setSilent(true);
         marker.setNoGravity(true);
+        // Disable physics/collision to further reduce interaction blocking
+        marker.noPhysics = true;
         // Glowing effect - visible through walls. Add extra time buffer for cleanup lag.
         marker.addEffect(new MobEffectInstance(MobEffects.GLOWING, durationTicks + 20, 0, false, false));
-        // Invisibility effect - makes the shulker shell completely transparent, showing only the outline
+        // Invisibility effect - makes the magma cube completely transparent, showing only the outline
         marker.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, durationTicks + 20, 0, false, false));
 
         // Set team color for the glow

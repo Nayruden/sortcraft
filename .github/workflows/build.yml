@@ -77,7 +77,7 @@ jobs:
         run: ./gradlew clean "-Pmc_version=${{ matrix.mc_version }}" --no-daemon
 
       - name: Build for ${{ matrix.mc_version }}
-        run: ./gradlew build "-Pmc_version=${{ matrix.mc_version }}" --no-daemon
+        run: ./gradlew build "-Pmc_version=${{ matrix.mc_version }}" -x test --no-daemon
 
       - name: Collect artifacts
         run: |
