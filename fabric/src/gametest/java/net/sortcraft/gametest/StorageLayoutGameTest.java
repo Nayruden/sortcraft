@@ -7,8 +7,6 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.sortcraft.category.CategoryLoader;
-import net.sortcraft.sorting.SortingResults;
 
 /**
  * GameTests for complex storage room layouts.
@@ -16,28 +14,12 @@ import net.sortcraft.sorting.SortingResults;
  */
 public class StorageLayoutGameTest {
 
-    private static final String STORAGE_CATEGORIES = """
-        swords:
-          items:
-          - minecraft:diamond_sword
-          - minecraft:iron_sword
-        pickaxes:
-          items:
-          - minecraft:diamond_pickaxe
-          - minecraft:iron_pickaxe
-        cobblestone:
-          items:
-          - minecraft:cobblestone
-        """;
-
     /**
      * Test a typical storage tower: multiple category stacks side by side.
      */
     @GameTest
     public void storageTowerSideBySide(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(STORAGE_CATEGORIES);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.STORAGE);
 
         BlockPos inputPos = new BlockPos(1, 1, 1);
 
@@ -89,9 +71,7 @@ public class StorageLayoutGameTest {
      */
     @GameTest
     public void storageWithDoubleChests(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(STORAGE_CATEGORIES);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.STORAGE);
 
         BlockPos inputPos = new BlockPos(1, 1, 1);
 
@@ -125,9 +105,7 @@ public class StorageLayoutGameTest {
      */
     @GameTest
     public void categoriesFacingDifferentDirections(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(STORAGE_CATEGORIES);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.STORAGE);
 
         BlockPos inputPos = new BlockPos(5, 1, 5);
 
@@ -174,9 +152,7 @@ public class StorageLayoutGameTest {
      */
     @GameTest
     public void closestCategoryUsed(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(STORAGE_CATEGORIES);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.STORAGE);
 
         BlockPos inputPos = new BlockPos(5, 1, 5);
 
@@ -219,9 +195,7 @@ public class StorageLayoutGameTest {
      */
     @GameTest
     public void inputInMiddleOfRoom(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(STORAGE_CATEGORIES);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.STORAGE);
 
         // Input in center
         BlockPos inputPos = new BlockPos(5, 1, 5);

@@ -1,13 +1,10 @@
 package net.sortcraft.gametest;
 
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.sorting.SortingResults;
 
 /**
@@ -16,48 +13,25 @@ import net.sortcraft.sorting.SortingResults;
  */
 public class OverflowGameTest {
 
-    private static final String COBBLESTONE_CATEGORY = """
-        cobblestone:
-          items:
-          - minecraft:cobblestone
-        """;
-
-    private static final String SWORDS_CATEGORY = """
-        swords:
-          items:
-          - minecraft:diamond_sword
-        """;
-
     /**
      * Test that items remain in input when category chest is completely full.
      */
     @GameTest
     public void itemsRemainInInputWhenCategoryFull(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(COBBLESTONE_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.COBBLESTONE);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "cobblestone");
-
-        // Fill category chest completely
-        for (int i = 0; i < 27; i++) {
-            TestHelper.insertItemAt(helper, categoryPos, i, new ItemStack(Items.COBBLESTONE, 64));
-        }
+        // Setup with category chest full
+        SortingTestSetup setup = TestScenarios.inputWithPrefilledCategory(
+            helper, "cobblestone", ItemQuantity.full(Items.COBBLESTONE));
 
         // Add cobblestone to input
-        TestHelper.insertItems(helper, inputPos, new ItemStack(Items.COBBLESTONE, 64));
+        TestHelper.insertItems(helper, setup.inputPos(), new ItemStack(Items.COBBLESTONE, 64));
 
         // Execute sort
-        SortingResults results = TestHelper.executeSort(helper, inputPos);
+        SortingResults results = TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: Input chest should still have the cobblestone (overflow)
-        int inputCount = TestHelper.countItemsInChest(helper, inputPos, Items.COBBLESTONE);
+        int inputCount = TestHelper.countItemsInChest(helper, setup.inputPos(), Items.COBBLESTONE);
         if (inputCount != 64) {
             helper.fail(Component.literal("Expected 64 cobblestone to remain in input but found " + inputCount));
             return;
@@ -77,41 +51,30 @@ public class OverflowGameTest {
      */
     @GameTest
     public void partialOverflowSomeItemsSorted(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(COBBLESTONE_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.COBBLESTONE);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "cobblestone");
-
-        // Fill category chest except last slot (26 slots full, 1 empty)
-        for (int i = 0; i < 26; i++) {
-            TestHelper.insertItemAt(helper, categoryPos, i, new ItemStack(Items.COBBLESTONE, 64));
-        }
+        // Setup with category chest almost full (1 slot remaining = 64 capacity)
+        SortingTestSetup setup = TestScenarios.inputWithPrefilledCategory(
+            helper, "cobblestone", ItemQuantity.stacks(Items.COBBLESTONE, 26));
 
         // Add 128 cobblestone to input (64 will fit, 64 will overflow)
-        TestHelper.insertItems(helper, inputPos,
+        TestHelper.insertItems(helper, setup.inputPos(),
             new ItemStack(Items.COBBLESTONE, 64),
             new ItemStack(Items.COBBLESTONE, 64)
         );
 
-        // Execute sort using the helper (which properly modifies the input chest)
-        SortingResults results = TestHelper.executeSort(helper, inputPos);
+        // Execute sort
+        SortingResults results = TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: Category chest should be full (27 * 64 = 1728)
-        int categoryCount = TestHelper.countItemsInChest(helper, categoryPos, Items.COBBLESTONE);
+        int categoryCount = TestHelper.countItemsInChest(helper, setup.categoryPos(), Items.COBBLESTONE);
         if (categoryCount != 27 * 64) {
             helper.fail(Component.literal("Expected category chest to be full but found " + categoryCount));
             return;
         }
 
         // Verify: Input should have 64 remaining (overflow)
-        int inputCount = TestHelper.countItemsInChest(helper, inputPos, Items.COBBLESTONE);
+        int inputCount = TestHelper.countItemsInChest(helper, setup.inputPos(), Items.COBBLESTONE);
         if (inputCount != 64) {
             helper.fail(Component.literal("Expected 64 cobblestone overflow in input but found " + inputCount));
             return;
@@ -125,26 +88,16 @@ public class OverflowGameTest {
      */
     @GameTest
     public void unsortableItemsRemainInInput(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS_SHORT);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "swords");
-
-        // Add items with no category (debug_stick)
-        TestHelper.insertItems(helper, inputPos, new ItemStack(Items.DEBUG_STICK));
+        SortingTestSetup setup = TestScenarios.inputWithItems(helper, "swords",
+            new ItemStack(Items.DEBUG_STICK));
 
         // Execute sort
-        SortingResults results = TestHelper.executeSort(helper, inputPos);
+        SortingResults results = TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: Debug stick should remain in input
-        int inputCount = TestHelper.countItemsInChest(helper, inputPos, Items.DEBUG_STICK);
+        int inputCount = TestHelper.countItemsInChest(helper, setup.inputPos(), Items.DEBUG_STICK);
         if (inputCount != 1) {
             helper.fail(Component.literal("Expected debug_stick to remain in input but found " + inputCount));
             return;
@@ -164,37 +117,26 @@ public class OverflowGameTest {
      */
     @GameTest
     public void mixedItemsSomeUnsortable(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS_SHORT);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "swords");
-
-        // Add mixed items
-        TestHelper.insertItems(helper, inputPos,
+        SortingTestSetup setup = TestScenarios.inputWithItems(helper, "swords",
             new ItemStack(Items.DIAMOND_SWORD),  // sortable
             new ItemStack(Items.DEBUG_STICK),    // unsortable
             new ItemStack(Items.DIAMOND_SWORD)   // sortable
         );
 
         // Execute sort
-        TestHelper.executeSort(helper, inputPos);
+        TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: Swords should be in category chest
-        int swordCount = TestHelper.countItemsInChest(helper, categoryPos, Items.DIAMOND_SWORD);
+        int swordCount = TestHelper.countItemsInChest(helper, setup.categoryPos(), Items.DIAMOND_SWORD);
         if (swordCount != 2) {
             helper.fail(Component.literal("Expected 2 swords in category but found " + swordCount));
             return;
         }
 
         // Verify: Debug stick should remain in input
-        int debugCount = TestHelper.countItemsInChest(helper, inputPos, Items.DEBUG_STICK);
+        int debugCount = TestHelper.countItemsInChest(helper, setup.inputPos(), Items.DEBUG_STICK);
         if (debugCount != 1) {
             helper.fail(Component.literal("Expected debug_stick in input but found " + debugCount));
             return;
@@ -208,22 +150,13 @@ public class OverflowGameTest {
      */
     @GameTest
     public void emptyInputChestNoErrors(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS_SHORT);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
+        // Setup with empty input
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "swords");
 
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "swords");
-
-        // Don't add any items - input is empty
-
-        // Execute sort
-        SortingResults results = TestHelper.executeSort(helper, inputPos);
+        // Execute sort (input is empty)
+        SortingResults results = TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: No errors, sorted count should be 0
         if (results.sorted != 0) {
@@ -241,35 +174,27 @@ public class OverflowGameTest {
      */
     @GameTest
     public void fullInputChestAllUnsortable(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS_SHORT);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "swords");
 
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "swords");
-
-        // Fill input chest completely with unsortable items
+        // Fill input chest completely with unsortable items (debug sticks don't stack)
         for (int i = 0; i < 27; i++) {
-            TestHelper.insertItemAt(helper, inputPos, i, new ItemStack(Items.DEBUG_STICK));
+            TestHelper.insertItemAt(helper, setup.inputPos(), i, new ItemStack(Items.DEBUG_STICK));
         }
 
         // Execute sort
-        SortingResults results = TestHelper.executeSort(helper, inputPos);
+        SortingResults results = TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: All items should remain in input
-        int inputCount = TestHelper.countItemsInChest(helper, inputPos, Items.DEBUG_STICK);
+        int inputCount = TestHelper.countItemsInChest(helper, setup.inputPos(), Items.DEBUG_STICK);
         if (inputCount != 27) {
             helper.fail(Component.literal("Expected 27 debug sticks to remain but found " + inputCount));
             return;
         }
 
         // Verify: Category chest should be empty
-        TestHelper.assertChestEmpty(helper, categoryPos);
+        TestHelper.assertChestEmpty(helper, setup.categoryPos());
 
         // Verify: Results should show 0 sorted
         if (results.sorted != 0) {
@@ -285,38 +210,27 @@ public class OverflowGameTest {
      */
     @GameTest
     public void sortExactlyFillsCategoryChest(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(COBBLESTONE_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.COBBLESTONE);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "cobblestone");
-
-        // Fill category chest except last slot
-        for (int i = 0; i < 26; i++) {
-            TestHelper.insertItemAt(helper, categoryPos, i, new ItemStack(Items.COBBLESTONE, 64));
-        }
+        // Setup with category almost full (1 slot remaining)
+        SortingTestSetup setup = TestScenarios.inputWithPrefilledCategory(
+            helper, "cobblestone", ItemQuantity.stacks(Items.COBBLESTONE, 26));
 
         // Add exactly 64 cobblestone to input (will exactly fill the last slot)
-        TestHelper.insertItems(helper, inputPos, new ItemStack(Items.COBBLESTONE, 64));
+        TestHelper.insertItems(helper, setup.inputPos(), new ItemStack(Items.COBBLESTONE, 64));
 
         // Execute sort
-        SortingResults results = TestHelper.executeSort(helper, inputPos);
+        SortingResults results = TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: Category chest should be completely full
-        int categoryCount = TestHelper.countItemsInChest(helper, categoryPos, Items.COBBLESTONE);
+        int categoryCount = TestHelper.countItemsInChest(helper, setup.categoryPos(), Items.COBBLESTONE);
         if (categoryCount != 27 * 64) {
             helper.fail(Component.literal("Expected category chest to be full (1728) but found " + categoryCount));
             return;
         }
 
         // Verify: Input should be empty
-        TestHelper.assertChestEmpty(helper, inputPos);
+        TestHelper.assertChestEmpty(helper, setup.inputPos());
 
         // Verify: No overflow
         if (!results.overflowCategories.isEmpty()) {
@@ -332,36 +246,27 @@ public class OverflowGameTest {
      */
     @GameTest
     public void sortMergesWithPartialStacksInCategory(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(COBBLESTONE_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.COBBLESTONE);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "cobblestone");
-
-        // Put a partial stack (32) in category chest
-        TestHelper.insertItems(helper, categoryPos, new ItemStack(Items.COBBLESTONE, 32));
+        // Setup with category having a partial stack (32 cobblestone)
+        SortingTestSetup setup = TestScenarios.inputWithPrefilledCategory(
+            helper, "cobblestone", ItemQuantity.partial(Items.COBBLESTONE, 32));
 
         // Add 32 cobblestone to input (should merge to make 64)
-        TestHelper.insertItems(helper, inputPos, new ItemStack(Items.COBBLESTONE, 32));
+        TestHelper.insertItems(helper, setup.inputPos(), new ItemStack(Items.COBBLESTONE, 32));
 
         // Execute sort
-        TestHelper.executeSort(helper, inputPos);
+        TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: Category chest should have 64 cobblestone
-        int categoryCount = TestHelper.countItemsInChest(helper, categoryPos, Items.COBBLESTONE);
+        int categoryCount = TestHelper.countItemsInChest(helper, setup.categoryPos(), Items.COBBLESTONE);
         if (categoryCount != 64) {
             helper.fail(Component.literal("Expected 64 cobblestone in category but found " + categoryCount));
             return;
         }
 
         // Verify: Input should be empty
-        TestHelper.assertChestEmpty(helper, inputPos);
+        TestHelper.assertChestEmpty(helper, setup.inputPos());
 
         helper.succeed();
     }

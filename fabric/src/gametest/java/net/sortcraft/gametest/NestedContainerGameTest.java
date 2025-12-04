@@ -2,12 +2,10 @@ package net.sortcraft.gametest;
 
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.sortcraft.category.CategoryLoader;
 
 import java.util.List;
 
@@ -20,17 +18,6 @@ import java.util.List;
  */
 public class NestedContainerGameTest {
 
-    private static final String SWORDS_CATEGORY = """
-        swords:
-          items:
-          - minecraft:diamond_sword
-          - minecraft:iron_sword
-          - minecraft:stone_sword
-          - minecraft:wooden_sword
-          - minecraft:golden_sword
-          - minecraft:netherite_sword
-        """;
-
     // ========== Bundle Tests ==========
 
     /**
@@ -38,33 +25,22 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void bundleWithSortableItemsGetsSorted(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        // Setup input chest with bundle containing swords
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-
-        // Setup category chest
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "swords");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "swords");
 
         // Create bundle with 2 diamond swords
         ItemStack bundle = TestHelper.createBundle(
             new ItemStack(Items.DIAMOND_SWORD),
             new ItemStack(Items.DIAMOND_SWORD)
         );
-        TestHelper.insertItems(helper, inputPos, bundle);
+        TestHelper.insertItems(helper, setup.inputPos(), bundle);
 
         // Execute sort
-        TestHelper.executeSort(helper, inputPos);
+        TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: swords should be in category chest
-        int swordsInCategory = TestHelper.countItemsInChest(helper, categoryPos, Items.DIAMOND_SWORD);
+        int swordsInCategory = TestHelper.countItemsInChest(helper, setup.categoryPos(), Items.DIAMOND_SWORD);
         if (swordsInCategory != 2) {
             helper.fail(Component.literal("Expected 2 swords in category chest but found " + swordsInCategory));
             return;
@@ -78,29 +54,21 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void bundleWithUnsortableItemsRemainsIntact(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "swords");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "swords");
 
         // Create bundle with unsortable item (debug_stick has no category)
         ItemStack bundle = TestHelper.createBundle(
             new ItemStack(Items.DEBUG_STICK)
         );
-        TestHelper.insertItems(helper, inputPos, bundle);
+        TestHelper.insertItems(helper, setup.inputPos(), bundle);
 
         // Execute sort
-        TestHelper.executeSort(helper, inputPos);
+        TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: bundle should still be in input chest
-        List<ItemStack> remaining = TestHelper.getChestContents(helper, inputPos);
+        List<ItemStack> remaining = TestHelper.getChestContents(helper, setup.inputPos());
         if (remaining.isEmpty()) {
             helper.fail(Component.literal("Bundle with unsortable item should remain in input"));
             return;
@@ -130,31 +98,23 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void shulkerWithSortableItemsGetsSorted(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "swords");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "swords");
 
         // Create shulker with swords
         ItemStack shulker = TestHelper.createShulkerBox(
             new ItemStack(Items.DIAMOND_SWORD),
             new ItemStack(Items.IRON_SWORD)
         );
-        TestHelper.insertItems(helper, inputPos, shulker);
+        TestHelper.insertItems(helper, setup.inputPos(), shulker);
 
         // Execute sort
-        TestHelper.executeSort(helper, inputPos);
+        TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: swords should be in category chest
-        int swordsInCategory = TestHelper.countItemsInChest(helper, categoryPos, Items.DIAMOND_SWORD) +
-                               TestHelper.countItemsInChest(helper, categoryPos, Items.IRON_SWORD);
+        int swordsInCategory = TestHelper.countItemsInChest(helper, setup.categoryPos(), Items.DIAMOND_SWORD) +
+                               TestHelper.countItemsInChest(helper, setup.categoryPos(), Items.IRON_SWORD);
         if (swordsInCategory != 2) {
             helper.fail(Component.literal("Expected 2 swords in category chest but found " + swordsInCategory));
             return;
@@ -171,30 +131,22 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void shulkerBundleUnsortableItemAllRemainIntact(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "swords");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "swords");
 
         // Create nested structure: Shulker → Bundle → debug_stick (unsortable)
         ItemStack innerBundle = TestHelper.createBundle(
             new ItemStack(Items.DEBUG_STICK)
         );
         ItemStack shulker = TestHelper.createShulkerBox(innerBundle);
-        TestHelper.insertItems(helper, inputPos, shulker);
+        TestHelper.insertItems(helper, setup.inputPos(), shulker);
 
         // Execute sort
-        TestHelper.executeSort(helper, inputPos);
+        TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: Input chest should still contain exactly 1 item (the shulker)
-        List<ItemStack> remaining = TestHelper.getChestContents(helper, inputPos);
+        List<ItemStack> remaining = TestHelper.getChestContents(helper, setup.inputPos());
         if (remaining.size() != 1) {
             helper.fail(Component.literal("Expected 1 item in input (shulker) but found " + remaining.size()));
             return;
@@ -243,17 +195,9 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void shulkerBundleMixedItemsPartialSort(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "swords");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "swords");
 
         // Create: Shulker → Bundle → [diamond_sword (sortable), debug_stick (unsortable)]
         ItemStack innerBundle = TestHelper.createBundle(
@@ -261,20 +205,20 @@ public class NestedContainerGameTest {
             new ItemStack(Items.DEBUG_STICK)
         );
         ItemStack shulker = TestHelper.createShulkerBox(innerBundle);
-        TestHelper.insertItems(helper, inputPos, shulker);
+        TestHelper.insertItems(helper, setup.inputPos(), shulker);
 
         // Execute sort
-        TestHelper.executeSort(helper, inputPos);
+        TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: Diamond sword should be in category chest
-        int swordsInCategory = TestHelper.countItemsInChest(helper, categoryPos, Items.DIAMOND_SWORD);
+        int swordsInCategory = TestHelper.countItemsInChest(helper, setup.categoryPos(), Items.DIAMOND_SWORD);
         if (swordsInCategory != 1) {
             helper.fail(Component.literal("Expected 1 sword in category chest but found " + swordsInCategory));
             return;
         }
 
         // Verify: Shulker with bundle containing debug_stick should remain in input
-        List<ItemStack> remaining = TestHelper.getChestContents(helper, inputPos);
+        List<ItemStack> remaining = TestHelper.getChestContents(helper, setup.inputPos());
         boolean hasShulkerWithDebugStick = remaining.stream()
             .filter(s -> s.is(Items.SHULKER_BOX))
             .flatMap(s -> TestHelper.getShulkerContents(s).stream())
@@ -295,27 +239,19 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void emptyBundleHandledCorrectly(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "swords");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "swords");
 
         // Create empty bundle
         ItemStack emptyBundle = new ItemStack(Items.BUNDLE);
-        TestHelper.insertItems(helper, inputPos, emptyBundle);
+        TestHelper.insertItems(helper, setup.inputPos(), emptyBundle);
 
         // Execute sort
-        TestHelper.executeSort(helper, inputPos);
+        TestHelper.executeSort(helper, setup.inputPos());
 
         // Empty bundle should remain in input (no category for bundles)
-        List<ItemStack> remaining = TestHelper.getChestContents(helper, inputPos);
+        List<ItemStack> remaining = TestHelper.getChestContents(helper, setup.inputPos());
         boolean hasBundle = remaining.stream().anyMatch(s -> s.is(Items.BUNDLE));
         if (!hasBundle) {
             helper.fail(Component.literal("Empty bundle should remain in input"));
@@ -330,27 +266,19 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void emptyShulkerHandledCorrectly(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "swords");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "swords");
 
         // Create empty shulker
         ItemStack emptyShulker = new ItemStack(Items.SHULKER_BOX);
-        TestHelper.insertItems(helper, inputPos, emptyShulker);
+        TestHelper.insertItems(helper, setup.inputPos(), emptyShulker);
 
         // Execute sort
-        TestHelper.executeSort(helper, inputPos);
+        TestHelper.executeSort(helper, setup.inputPos());
 
         // Empty shulker should remain in input (no category for shulkers)
-        List<ItemStack> remaining = TestHelper.getChestContents(helper, inputPos);
+        List<ItemStack> remaining = TestHelper.getChestContents(helper, setup.inputPos());
         boolean hasShulker = remaining.stream().anyMatch(s -> s.is(Items.SHULKER_BOX));
         if (!hasShulker) {
             helper.fail(Component.literal("Empty shulker should remain in input"));
@@ -365,17 +293,9 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void multipleBundlesDifferentContents(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "swords");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "swords");
 
         // Create bundle 1 with sortable items
         ItemStack bundle1 = TestHelper.createBundle(
@@ -385,20 +305,20 @@ public class NestedContainerGameTest {
         ItemStack bundle2 = TestHelper.createBundle(
             new ItemStack(Items.DEBUG_STICK)
         );
-        TestHelper.insertItems(helper, inputPos, bundle1, bundle2);
+        TestHelper.insertItems(helper, setup.inputPos(), bundle1, bundle2);
 
         // Execute sort
-        TestHelper.executeSort(helper, inputPos);
+        TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: Sword from bundle1 should be in category
-        int swordsInCategory = TestHelper.countItemsInChest(helper, categoryPos, Items.DIAMOND_SWORD);
+        int swordsInCategory = TestHelper.countItemsInChest(helper, setup.categoryPos(), Items.DIAMOND_SWORD);
         if (swordsInCategory != 1) {
             helper.fail(Component.literal("Expected 1 sword in category but found " + swordsInCategory));
             return;
         }
 
         // Verify: Bundle2 with debug_stick should remain in input
-        List<ItemStack> remaining = TestHelper.getChestContents(helper, inputPos);
+        List<ItemStack> remaining = TestHelper.getChestContents(helper, setup.inputPos());
         boolean hasDebugStickBundle = remaining.stream()
             .filter(s -> s.is(Items.BUNDLE))
             .flatMap(b -> TestHelper.getBundleContents(b).stream())
@@ -414,17 +334,6 @@ public class NestedContainerGameTest {
 
     // ========== Uniform Container Threshold Tests ==========
 
-    private static final String SWORDS_AND_CONTAINERS_CATEGORY = """
-        swords:
-          items:
-          - minecraft:diamond_sword
-          - minecraft:iron_sword
-        containers:
-          items:
-          - minecraft:shulker_box
-          - minecraft:bundle
-        """;
-
     /**
      * Test that a shulker with exactly 10 stacks of the same item is sorted as a unit.
      * The uniform container threshold is 10 - meeting it means the container is sorted
@@ -432,20 +341,11 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void shulkerWith10IdenticalStacksSortedAsUnit(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_AND_CONTAINERS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS_AND_CONTAINERS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos swordsPos = new BlockPos(3, 1, 1);
-        BlockPos containersPos = new BlockPos(5, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, swordsPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, swordsPos, Direction.NORTH, "swords");
-        TestHelper.placeSingleChest(helper, containersPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, containersPos, Direction.NORTH, "containers");
+        var positions = TestScenarios.multiCategory(helper, "swords", "containers");
+        BlockPos inputPos = positions.get("input");
+        BlockPos swordsPos = positions.get("swords");
 
         // Create shulker with exactly 10 diamond swords (meets threshold)
         ItemStack[] contents = new ItemStack[10];
@@ -489,20 +389,12 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void shulkerWith9IdenticalStacksExtracted(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_AND_CONTAINERS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS_AND_CONTAINERS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos swordsPos = new BlockPos(3, 1, 1);
-        BlockPos containersPos = new BlockPos(5, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, swordsPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, swordsPos, Direction.NORTH, "swords");
-        TestHelper.placeSingleChest(helper, containersPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, containersPos, Direction.NORTH, "containers");
+        var positions = TestScenarios.multiCategory(helper, "swords", "containers");
+        BlockPos inputPos = positions.get("input");
+        BlockPos swordsPos = positions.get("swords");
+        BlockPos containersPos = positions.get("containers");
 
         // Create shulker with 9 diamond swords (below threshold)
         ItemStack[] contents = new ItemStack[9];
@@ -538,20 +430,12 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void shulkerWithMixedItemsExtracted(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_AND_CONTAINERS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS_AND_CONTAINERS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos swordsPos = new BlockPos(3, 1, 1);
-        BlockPos containersPos = new BlockPos(5, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, swordsPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, swordsPos, Direction.NORTH, "swords");
-        TestHelper.placeSingleChest(helper, containersPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, containersPos, Direction.NORTH, "containers");
+        var positions = TestScenarios.multiCategory(helper, "swords", "containers");
+        BlockPos inputPos = positions.get("input");
+        BlockPos swordsPos = positions.get("swords");
+        BlockPos containersPos = positions.get("containers");
 
         // Create shulker with 10 stacks but mixed items (5 diamond + 5 iron)
         ItemStack[] contents = new ItemStack[10];
@@ -593,34 +477,26 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void emptyShulkerSortedToContainersCategory(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_AND_CONTAINERS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS_AND_CONTAINERS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos containersPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, containersPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, containersPos, Direction.NORTH, "containers");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "containers");
 
         // Create empty shulker
         ItemStack emptyShulker = new ItemStack(Items.SHULKER_BOX);
-        TestHelper.insertItems(helper, inputPos, emptyShulker);
+        TestHelper.insertItems(helper, setup.inputPos(), emptyShulker);
 
         // Execute sort
-        TestHelper.executeSort(helper, inputPos);
+        TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: Empty shulker should be in containers category
-        int shulkerCount = TestHelper.countItemsInChest(helper, containersPos, Items.SHULKER_BOX);
+        int shulkerCount = TestHelper.countItemsInChest(helper, setup.categoryPos(), Items.SHULKER_BOX);
         if (shulkerCount != 1) {
             helper.fail(Component.literal("Expected empty shulker in containers category but found " + shulkerCount));
             return;
         }
 
         // Verify: Input should be empty
-        TestHelper.assertChestEmpty(helper, inputPos);
+        TestHelper.assertChestEmpty(helper, setup.inputPos());
 
         helper.succeed();
     }
@@ -630,34 +506,26 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void emptyBundleSortedToContainersCategory(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_AND_CONTAINERS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS_AND_CONTAINERS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos containersPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, containersPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, containersPos, Direction.NORTH, "containers");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "containers");
 
         // Create empty bundle
         ItemStack emptyBundle = new ItemStack(Items.BUNDLE);
-        TestHelper.insertItems(helper, inputPos, emptyBundle);
+        TestHelper.insertItems(helper, setup.inputPos(), emptyBundle);
 
         // Execute sort
-        TestHelper.executeSort(helper, inputPos);
+        TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify: Empty bundle should be in containers category
-        int bundleCount = TestHelper.countItemsInChest(helper, containersPos, Items.BUNDLE);
+        int bundleCount = TestHelper.countItemsInChest(helper, setup.categoryPos(), Items.BUNDLE);
         if (bundleCount != 1) {
             helper.fail(Component.literal("Expected empty bundle in containers category but found " + bundleCount));
             return;
         }
 
         // Verify: Input should be empty
-        TestHelper.assertChestEmpty(helper, inputPos);
+        TestHelper.assertChestEmpty(helper, setup.inputPos());
 
         helper.succeed();
     }
@@ -668,20 +536,12 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void shulkerSortedToContainersAfterExtraction(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_AND_CONTAINERS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS_AND_CONTAINERS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos swordsPos = new BlockPos(3, 1, 1);
-        BlockPos containersPos = new BlockPos(5, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, swordsPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, swordsPos, Direction.NORTH, "swords");
-        TestHelper.placeSingleChest(helper, containersPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, containersPos, Direction.NORTH, "containers");
+        var positions = TestScenarios.multiCategory(helper, "swords", "containers");
+        BlockPos inputPos = positions.get("input");
+        BlockPos swordsPos = positions.get("swords");
+        BlockPos containersPos = positions.get("containers");
 
         // Create shulker with 3 swords (below threshold, will be extracted)
         ItemStack shulker = TestHelper.createShulkerBox(
@@ -719,20 +579,12 @@ public class NestedContainerGameTest {
      */
     @GameTest
     public void bundleSortedToContainersAfterExtraction(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_AND_CONTAINERS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS_AND_CONTAINERS);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos swordsPos = new BlockPos(3, 1, 1);
-        BlockPos containersPos = new BlockPos(5, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, swordsPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, swordsPos, Direction.NORTH, "swords");
-        TestHelper.placeSingleChest(helper, containersPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, containersPos, Direction.NORTH, "containers");
+        var positions = TestScenarios.multiCategory(helper, "swords", "containers");
+        BlockPos inputPos = positions.get("input");
+        BlockPos swordsPos = positions.get("swords");
+        BlockPos containersPos = positions.get("containers");
 
         // Create bundle with 2 swords
         ItemStack bundle = TestHelper.createBundle(

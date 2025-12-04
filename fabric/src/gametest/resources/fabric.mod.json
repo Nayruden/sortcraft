@@ -6,6 +6,7 @@
   "environment": "*",
   "entrypoints": {
     "fabric-gametest": [
+      "net.sortcraft.gametest.CategoryMatchingGameTest",
       "net.sortcraft.gametest.ChestLayoutGameTest",
       "net.sortcraft.gametest.ItemDistributionGameTest",
       "net.sortcraft.gametest.NestedContainerGameTest",

@@ -9,14 +9,12 @@ import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.WallSignBlock;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
-import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.container.ContainerHelper;
 
 /**
@@ -177,38 +175,24 @@ public class SortCraftGameTest {
 
     // ========== Cleanup Container Regression Tests ==========
 
-    private static final String COBBLESTONE_CATEGORY = """
-        cobblestone:
-          items:
-          - minecraft:cobblestone
-        """;
-
     /**
      * Regression test: Verify that after sorting, no slots contain stacks with count=0.
      * This was causing "Failed to save chunk" errors before the cleanupContainer fix.
      */
     @GameTest
     public void noZeroCountStacksAfterSort(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(COBBLESTONE_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.COBBLESTONE);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "cobblestone");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "cobblestone");
 
         // Add items to sort
-        TestHelper.insertItems(helper, inputPos, new ItemStack(Items.COBBLESTONE, 64));
+        TestHelper.insertItems(helper, setup.inputPos(), new ItemStack(Items.COBBLESTONE, 64));
 
         // Execute sort
-        TestHelper.executeSort(helper, inputPos);
+        TestHelper.executeSort(helper, setup.inputPos());
 
         // Get the raw container and verify no slots have count=0 stacks
-        Container container = TestHelper.getChestContainer(helper, inputPos);
+        Container container = TestHelper.getChestContainer(helper, setup.inputPos());
         if (container == null) {
             helper.fail(Component.literal("Could not get input container"));
             return;
@@ -231,26 +215,18 @@ public class SortCraftGameTest {
      */
     @GameTest
     public void emptySlotContainsItemStackEmpty(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(COBBLESTONE_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.COBBLESTONE);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "cobblestone");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "cobblestone");
 
         // Add a single stack to slot 0
-        TestHelper.insertItems(helper, inputPos, new ItemStack(Items.COBBLESTONE, 64));
+        TestHelper.insertItems(helper, setup.inputPos(), new ItemStack(Items.COBBLESTONE, 64));
 
         // Execute sort
-        TestHelper.executeSort(helper, inputPos);
+        TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify input chest is empty and all slots contain ItemStack.EMPTY
-        Container container = TestHelper.getChestContainer(helper, inputPos);
+        Container container = TestHelper.getChestContainer(helper, setup.inputPos());
         if (container == null) {
             helper.fail(Component.literal("Could not get input container"));
             return;
@@ -280,14 +256,7 @@ public class SortCraftGameTest {
      */
     @GameTest
     public void cleanupWorksWithPartialSort(GameTestHelper helper) {
-        String mixedCategory = """
-            swords:
-              items:
-              - minecraft:diamond_sword
-            """;
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(mixedCategory);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
         BlockPos inputPos = new BlockPos(1, 1, 1);
         BlockPos categoryPos = new BlockPos(3, 1, 1);
@@ -339,23 +308,15 @@ public class SortCraftGameTest {
      */
     @GameTest
     public void previewModeReturnsCorrectResults(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(COBBLESTONE_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.COBBLESTONE);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "cobblestone");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "cobblestone");
 
         // Add items to input
-        TestHelper.insertItems(helper, inputPos, new ItemStack(Items.COBBLESTONE, 64));
+        TestHelper.insertItems(helper, setup.inputPos(), new ItemStack(Items.COBBLESTONE, 64));
 
         // Execute preview
-        var results = TestHelper.executeSortPreview(helper, inputPos);
+        var results = TestHelper.executeSortPreview(helper, setup.inputPos());
 
         // Verify: Results should show 64 items would be sorted
         if (results.sorted != 64) {
@@ -364,14 +325,14 @@ public class SortCraftGameTest {
         }
 
         // Verify: Input chest should still have the items (not modified)
-        int inputCount = TestHelper.countItemsInChest(helper, inputPos, Items.COBBLESTONE);
+        int inputCount = TestHelper.countItemsInChest(helper, setup.inputPos(), Items.COBBLESTONE);
         if (inputCount != 64) {
             helper.fail(Component.literal("Input should still have 64 cobblestone but has " + inputCount));
             return;
         }
 
         // Verify: Category chest should be empty (not modified)
-        TestHelper.assertChestEmpty(helper, categoryPos);
+        TestHelper.assertChestEmpty(helper, setup.categoryPos());
 
         helper.succeed();
     }
@@ -381,29 +342,21 @@ public class SortCraftGameTest {
      */
     @GameTest
     public void previewModeDoesNotModifyCategoryChest(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(COBBLESTONE_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.COBBLESTONE);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "cobblestone");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "cobblestone");
 
         // Pre-fill category with some items
-        TestHelper.insertItems(helper, categoryPos, new ItemStack(Items.COBBLESTONE, 32));
+        TestHelper.insertItems(helper, setup.categoryPos(), new ItemStack(Items.COBBLESTONE, 32));
 
         // Add items to input
-        TestHelper.insertItems(helper, inputPos, new ItemStack(Items.COBBLESTONE, 64));
+        TestHelper.insertItems(helper, setup.inputPos(), new ItemStack(Items.COBBLESTONE, 64));
 
         // Execute preview
-        TestHelper.executeSortPreview(helper, inputPos);
+        TestHelper.executeSortPreview(helper, setup.inputPos());
 
         // Verify: Category chest should still have only 32 (not modified)
-        int categoryCount = TestHelper.countItemsInChest(helper, categoryPos, Items.COBBLESTONE);
+        int categoryCount = TestHelper.countItemsInChest(helper, setup.categoryPos(), Items.COBBLESTONE);
         if (categoryCount != 32) {
             helper.fail(Component.literal("Category should still have 32 cobblestone but has " + categoryCount));
             return;
@@ -417,28 +370,18 @@ public class SortCraftGameTest {
      */
     @GameTest
     public void previewModeReportsOverflow(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(COBBLESTONE_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.COBBLESTONE);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos categoryPos = new BlockPos(3, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, categoryPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, categoryPos, Direction.NORTH, "cobblestone");
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "cobblestone");
 
         // Fill category chest completely
-        for (int i = 0; i < 27; i++) {
-            TestHelper.insertItemAt(helper, categoryPos, i, new ItemStack(Items.COBBLESTONE, 64));
-        }
+        TestHelper.fillChest(helper, setup.categoryPos(), ItemQuantity.full(Items.COBBLESTONE));
 
         // Add items to input
-        TestHelper.insertItems(helper, inputPos, new ItemStack(Items.COBBLESTONE, 64));
+        TestHelper.insertItems(helper, setup.inputPos(), new ItemStack(Items.COBBLESTONE, 64));
 
         // Execute preview
-        var results = TestHelper.executeSortPreview(helper, inputPos);
+        var results = TestHelper.executeSortPreview(helper, setup.inputPos());
 
         // Verify: Results should report overflow
         if (!results.overflowCategories.contains("cobblestone")) {
@@ -447,7 +390,7 @@ public class SortCraftGameTest {
         }
 
         // Verify: Input should still have items (not modified)
-        int inputCount = TestHelper.countItemsInChest(helper, inputPos, Items.COBBLESTONE);
+        int inputCount = TestHelper.countItemsInChest(helper, setup.inputPos(), Items.COBBLESTONE);
         if (inputCount != 64) {
             helper.fail(Component.literal("Input should still have 64 cobblestone"));
             return;

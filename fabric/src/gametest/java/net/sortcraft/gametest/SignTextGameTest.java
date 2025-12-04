@@ -7,7 +7,6 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.sortcraft.category.CategoryLoader;
 
 /**
  * GameTests for sign text format variations.
@@ -15,20 +14,12 @@ import net.sortcraft.category.CategoryLoader;
  */
 public class SignTextGameTest {
 
-    private static final String SWORDS_CATEGORY = """
-        swords:
-          items:
-          - minecraft:diamond_sword
-        """;
-
     /**
      * Test that category sign text is case-insensitive.
      */
     @GameTest
     public void categorySignCaseInsensitive(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
         BlockPos inputPos = new BlockPos(1, 1, 1);
         BlockPos categoryPos = new BlockPos(3, 1, 1);
@@ -59,9 +50,7 @@ public class SignTextGameTest {
      */
     @GameTest
     public void categorySignMixedCase(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
         BlockPos inputPos = new BlockPos(1, 1, 1);
         BlockPos categoryPos = new BlockPos(3, 1, 1);
@@ -91,9 +80,7 @@ public class SignTextGameTest {
      */
     @GameTest
     public void categorySignOnSecondLine(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
         BlockPos inputPos = new BlockPos(1, 1, 1);
         BlockPos categoryPos = new BlockPos(3, 1, 1);
@@ -124,9 +111,7 @@ public class SignTextGameTest {
      */
     @GameTest
     public void categorySignOnLastLine(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
         BlockPos inputPos = new BlockPos(1, 1, 1);
         BlockPos categoryPos = new BlockPos(3, 1, 1);
@@ -157,9 +142,7 @@ public class SignTextGameTest {
      */
     @GameTest
     public void inputSignCaseInsensitive(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
         BlockPos inputPos = new BlockPos(1, 1, 1);
         BlockPos categoryPos = new BlockPos(3, 1, 1);
@@ -188,9 +171,7 @@ public class SignTextGameTest {
      */
     @GameTest
     public void signWithWhitespace(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
         BlockPos inputPos = new BlockPos(1, 1, 1);
         BlockPos categoryPos = new BlockPos(3, 1, 1);
@@ -220,9 +201,7 @@ public class SignTextGameTest {
      */
     @GameTest
     public void signWithoutBracketsNotCategory(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(SWORDS_CATEGORY);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.SWORDS);
 
         BlockPos inputPos = new BlockPos(1, 1, 1);
         BlockPos categoryPos = new BlockPos(3, 1, 1);
@@ -250,37 +229,18 @@ public class SignTextGameTest {
 
     // ========== Category Priority Tests ==========
 
-    private static final String PRIORITY_CATEGORIES = """
-        high_priority:
-          priority: 1
-          items:
-          - minecraft:diamond_sword
-        low_priority:
-          priority: 20
-          items:
-          - minecraft:diamond_sword
-        """;
-
     /**
      * Test that items go to higher priority category when both match.
      * Lower priority value = higher priority (checked first).
      */
     @GameTest
     public void itemGoesToHigherPriorityCategory(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(PRIORITY_CATEGORIES);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.PRIORITY);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos highPriorityPos = new BlockPos(3, 1, 1);
-        BlockPos lowPriorityPos = new BlockPos(5, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, highPriorityPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, highPriorityPos, Direction.NORTH, "high_priority");
-        TestHelper.placeSingleChest(helper, lowPriorityPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, lowPriorityPos, Direction.NORTH, "low_priority");
+        var positions = TestScenarios.multiCategory(helper, "high_priority", "low_priority");
+        BlockPos inputPos = positions.get("input");
+        BlockPos highPriorityPos = positions.get("high_priority");
+        BlockPos lowPriorityPos = positions.get("low_priority");
 
         TestHelper.insertItems(helper, inputPos, new ItemStack(Items.DIAMOND_SWORD));
 
@@ -307,25 +267,15 @@ public class SignTextGameTest {
      */
     @GameTest
     public void itemOverflowsToLowerPriorityCategory(GameTestHelper helper) {
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(PRIORITY_CATEGORIES);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.PRIORITY);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos highPriorityPos = new BlockPos(3, 1, 1);
-        BlockPos lowPriorityPos = new BlockPos(5, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, highPriorityPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, highPriorityPos, Direction.NORTH, "high_priority");
-        TestHelper.placeSingleChest(helper, lowPriorityPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, lowPriorityPos, Direction.NORTH, "low_priority");
+        var positions = TestScenarios.multiCategory(helper, "high_priority", "low_priority");
+        BlockPos inputPos = positions.get("input");
+        BlockPos highPriorityPos = positions.get("high_priority");
+        BlockPos lowPriorityPos = positions.get("low_priority");
 
         // Fill high priority chest completely with swords (27 slots)
-        for (int i = 0; i < 27; i++) {
-            TestHelper.insertItemAt(helper, highPriorityPos, i, new ItemStack(Items.DIAMOND_SWORD));
-        }
+        TestHelper.fillChest(helper, highPriorityPos, ItemQuantity.full(Items.DIAMOND_SWORD));
 
         // Add one more sword to input
         TestHelper.insertItems(helper, inputPos, new ItemStack(Items.DIAMOND_SWORD));
@@ -350,29 +300,12 @@ public class SignTextGameTest {
      */
     @GameTest
     public void defaultPriorityIsTen(GameTestHelper helper) {
-        String defaultPriorityCategory = """
-            default_cat:
-              items:
-              - minecraft:diamond_sword
-            explicit_ten:
-              priority: 10
-              items:
-              - minecraft:iron_sword
-            """;
-        CategoryLoader.clear();
-        CategoryLoader.loadCategoriesFromYaml(defaultPriorityCategory);
-        CategoryLoader.flattenCategories();
+        TestHelper.setupCategories(TestCategories.DEFAULT_PRIORITY);
 
-        BlockPos inputPos = new BlockPos(1, 1, 1);
-        BlockPos defaultPos = new BlockPos(3, 1, 1);
-        BlockPos explicitPos = new BlockPos(5, 1, 1);
-
-        TestHelper.placeSingleChest(helper, inputPos, Direction.NORTH);
-        TestHelper.placeInputSign(helper, inputPos, Direction.NORTH);
-        TestHelper.placeSingleChest(helper, defaultPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, defaultPos, Direction.NORTH, "default_cat");
-        TestHelper.placeSingleChest(helper, explicitPos, Direction.NORTH);
-        TestHelper.placeCategorySign(helper, explicitPos, Direction.NORTH, "explicit_ten");
+        var positions = TestScenarios.multiCategory(helper, "default_cat", "explicit_ten");
+        BlockPos inputPos = positions.get("input");
+        BlockPos defaultPos = positions.get("default_cat");
+        BlockPos explicitPos = positions.get("explicit_ten");
 
         // Add both items
         TestHelper.insertItems(helper, inputPos,

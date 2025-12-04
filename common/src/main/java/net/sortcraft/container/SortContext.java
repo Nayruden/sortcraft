@@ -54,11 +54,25 @@ public class SortContext {
         BlockPos min = centerPos.offset(-signRadius, -signRadius, -signRadius);
         BlockPos max = centerPos.offset(signRadius, signRadius, signRadius);
 
+        LOGGER.info("[SortContext] Building sign cache: center={}, radius={}, searchArea=[{} to {}]",
+                centerPos, signRadius, min, max);
+
+        int wallSignsFound = 0;
+        int signEntitiesFound = 0;
+
         for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
             BlockEntity be = world.getBlockEntity(pos);
             BlockState state = world.getBlockState(pos);
             if (!(state.getBlock() instanceof WallSignBlock)) continue;
-            if (!(be instanceof SignBlockEntity sign)) continue;
+            wallSignsFound++;
+            if (!(be instanceof SignBlockEntity sign)) {
+                LOGGER.info("[SortContext] WallSignBlock at {} has no SignBlockEntity!", pos);
+                continue;
+            }
+            signEntitiesFound++;
+
+            LOGGER.info("[SortContext] Found sign at {}: front line 0 = '{}'",
+                    pos, sign.getFrontText().getMessage(0, false).getString().trim());
 
             // Get all text lines from the sign
             for (int i = 0; i < 4; i++) {
@@ -69,7 +83,8 @@ public class SortContext {
                 cacheSignText(backLine, sign, pos);
             }
         }
-        LOGGER.debug("[SortContext] Sign cache built with {} unique sign texts", signCache.size());
+        LOGGER.info("[SortContext] Sign cache built: {} unique texts, {} wall signs found, {} sign entities",
+                signCache.size(), wallSignsFound, signEntitiesFound);
     }
 
     private void cacheSignText(String text, SignBlockEntity sign, BlockPos pos) {
@@ -94,7 +109,10 @@ public class SortContext {
      */
     public SignBlockEntity findSign(String text) {
         buildSignCache();
-        return signCache.get(text.toLowerCase());
+        SignBlockEntity result = signCache.get(text.toLowerCase());
+        LOGGER.info("[SortContext] findSign('{}') -> {}", text,
+                result != null ? "found at " + result.getBlockPos() : "NOT FOUND");
+        return result;
     }
 
     /**

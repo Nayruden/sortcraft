@@ -2,10 +2,12 @@ package net.sortcraft.category;
 
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.sortcraft.FilterRule;
 import net.sortcraft.FilterRuleFactory;
 import net.sortcraft.config.ConfigManager;
 import net.sortcraft.compat.RegistryHelper;
@@ -62,8 +64,6 @@ public final class CategoryLoader {
 
     /**
      * Loads categories from a YAML string. Intended for testing purposes.
-     * Note: Filter-based categories that require server access will fail to parse.
-     * Use this only for categories that use item IDs and regex patterns.
      *
      * @param yamlContent the YAML content to parse
      * @return the number of categories loaded
@@ -77,14 +77,29 @@ public final class CategoryLoader {
             return 0;
         }
 
-        Map<String, Object> mapRoot = (Map<String, Object>) data;
+        int count = loadCategoriesFromMap((Map<String, Object>) data, "YAML string");
+        LOGGER.info("Loaded {} categories from YAML string", count);
+        return count;
+    }
+
+    /**
+     * Shared method to load categories from a parsed YAML map.
+     *
+     * @param mapRoot the parsed YAML map containing category definitions
+     * @param sourceName descriptive name of the source (for logging)
+     * @return the number of categories loaded
+     */
+    private static int loadCategoriesFromMap(Map<String, Object> mapRoot, String sourceName) {
         int count = 0;
         for (Map.Entry<String, Object> entry : mapRoot.entrySet()) {
             String categoryName = entry.getKey();
             Object valueRaw = entry.getValue();
             if (!(valueRaw instanceof Map)) {
-                LOGGER.warn("Category '{}' has a non-map value, skipping", categoryName);
+                LOGGER.warn("Category '{}' in {} has a non-map value, skipping", categoryName, sourceName);
                 continue;
+            }
+            if (categories.containsKey(categoryName)) {
+                LOGGER.warn("Duplicate category '{}' in {}, overwriting previous definition", categoryName, sourceName);
             }
             CategoryNode categoryNode = parseCategory(categoryName, valueRaw);
             if (categoryNode != null) {
@@ -92,7 +107,6 @@ public final class CategoryLoader {
                 count++;
             }
         }
-        LOGGER.info("Loaded {} categories from YAML string", count);
         return count;
     }
 
@@ -137,22 +151,7 @@ public final class CategoryLoader {
                         LOGGER.warn("File '{}' does not contain a map at root level, skipping", yamlFile.getFileName());
                         continue;
                     }
-                    Map<String, Object> mapRoot = (Map<String, Object>) data;
-                    for (Map.Entry<String, Object> entry : mapRoot.entrySet()) {
-                        String categoryName = entry.getKey();
-                        Object valueRaw = entry.getValue();
-                        if (!(valueRaw instanceof Map)) {
-                            LOGGER.warn("Category '{}' in file '{}' has a non-map value, skipping", categoryName, yamlFile.getFileName());
-                            continue;
-                        }
-                        if (categories.containsKey(categoryName)) {
-                            LOGGER.warn("Duplicate category '{}' in file '{}', overwriting previous definition", categoryName, yamlFile.getFileName());
-                        }
-                        CategoryNode categoryNode = parseCategory(categoryName, valueRaw);
-                        if (categoryNode != null) {
-                            categories.put(categoryName, categoryNode);
-                        }
-                    }
+                    loadCategoriesFromMap((Map<String, Object>) data, yamlFile.getFileName().toString());
                     filesLoaded++;
                 } catch (Exception err) {
                     LOGGER.error("Error loading categories from file: {}", yamlFile.getFileName(), err);
@@ -179,64 +178,23 @@ public final class CategoryLoader {
         try {
             CategoryNode categoryNode = new CategoryNode(categoryName);
 
-            if (!(valueRaw instanceof Map<?, ?>)) {
+            if (!(valueRaw instanceof Map<?, ?> categoryConf)) {
                 LOGGER.warn("Cannot parse category '{}', not a dictionary type", valueRaw);
                 return null;
             }
-            Map<String, Object> categoryConf = (Map<String, Object>) valueRaw;
 
-            boolean anyFilter = false;
-            var filteredItems = new HashSet<>(BuiltInRegistries.ITEM.keySet());
             Object itemPatternsValue = categoryConf.get("items");
             if (itemPatternsValue instanceof List<?> itemPatterns) {
-                for (var patternRaw : itemPatterns) {
-                    switch (patternRaw) {
-                        case String patternStr when (patternStr.length() > 1 && patternStr.charAt(0) == '/' && patternStr.charAt(patternStr.length() - 1) == '/') -> {
-                            var pattern = Pattern.compile(patternStr.substring(1, patternStr.length() - 1));
-                            BuiltInRegistries.ITEM.keySet().stream()
-                                    .filter(itemId -> pattern.matcher(itemId.toString()).find())
-                                    .forEach(categoryNode.itemIds::add);
-                        }
-                        case String itemName -> {
-                            ResourceLocation id = ResourceLocation.tryParse(itemName);
-                            if (id != null) {
-                                categoryNode.itemIds.add(id);
-                            } else {
-                                LOGGER.warn("Invalid item identifier '{}' in category '{}'", itemName, categoryName);
-                            }
-                        }
-                        case Map<?, ?> filterAttrs -> {
-                            anyFilter = true;
-                            List<FilterRule> filters = filterAttrs.entrySet().stream()
-                                    .map((entry) -> FilterRuleFactory.fromYaml(currentRegistries, (String) entry.getKey(), (String) entry.getValue()))
-                                    .toList();
-                            HashSet<ResourceLocation> newFilteredItems = new HashSet<>();
-                            for (ResourceLocation id : filteredItems) {
-                                ItemStack stack = new ItemStack(RegistryHelper.getItemOrThrow(id));
-                                boolean allMatch = true;
-                                for (FilterRule filter : filters) {
-                                    if (!filter.matches(stack)) {
-                                        allMatch = false;
-                                        break;
-                                    }
-                                }
-                                if (allMatch) {
-                                    newFilteredItems.add(id);
-                                }
-                            }
-                            filteredItems = newFilteredItems;
-                        }
-                        default -> LOGGER.warn("Unhandled item pattern type '{}' in category '{}'", patternRaw, categoryName);
+                for (var entry : itemPatterns) {
+                    if (entry instanceof String pattern) {
+                        expandItemPattern(pattern, categoryName, categoryNode);
+                    } else {
+                        LOGGER.warn("Unsupported item entry type '{}' in category '{}'",
+                                entry.getClass().getSimpleName(), categoryName);
                     }
                 }
             } else if (itemPatternsValue != null) {
                 LOGGER.warn("Category '{}' has unrecognized 'items' type '{}'", categoryName, itemPatternsValue.getClass().getName());
-            }
-
-            if (anyFilter && !filteredItems.isEmpty()) {
-                categoryNode.itemIds.addAll(filteredItems);
-            } else if (anyFilter) {
-                LOGGER.warn("Item patterns in category '{}' filtered out all items!", categoryName);
             }
 
             Object includeRaw = categoryConf.get("includes");
@@ -344,6 +302,67 @@ public final class CategoryLoader {
         }
 
         return filteredCategories;
+    }
+
+    // ========== Item Pattern Expansion Helpers ==========
+
+    /**
+     * Expands a pattern string into item IDs and adds them to the category.
+     * Supports: explicit item IDs, regex patterns (/regex/), and tag references (#tag).
+     */
+    private static void expandItemPattern(String pattern, String categoryName, CategoryNode categoryNode) {
+        if (isRegexPattern(pattern)) {
+            expandRegexPattern(pattern, categoryNode);
+        } else if (pattern.startsWith("#")) {
+            expandTag(pattern, categoryName, categoryNode);
+        } else {
+            addExplicitItem(pattern, categoryName, categoryNode);
+        }
+    }
+
+    private static boolean isRegexPattern(String s) {
+        return s.length() > 1 && s.charAt(0) == '/' && s.charAt(s.length() - 1) == '/';
+    }
+
+    private static void expandRegexPattern(String patternStr, CategoryNode categoryNode) {
+        String regex = patternStr.substring(1, patternStr.length() - 1);
+        Pattern pattern = Pattern.compile(regex);
+        BuiltInRegistries.ITEM.keySet().stream()
+                .filter(itemId -> pattern.matcher(itemId.toString()).find())
+                .forEach(categoryNode.itemIds::add);
+    }
+
+    private static void expandTag(String tagRef, String categoryName, CategoryNode categoryNode) {
+        String tagId = tagRef.substring(1);
+        ResourceLocation tagLocation = ResourceLocation.tryParse(tagId);
+        if (tagLocation == null) {
+            LOGGER.warn("Invalid tag reference '{}' in category '{}'", tagRef, categoryName);
+            return;
+        }
+
+        TagKey<Item> tagKey = TagKey.create(Registries.ITEM, tagLocation);
+        List<ResourceLocation> matchedItems = BuiltInRegistries.ITEM.keySet().stream()
+                .filter(itemId -> {
+                    Item item = RegistryHelper.getItemByKey(itemId);
+                    return item != null && BuiltInRegistries.ITEM.wrapAsHolder(item).is(tagKey);
+                })
+                .toList();
+
+        if (matchedItems.isEmpty()) {
+            LOGGER.warn("Tag '{}' matched no items for category '{}'", tagRef, categoryName);
+        } else {
+            categoryNode.itemIds.addAll(matchedItems);
+            LOGGER.debug("Expanded tag '{}' to {} items in category '{}'", tagRef, matchedItems.size(), categoryName);
+        }
+    }
+
+    private static void addExplicitItem(String itemName, String categoryName, CategoryNode categoryNode) {
+        ResourceLocation id = ResourceLocation.tryParse(itemName);
+        if (id != null) {
+            categoryNode.itemIds.add(id);
+        } else {
+            LOGGER.warn("Invalid item identifier '{}' in category '{}'", itemName, categoryName);
+        }
     }
 }
 

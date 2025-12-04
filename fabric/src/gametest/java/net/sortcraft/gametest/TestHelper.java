@@ -282,6 +282,29 @@ public final class TestHelper {
     }
 
     /**
+     * Fills a chest with the specified quantity of items.
+     * Uses ItemQuantity to specify full stacks and partial stack amounts.
+     *
+     * @param helper   The GameTestHelper
+     * @param chestPos Position of the chest to fill
+     * @param quantity The ItemQuantity specifying what and how much to fill
+     */
+    public static void fillChest(GameTestHelper helper, BlockPos chestPos, ItemQuantity quantity) {
+        int maxStack = quantity.maxStackSize();
+
+        // Fill full stacks
+        for (int i = 0; i < quantity.fullStacks(); i++) {
+            insertItemAt(helper, chestPos, i, new ItemStack(quantity.item(), maxStack));
+        }
+
+        // Fill partial stack if any
+        if (quantity.partialStackSize() > 0) {
+            insertItemAt(helper, chestPos, quantity.fullStacks(),
+                new ItemStack(quantity.item(), quantity.partialStackSize()));
+        }
+    }
+
+    /**
      * Gets all non-empty items from a chest.
      */
     public static List<ItemStack> getChestContents(GameTestHelper helper, BlockPos chestPos) {
