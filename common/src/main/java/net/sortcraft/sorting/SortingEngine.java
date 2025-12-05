@@ -13,6 +13,7 @@ import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.block.WallSignBlock;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.sortcraft.audit.SortAuditLog;
 import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.category.CategoryNode;
 import net.sortcraft.command.CommandHandler;
@@ -45,7 +46,22 @@ public final class SortingEngine {
      * @return Results containing counts of sorted items and any overflow/unknown items
      */
     public static SortingResults sortFromContainer(SortContext context, ServerLevel world, Container sourceContainer, boolean preview) {
-        SortingResults results = sortStacks(context, world, containerToIterable(sourceContainer), preview);
+        return sortFromContainer(context, world, sourceContainer, preview, null);
+    }
+
+    /**
+     * Sorts all items from the source container into categorized chests with optional audit logging.
+     *
+     * @param context The sort context with position and search radius
+     * @param world The server level
+     * @param sourceContainer The container to sort items FROM
+     * @param preview If true, only calculate what would be sorted without moving items
+     * @param audit Optional audit log to record item movements (can be null)
+     * @return Results containing counts of sorted items and any overflow/unknown items
+     */
+    public static SortingResults sortFromContainer(SortContext context, ServerLevel world, Container sourceContainer,
+                                                   boolean preview, SortAuditLog audit) {
+        SortingResults results = sortStacks(context, world, containerToIterable(sourceContainer), preview, audit);
 
         // Clean up empty stacks (count=0) left behind by shrink() to prevent chunk save errors
         if (!preview) {
@@ -60,13 +76,19 @@ public final class SortingEngine {
      * Handles containers (bundles, shulker boxes) recursively.
      * Note: Callers must handle cleanup of source containers if using containerToIterable().
      */
-    private static SortingResults sortStacks(SortContext context, ServerLevel world, Iterable<ItemStack> stacks, boolean preview) {
+    private static SortingResults sortStacks(SortContext context, ServerLevel world, Iterable<ItemStack> stacks,
+                                             boolean preview, SortAuditLog audit) {
         SortingResults results = new SortingResults();
 
         for (ItemStack stack : stacks) {
             if (stack.isEmpty()) continue;
 
             LOGGER.debug("[sortinput] Sorting {} of {}", stack.getCount(), stack.getItem().toString());
+
+            // Track items processed for audit
+            if (audit != null) {
+                audit.recordItemsProcessed(stack.getCount());
+            }
 
             // Check if this is a container (bundle or shulker box)
             Iterable<ItemStack> innerStacks = ContainerHelper.getStacksIfContainer(stack);
@@ -77,12 +99,12 @@ public final class SortingEngine {
                             UNIFORM_CONTAINER_THRESHOLD, uniformItem);
 
                     List<CategoryNode> cats = CategoryLoader.getMatchingCategoriesNoFilter(uniformItem);
-                    sortSingleStack(context, world, preview, stack, cats, uniformItem, results);
+                    sortSingleStack(context, world, preview, stack, cats, uniformItem, results, audit);
                     continue;
                 }
 
                 LOGGER.debug("[sortinput] Item is a container. Sorting contents of container.");
-                SortingResults innerResults = sortStacks(context, world, innerStacks, preview);
+                SortingResults innerResults = sortStacks(context, world, innerStacks, preview, audit);
                 results.sorted += innerResults.sorted;
                 results.overflowCategories.addAll(innerResults.overflowCategories);
                 results.unknownItems.addAll(innerResults.unknownItems);
@@ -114,7 +136,7 @@ public final class SortingEngine {
 
             ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
             List<CategoryNode> cats = CategoryLoader.getMatchingCategories(stack);
-            sortSingleStack(context, world, preview, stack, cats, itemId, results);
+            sortSingleStack(context, world, preview, stack, cats, itemId, results, audit);
         }
         return results;
     }
@@ -142,7 +164,8 @@ public final class SortingEngine {
     }
 
     private static void sortSingleStack(SortContext context, ServerLevel world, boolean preview, ItemStack stack,
-                                        List<CategoryNode> cats, ResourceLocation itemId, SortingResults results) {
+                                        List<CategoryNode> cats, ResourceLocation itemId, SortingResults results,
+                                        SortAuditLog audit) {
         if (cats.isEmpty()) {
             LOGGER.debug("[sortinput] No categories found for item: {}", itemId);
             results.unknownItems.add(itemId.toString());
@@ -163,6 +186,13 @@ public final class SortingEngine {
                 results.sorted += moved;
                 results.categoryCounts.merge(category.name, moved, Integer::sum);
                 LOGGER.debug("[sortinput] Moved {} of item {}", moved, itemId);
+
+                // Record movement in audit log
+                if (audit != null) {
+                    BlockPos destPos = categoryChests.isEmpty() ? null : categoryChests.get(0).getPos();
+                    boolean partial = totalMoved < stackSize;
+                    audit.recordMovement(itemId.toString(), moved, category.name, destPos, partial);
+                }
 
                 if (preview && totalMoved >= stackSize) break;
             }

@@ -1,5 +1,6 @@
 package net.sortcraft.config;
 
+import net.sortcraft.audit.AuditConfig;
 import net.sortcraft.platform.Platform;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
@@ -24,9 +25,21 @@ public final class ConfigManager {
 
     // Configuration values with defaults
     private static int searchRadius = 64;
+    private static AuditConfig auditConfig = new AuditConfig();
 
     public static int getSearchRadius() {
         return searchRadius;
+    }
+
+    public static AuditConfig getAuditConfig() {
+        return auditConfig;
+    }
+
+    /**
+     * Gets the game directory (parent of config directory).
+     */
+    public static Path getGameDir() {
+        return Platform.getConfigDir().getParent();
     }
 
     /**
@@ -60,6 +73,21 @@ public final class ConfigManager {
                         # Search radius for finding signs (in blocks)
                         # Default: 64
                         searchRadius: 64
+
+                        # Audit logging configuration
+                        audit:
+                          # Enable audit logging of sort operations
+                          enabled: false
+                          # Detail level: FULL, SUMMARY, MINIMAL
+                          detailLevel: FULL
+                          # Whether to log preview operations
+                          logPreviews: false
+                          # Maximum size of each audit file in MB before rotation
+                          maxFileSizeMb: 50
+                          # Maximum number of audit files to keep
+                          maxFiles: 7
+                          # Use async writing for better performance on busy servers
+                          asyncWrite: false
                         """;
                 Files.write(configPath, defaultConfig.getBytes(StandardCharsets.UTF_8));
                 LOGGER.info("Created default config.yaml at {}", configPath);
@@ -84,15 +112,68 @@ public final class ConfigManager {
                     } else if (searchRadiusValue instanceof Number radius) {
                         searchRadius = radius.intValue();
                     }
+
+                    // Load audit configuration
+                    Object auditValue = config.get("audit");
+                    if (auditValue instanceof Map<?, ?> auditMap) {
+                        auditConfig = loadAuditConfig((Map<String, Object>) auditMap);
+                    }
                 }
             }
 
             // Configure Log4j2 logger level
             Configurator.setLevel(MODID, logLevel);
-            LOGGER.info("Loaded config: logLevel={}, searchRadius={}", logLevel, searchRadius);
+            LOGGER.info("Loaded config: logLevel={}, searchRadius={}, audit.enabled={}",
+                    logLevel, searchRadius, auditConfig.isEnabled());
         } catch (IOException e) {
             LOGGER.error("Error loading config.yaml", e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static AuditConfig loadAuditConfig(Map<String, Object> auditMap) {
+        boolean enabled = false;
+        AuditConfig.DetailLevel detailLevel = AuditConfig.DetailLevel.FULL;
+        boolean logPreviews = false;
+        int maxFileSizeMb = 50;
+        int maxFiles = 7;
+        boolean asyncWrite = false;
+
+        Object enabledValue = auditMap.get("enabled");
+        if (enabledValue instanceof Boolean b) {
+            enabled = b;
+        }
+
+        Object detailLevelValue = auditMap.get("detailLevel");
+        if (detailLevelValue instanceof String s) {
+            try {
+                detailLevel = AuditConfig.DetailLevel.valueOf(s.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                LOGGER.warn("Invalid audit.detailLevel '{}', using FULL", s);
+            }
+        }
+
+        Object logPreviewsValue = auditMap.get("logPreviews");
+        if (logPreviewsValue instanceof Boolean b) {
+            logPreviews = b;
+        }
+
+        Object maxFileSizeMbValue = auditMap.get("maxFileSizeMb");
+        if (maxFileSizeMbValue instanceof Number n) {
+            maxFileSizeMb = n.intValue();
+        }
+
+        Object maxFilesValue = auditMap.get("maxFiles");
+        if (maxFilesValue instanceof Number n) {
+            maxFiles = n.intValue();
+        }
+
+        Object asyncWriteValue = auditMap.get("asyncWrite");
+        if (asyncWriteValue instanceof Boolean b) {
+            asyncWrite = b;
+        }
+
+        return new AuditConfig(enabled, detailLevel, logPreviews, maxFileSizeMb, maxFiles, asyncWrite);
     }
 }
 

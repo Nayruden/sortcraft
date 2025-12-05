@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.WallSignBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.sortcraft.audit.SortAuditLogger;
 import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.command.CommandHandler;
 import net.sortcraft.command.SortInputCommand;
@@ -39,6 +40,7 @@ public class SortCraft {
 
         // Server stopping: clean up static state (important for integrated server / single-player)
         LifecycleEvent.SERVER_STOPPING.register(server -> {
+            SortAuditLogger.shutdown();
             CategoryLoader.clear();
             ChestHighlighter.clearAll();
             LOGGER.debug("Server stopping - cleared SortCraft static state");

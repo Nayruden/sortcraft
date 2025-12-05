@@ -19,6 +19,10 @@ import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.ChestType;
+import net.sortcraft.audit.AuditConfig;
+import net.sortcraft.audit.ItemMovementRecord;
+import net.sortcraft.audit.SortAuditEntry;
+import net.sortcraft.audit.SortAuditLog;
 import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.container.SortContext;
 import net.sortcraft.sorting.SortingEngine;
@@ -26,6 +30,7 @@ import net.sortcraft.sorting.SortingResults;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Utility class for SortCraft GameTests.
@@ -539,5 +544,202 @@ public final class TestHelper {
             helper.fail(Component.literal("Expected shulker to contain " + expectedCount +
                     " of " + itemType + " but found " + total));
         }
+    }
+
+    // ========== Audit Testing Helpers ==========
+
+    /**
+     * Result holder for sort operations with audit data.
+     */
+    public record AuditedSortResult(SortingResults results, SortAuditEntry auditEntry) {}
+
+    /**
+     * Executes a sort operation with audit logging enabled.
+     * Creates a mock player context for audit purposes.
+     *
+     * @param helper   The GameTestHelper
+     * @param inputPos The relative position of the input chest
+     * @param radius   The search radius for category chests
+     * @return AuditedSortResult containing both sorting results and audit entry
+     */
+    public static AuditedSortResult executeSortWithAudit(GameTestHelper helper, BlockPos inputPos, int radius) {
+        ServerLevel level = helper.getLevel();
+        BlockPos absInputPos = helper.absolutePos(inputPos);
+        SortContext context = new SortContext(level, absInputPos, radius);
+        Container inputContainer = getChestContainer(helper, inputPos);
+        if (inputContainer == null) {
+            throw new IllegalStateException("No chest container at " + inputPos);
+        }
+
+        // Create audit log with test player info
+        SortAuditLog audit = SortAuditLog.startForTest(
+                "TestPlayer",
+                UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                level.dimension().location().toString(),
+                absInputPos,
+                radius,
+                false
+        );
+
+        SortingResults results = SortingEngine.sortFromContainer(context, level, inputContainer, false, audit);
+        SortAuditEntry entry = audit.complete(results);
+
+        return new AuditedSortResult(results, entry);
+    }
+
+    /**
+     * Executes a sort operation with audit logging using default radius of 5.
+     */
+    public static AuditedSortResult executeSortWithAudit(GameTestHelper helper, BlockPos inputPos) {
+        return executeSortWithAudit(helper, inputPos, 5);
+    }
+
+    /**
+     * Asserts that a JSON string contains a specific key.
+     */
+    public static void assertJsonContains(GameTestHelper helper, String json, String key) {
+        if (!json.contains("\"" + key + "\"")) {
+            helper.fail(Component.literal("Expected JSON to contain key '" + key + "' but it didn't"));
+        }
+    }
+
+    /**
+     * Asserts that a JSON string does NOT contain a specific key.
+     */
+    public static void assertJsonNotContains(GameTestHelper helper, String json, String key) {
+        if (json.contains("\"" + key + "\"")) {
+            helper.fail(Component.literal("Expected JSON to NOT contain key '" + key + "' but it did"));
+        }
+    }
+
+    /**
+     * Validates audit entry at all three detail levels.
+     * Returns the FULL json for additional assertions.
+     */
+    public static String validateAuditDetailLevels(GameTestHelper helper, SortAuditEntry entry,
+                                                    boolean expectMovements, boolean expectCategorySummary) {
+        String fullJson = entry.toJson(AuditConfig.DetailLevel.FULL);
+        String summaryJson = entry.toJson(AuditConfig.DetailLevel.SUMMARY);
+        String minimalJson = entry.toJson(AuditConfig.DetailLevel.MINIMAL);
+
+        // Core fields should always be present
+        for (String json : new String[]{fullJson, summaryJson, minimalJson}) {
+            assertJsonContains(helper, json, "operationId");
+            assertJsonContains(helper, json, "timestamp");
+            assertJsonContains(helper, json, "playerName");
+            assertJsonContains(helper, json, "status");
+            assertJsonContains(helper, json, "totalItemsSorted");
+        }
+
+        // FULL should have movements if there are any
+        if (expectMovements) {
+            assertJsonContains(helper, fullJson, "movements");
+        }
+        // SUMMARY and MINIMAL should never have movements
+        assertJsonNotContains(helper, summaryJson, "movements");
+        assertJsonNotContains(helper, minimalJson, "movements");
+
+        // FULL and SUMMARY should have categorySummary if there are any
+        if (expectCategorySummary) {
+            assertJsonContains(helper, fullJson, "categorySummary");
+            assertJsonContains(helper, summaryJson, "categorySummary");
+        }
+        // MINIMAL should never have categorySummary
+        assertJsonNotContains(helper, minimalJson, "categorySummary");
+
+        return fullJson;
+    }
+
+    /**
+     * Asserts that the audit entry's unknownItems contains all specified item IDs.
+     * Throws AssertionError on failure to prevent helper.succeed() from being called.
+     */
+    public static void assertUnknownItemsContain(GameTestHelper helper, SortAuditEntry entry, String... expectedItems) {
+        for (String item : expectedItems) {
+            if (!entry.unknownItems().contains(item)) {
+                throw new AssertionError("Expected unknown items to contain '" + item + "'");
+            }
+        }
+    }
+
+    /**
+     * Asserts that the audit entry's overflowCategories contains all specified categories.
+     * Throws AssertionError on failure to prevent helper.succeed() from being called.
+     */
+    public static void assertOverflowCategoriesContain(GameTestHelper helper, SortAuditEntry entry, String... expectedCategories) {
+        for (String category : expectedCategories) {
+            if (!entry.overflowCategories().contains(category)) {
+                throw new AssertionError("Expected overflow categories to contain '" + category + "'");
+            }
+        }
+    }
+
+    /**
+     * Asserts that the audit entry's movements contain an expected ItemMovementRecord.
+     * Since the sorting engine records movements per-stack (not aggregated), this method
+     * aggregates all movements with matching itemId, category, and destinationPos, then
+     * compares the total quantity.
+     * Throws AssertionError on failure to prevent helper.succeed() from being called.
+     */
+    public static void assertMovementExists(GameTestHelper helper, SortAuditEntry entry, ItemMovementRecord expected) {
+        // Aggregate movements by itemId + category + destinationPos
+        int totalQuantity = 0;
+        boolean foundAny = false;
+        for (var actual : entry.movements()) {
+            if (actual.itemId().equals(expected.itemId()) &&
+                actual.category().equals(expected.category()) &&
+                actual.destinationPos().equals(expected.destinationPos())) {
+                totalQuantity += actual.quantity();
+                foundAny = true;
+            }
+        }
+
+        if (!foundAny) {
+            StringBuilder msg = new StringBuilder("No movements found for item: " + expected.itemId() +
+                    " to category: " + expected.category() + " at position: " + expected.destinationPos());
+            msg.append("\nActual movements:");
+            for (var actual : entry.movements()) {
+                msg.append("\n  - ").append(actual);
+            }
+            throw new AssertionError(msg.toString());
+        }
+
+        if (totalQuantity != expected.quantity()) {
+            StringBuilder msg = new StringBuilder("Quantity mismatch for " + expected.itemId() +
+                    " to " + expected.category() + " at " + expected.destinationPos() +
+                    ": expected " + expected.quantity() + " but got " + totalQuantity);
+            msg.append("\nActual movements:");
+            for (var actual : entry.movements()) {
+                msg.append("\n  - ").append(actual);
+            }
+            throw new AssertionError(msg.toString());
+        }
+    }
+
+    /**
+     * Asserts that the audit entry's movements contain all expected ItemMovementRecords.
+     * Each expected record is compared by aggregating movements with matching itemId, category,
+     * and destinationPos, then comparing the total quantity.
+     * Throws AssertionError on failure to prevent helper.succeed() from being called.
+     */
+    public static void assertMovementsExist(GameTestHelper helper, SortAuditEntry entry, ItemMovementRecord... expectedMovements) {
+        for (ItemMovementRecord expected : expectedMovements) {
+            assertMovementExists(helper, entry, expected);
+        }
+    }
+
+    /**
+     * Creates an ItemMovementRecord for testing. Convenience method to construct records in tests.
+     * The destinationPos should be an absolute position from helper.absolutePos().
+     */
+    public static ItemMovementRecord movement(String itemId, int quantity, String category, BlockPos destinationPos, boolean partial) {
+        return new ItemMovementRecord(itemId, quantity, category, destinationPos, partial);
+    }
+
+    /**
+     * Creates an ItemMovementRecord for testing with partial=false (the common case).
+     */
+    public static ItemMovementRecord movement(String itemId, int quantity, String category, BlockPos destinationPos) {
+        return new ItemMovementRecord(itemId, quantity, category, destinationPos, false);
     }
 }

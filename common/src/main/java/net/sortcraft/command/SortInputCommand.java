@@ -1,7 +1,6 @@
 package net.sortcraft.command;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -11,10 +10,11 @@ import net.minecraft.world.Container;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.sortcraft.audit.SortAuditLog;
+import net.sortcraft.audit.SortAuditLogger;
 import net.sortcraft.config.ConfigManager;
 import net.sortcraft.container.ContainerHelper;
 import net.sortcraft.container.SortContext;
-import net.sortcraft.highlight.ChestHighlighter;
 import net.sortcraft.sorting.SortingEngine;
 import net.sortcraft.sorting.SortingResults;
 import org.slf4j.Logger;
@@ -78,7 +78,17 @@ public final class SortInputCommand {
 
         LOGGER.debug("[sortinput] Input chest inventory loaded. Beginning sort.");
 
-        SortingResults results = SortingEngine.sortFromContainer(context, world, inputInv, preview);
+        // Start audit logging if enabled
+        SortAuditLog audit = SortAuditLogger.isEnabled() && (!preview || SortAuditLogger.shouldLogPreviews())
+                ? SortAuditLog.start(player, world, chestPos, searchRadius, preview)
+                : null;
+
+        SortingResults results = SortingEngine.sortFromContainer(context, world, inputInv, preview, audit);
+
+        // Complete and log the audit entry
+        if (audit != null) {
+            audit.completeAndLog(results);
+        }
 
         StringBuilder message = new StringBuilder();
         message.append(SortingEngine.summarize(results.overflowCategories, "⚠ Storage overflow in following categories:"));

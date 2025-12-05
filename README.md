@@ -411,6 +411,71 @@ searchRadius: 64
 
 ---
 
+## 📊 **Audit Logging**
+
+SortCraft includes an optional audit logging system that records all sorting operations to structured JSONL files. This is useful for server administrators who want to track item movements or debug sorting issues.
+
+### **Enabling Audit Logging**
+
+Add an `audit` section to your `config/sortcraft/config.yaml`:
+
+```yaml
+# Audit logging configuration
+audit:
+  enabled: true
+  detailLevel: SUMMARY    # FULL, SUMMARY, or MINIMAL
+  logPreviews: false      # Whether to log preview operations
+  asyncWrite: true        # Write logs asynchronously (recommended)
+  maxFileSizeMb: 10       # Rotate log files at this size
+  maxFiles: 7             # Keep this many rotated log files
+```
+
+### **Detail Levels**
+
+| Level     | Description                                                                 |
+|-----------|-----------------------------------------------------------------------------|
+| `FULL`    | Complete details including every item movement with source/destination positions |
+| `SUMMARY` | Category counts and totals without individual movement records              |
+| `MINIMAL` | Only logs failed or partial operations (errors and warnings)                |
+
+### **Log Format**
+
+Audit logs are written to `logs/sortcraft/audit-YYYY-MM-DD.log` in JSONL format (one JSON object per line). Each entry includes:
+
+- **operationId**: Unique identifier for the sort operation
+- **timestamp**: When the operation occurred (ISO 8601 format)
+- **playerName/playerUuid**: Who initiated the sort
+- **dimension**: Which dimension the sort occurred in
+- **operationType**: `SORT` or `PREVIEW`
+- **inputChestPos**: Position of the input chest
+- **status**: `SUCCESS`, `PARTIAL_SUCCESS`, or `FAILED`
+- **totalItemsProcessed/totalItemsSorted**: Item counts
+- **durationMs**: How long the operation took
+- **categoryCounts**: Items sorted per category (SUMMARY and FULL)
+- **movements**: Individual item movements (FULL only)
+- **unknownItems**: Items that couldn't be categorized
+- **overflowCategories**: Categories that ran out of space
+
+### **Example Log Entry (SUMMARY level)**
+
+```json
+{
+  "operationId": "a1b2c3d4-...",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "playerName": "Steve",
+  "dimension": "minecraft:overworld",
+  "operationType": "SORT",
+  "inputChestPos": {"x": 100, "y": 64, "z": 200},
+  "status": "SUCCESS",
+  "totalItemsProcessed": 256,
+  "totalItemsSorted": 256,
+  "durationMs": 45,
+  "categoryCounts": {"swords": 5, "pickaxes": 12, "cobblestone": 239}
+}
+```
+
+---
+
 ## 🚀 **Start Sorting Your World Today**
 
 SortCraft brings **peace and order** to your Minecraft storage chaos. Configure your categories, place your signs, and let SortCraft handle the rest.

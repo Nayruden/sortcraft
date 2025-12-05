@@ -60,6 +60,14 @@ public final class TestCategories {
             - minecraft:iron_axe
         """;
 
+    /** Single category: gems (diamonds and emeralds) */
+    public static final String GEMS = """
+        gems:
+          items:
+            - minecraft:diamond
+            - minecraft:emerald
+        """;
+
     // ========== Multi-Category Definitions ==========
 
     /** Two categories: swords and containers */
@@ -87,6 +95,25 @@ public final class TestCategories {
         cobblestone:
           items:
             - minecraft:cobblestone
+        """;
+
+    /** Four categories for audit tests: swords, cobblestone, gems, containers */
+    public static final String AUDIT_MULTI = """
+        swords:
+          items:
+            - minecraft:diamond_sword
+            - minecraft:iron_sword
+        cobblestone:
+          items:
+            - minecraft:cobblestone
+        gems:
+          items:
+            - minecraft:diamond
+            - minecraft:emerald
+        containers:
+          items:
+            - minecraft:shulker_box
+            - minecraft:bundle
         """;
 
     /** Four categories: swords, pickaxes, axes, cobblestone (for performance tests) */
