@@ -383,6 +383,60 @@ equipment:
   - gear
 ```
 
+#### `durability`
+
+Matches items based on their durability percentage. Supports comparison operators and a wildcard for any damageable item.
+
+| Value      | Description                                              |
+|------------|----------------------------------------------------------|
+| `<50%`     | Items with less than 50% durability remaining            |
+| `<=25%`    | Items with 25% or less durability remaining              |
+| `>75%`     | Items with more than 75% durability remaining            |
+| `>=50%`    | Items with 50% or more durability remaining              |
+| `=100%`    | Pristine items (no damage taken)                         |
+| `*`        | Any damageable item (tools, weapons, armor)              |
+
+**Notes:**
+- Non-damageable items (sticks, blocks, etc.) are treated as having 100% durability for comparison operators
+- Non-damageable items do NOT match `durability: "*"` - use this to filter for only damageable items
+- Durability is calculated as: `(maxDurability - currentDamage) / maxDurability * 100`
+
+```yaml
+# Damaged tools that need repair
+damaged_tools:
+  priority: 3
+  filters:
+  - durability: "<50%"
+  includes:
+  - tools
+
+# Pristine armor only
+pristine_armor:
+  priority: 2
+  filters:
+  - durability: "=100%"
+  includes:
+  - armor
+
+# Any damageable item (excludes sticks, blocks, etc.)
+equipment:
+  filters:
+  - durability: "*"
+  items:
+  - /.*:.*_sword/
+  - /.*:.*_pickaxe/
+  - /.*:.*_axe/
+  - minecraft:stick    # Won't match - sticks aren't damageable
+
+# Mid-range durability (25-75%)
+worn_gear:
+  filters:
+  - durability: ">=25%"
+  - durability: "<=75%"
+  includes:
+  - gear
+```
+
 ### **Multiple Filters**
 
 When multiple filters are specified, items must match **ALL** filters (AND logic):

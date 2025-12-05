@@ -64,7 +64,7 @@ public final class WhereIsCommand {
 
         Map<BlockPos, Iterable<ItemStack>> foundStorage = new HashMap<>();
         for (Map.Entry<BlockPos, Container> entry : containerCache.entrySet()) {
-            foundStorage.put(entry.getKey(), containerToIterable(entry.getValue()));
+            foundStorage.put(entry.getKey(), ContainerHelper.containerToIterable(entry.getValue()));
         }
 
         List<BlockPos> validPositions = foundStorage.entrySet().stream()
@@ -100,23 +100,6 @@ public final class WhereIsCommand {
             }
         }
         return false;
-    }
-
-    private static Iterable<ItemStack> containerToIterable(Container container) {
-        return () -> new java.util.Iterator<>() {
-            private int index = 0;
-            private final int size = container.getContainerSize();
-
-            @Override
-            public boolean hasNext() {
-                return index < size;
-            }
-
-            @Override
-            public ItemStack next() {
-                return container.getItem(index++);
-            }
-        };
     }
 }
 

@@ -418,5 +418,296 @@ public class FilterTest extends SortCraftBootstrapTestBase {
         assertStackMatchesCategory(named, "named_swords");
         assertStackDoesNotMatchCategory(plain, "named_swords");
     }
+
+    // ========== Durability Filter ==========
+
+    /**
+     * Helper to create a damaged item with specific durability percentage.
+     * @param item The damageable item
+     * @param durabilityPercent The desired durability (0-100)
+     * @return ItemStack with the specified durability
+     */
+    private ItemStack damagedStack(net.minecraft.world.item.Item item, int durabilityPercent) {
+        ItemStack stack = new ItemStack(item);
+        int maxDamage = stack.getMaxDamage();
+        if (maxDamage == 0) {
+            throw new IllegalArgumentException("Item " + item + " is not damageable");
+        }
+        // durability% = (maxDamage - damage) / maxDamage * 100
+        // damage = maxDamage - (durability% * maxDamage / 100)
+        int damage = maxDamage - (durabilityPercent * maxDamage / 100);
+        stack.setDamageValue(damage);
+        return stack;
+    }
+
+    @Test
+    void durabilityFilterMatchesDamagedItems() {
+        String yaml = """
+            damaged_tools:
+              items:
+              - minecraft:diamond_pickaxe
+              filters:
+              - durability: "<50%"
+            """;
+        loadCategories(yaml);
+
+        // 25% durability should match <50%
+        ItemStack damaged = damagedStack(Items.DIAMOND_PICKAXE, 25);
+        assertStackMatchesCategory(damaged, "damaged_tools");
+
+        // 75% durability should NOT match <50%
+        ItemStack healthy = damagedStack(Items.DIAMOND_PICKAXE, 75);
+        assertStackDoesNotMatchCategory(healthy, "damaged_tools");
+
+        // 100% (pristine) should NOT match <50%
+        ItemStack pristine = new ItemStack(Items.DIAMOND_PICKAXE);
+        assertStackDoesNotMatchCategory(pristine, "damaged_tools");
+    }
+
+    @Test
+    void durabilityFilterMatchesPristineItems() {
+        String yaml = """
+            pristine_armor:
+              items:
+              - minecraft:diamond_chestplate
+              filters:
+              - durability: "=100%"
+            """;
+        loadCategories(yaml);
+
+        // Pristine (no damage) should match =100%
+        ItemStack pristine = new ItemStack(Items.DIAMOND_CHESTPLATE);
+        assertStackMatchesCategory(pristine, "pristine_armor");
+
+        // Any damage should NOT match =100%
+        ItemStack damaged = damagedStack(Items.DIAMOND_CHESTPLATE, 99);
+        assertStackDoesNotMatchCategory(damaged, "pristine_armor");
+    }
+
+    @Test
+    void durabilityFilterWithGreaterThan() {
+        String yaml = """
+            healthy_tools:
+              items:
+              - minecraft:iron_sword
+              filters:
+              - durability: ">75%"
+            """;
+        loadCategories(yaml);
+
+        // 90% should match >75%
+        ItemStack healthy = damagedStack(Items.IRON_SWORD, 90);
+        assertStackMatchesCategory(healthy, "healthy_tools");
+
+        // 75% should NOT match >75% (not greater than)
+        ItemStack borderline = damagedStack(Items.IRON_SWORD, 75);
+        assertStackDoesNotMatchCategory(borderline, "healthy_tools");
+
+        // 50% should NOT match >75%
+        ItemStack damaged = damagedStack(Items.IRON_SWORD, 50);
+        assertStackDoesNotMatchCategory(damaged, "healthy_tools");
+    }
+
+    @Test
+    void durabilityFilterWithGreaterThanOrEqual() {
+        String yaml = """
+            usable_tools:
+              items:
+              - minecraft:iron_axe
+              filters:
+              - durability: ">=50%"
+            """;
+        loadCategories(yaml);
+
+        // 50% should match >=50%
+        ItemStack borderline = damagedStack(Items.IRON_AXE, 50);
+        assertStackMatchesCategory(borderline, "usable_tools");
+
+        // 75% should match >=50%
+        ItemStack healthy = damagedStack(Items.IRON_AXE, 75);
+        assertStackMatchesCategory(healthy, "usable_tools");
+
+        // 25% should NOT match >=50%
+        ItemStack damaged = damagedStack(Items.IRON_AXE, 25);
+        assertStackDoesNotMatchCategory(damaged, "usable_tools");
+    }
+
+    @Test
+    void durabilityFilterWithLessThanOrEqual() {
+        String yaml = """
+            worn_gear:
+              items:
+              - minecraft:diamond_helmet
+              filters:
+              - durability: "<=25%"
+            """;
+        loadCategories(yaml);
+
+        // 25% should match <=25%
+        ItemStack borderline = damagedStack(Items.DIAMOND_HELMET, 25);
+        assertStackMatchesCategory(borderline, "worn_gear");
+
+        // 10% should match <=25%
+        ItemStack veryDamaged = damagedStack(Items.DIAMOND_HELMET, 10);
+        assertStackMatchesCategory(veryDamaged, "worn_gear");
+
+        // 50% should NOT match <=25%
+        ItemStack healthy = damagedStack(Items.DIAMOND_HELMET, 50);
+        assertStackDoesNotMatchCategory(healthy, "worn_gear");
+    }
+
+    @Test
+    void durabilityFilterWildcardMatchesDamageableItems() {
+        String yaml = """
+            damageable:
+              items:
+              - minecraft:diamond_sword
+              - minecraft:stick
+              filters:
+              - durability: "*"
+            """;
+        loadCategories(yaml);
+
+        // Diamond sword is damageable - should match
+        ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
+        assertStackMatchesCategory(sword, "damageable");
+
+        // Stick is NOT damageable - should NOT match
+        ItemStack stick = new ItemStack(Items.STICK);
+        assertStackDoesNotMatchCategory(stick, "damageable");
+    }
+
+    @Test
+    void durabilityFilterNonDamageableItemsTreatedAs100Percent() {
+        // Non-damageable items should be treated as 100% durability for comparison operators
+        String yaml = """
+            pristine:
+              items:
+              - minecraft:cobblestone
+              filters:
+              - durability: "=100%"
+            damaged:
+              items:
+              - minecraft:cobblestone
+              filters:
+              - durability: "<100%"
+            """;
+        loadCategories(yaml);
+
+        ItemStack cobble = new ItemStack(Items.COBBLESTONE);
+
+        // Cobblestone (non-damageable) should match =100%
+        assertStackMatchesCategory(cobble, "pristine");
+
+        // Cobblestone should NOT match <100%
+        assertStackDoesNotMatchCategory(cobble, "damaged");
+    }
+
+    @Test
+    void durabilityFilterNegation() {
+        String yaml = """
+            not_damaged:
+              items:
+              - minecraft:diamond_sword
+              filters:
+              - "!durability": "<50%"
+            """;
+        loadCategories(yaml);
+
+        // 75% durability should match (NOT <50%)
+        ItemStack healthy = damagedStack(Items.DIAMOND_SWORD, 75);
+        assertStackMatchesCategory(healthy, "not_damaged");
+
+        // 25% durability should NOT match (it IS <50%)
+        ItemStack damaged = damagedStack(Items.DIAMOND_SWORD, 25);
+        assertStackDoesNotMatchCategory(damaged, "not_damaged");
+    }
+
+    @Test
+    void durabilityFilterCombinedWithOtherFilters() {
+        String yaml = """
+            named_damaged:
+              items:
+              - minecraft:diamond_sword
+              filters:
+              - durability: "<50%"
+              - custom_name: "*"
+            """;
+        loadCategories(yaml);
+
+        // Named AND damaged should match
+        ItemStack namedDamaged = damagedStack(Items.DIAMOND_SWORD, 25);
+        namedDamaged.set(DataComponents.CUSTOM_NAME, Component.literal("Old Faithful"));
+        assertStackMatchesCategory(namedDamaged, "named_damaged");
+
+        // Damaged but NOT named should NOT match
+        ItemStack unnamedDamaged = damagedStack(Items.DIAMOND_SWORD, 25);
+        assertStackDoesNotMatchCategory(unnamedDamaged, "named_damaged");
+
+        // Named but NOT damaged should NOT match
+        ItemStack namedHealthy = new ItemStack(Items.DIAMOND_SWORD);
+        namedHealthy.set(DataComponents.CUSTOM_NAME, Component.literal("Excalibur"));
+        assertStackDoesNotMatchCategory(namedHealthy, "named_damaged");
+    }
+
+    @Test
+    void durabilityFilterMultipleRanges() {
+        // Test using multiple durability filters to create a range
+        String yaml = """
+            mid_durability:
+              items:
+              - minecraft:diamond_pickaxe
+              filters:
+              - durability: ">=25%"
+              - durability: "<=75%"
+            """;
+        loadCategories(yaml);
+
+        // 50% should match (between 25% and 75%)
+        ItemStack mid = damagedStack(Items.DIAMOND_PICKAXE, 50);
+        assertStackMatchesCategory(mid, "mid_durability");
+
+        // 10% should NOT match (below 25%)
+        ItemStack low = damagedStack(Items.DIAMOND_PICKAXE, 10);
+        assertStackDoesNotMatchCategory(low, "mid_durability");
+
+        // 90% should NOT match (above 75%)
+        ItemStack high = damagedStack(Items.DIAMOND_PICKAXE, 90);
+        assertStackDoesNotMatchCategory(high, "mid_durability");
+    }
+
+    @Test
+    void durabilityFilterInvalidExpressionNotLoaded() {
+        String yaml = """
+            bad_durability:
+              items:
+              - minecraft:diamond_sword
+              filters:
+              - durability: "invalid"
+            """;
+
+        int loaded = loadCategories(yaml);
+
+        // Category should NOT be loaded due to invalid filter expression
+        assertEquals(0, loaded, "Category with invalid durability filter should not be loaded");
+        assertNull(CategoryLoader.getCategories().get("bad_durability"),
+                "Category with invalid durability filter should not exist");
+    }
+
+    @Test
+    void durabilityFilterEmptyValueNotLoaded() {
+        String yaml = """
+            empty_durability:
+              items:
+              - minecraft:diamond_sword
+              filters:
+              - durability: ""
+            """;
+
+        int loaded = loadCategories(yaml);
+
+        // Category should NOT be loaded due to empty filter value
+        assertEquals(0, loaded, "Category with empty durability filter should not be loaded");
+    }
 }
 

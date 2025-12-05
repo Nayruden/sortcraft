@@ -28,7 +28,21 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 /**
- * Core sorting engine that distributes items to categorized chests.
+ * Core sorting engine that distributes items from input containers to categorized destination chests.
+ *
+ * <p>The sorting process works as follows:
+ * <ol>
+ *   <li>Items are taken from the source container (the chest with an [input] sign)</li>
+ *   <li>Each item is matched against loaded categories using {@link CategoryLoader#getMatchingCategories}</li>
+ *   <li>Items are distributed to destination chests (those with [category] signs) in priority order</li>
+ *   <li>Containers (bundles, shulker boxes) are handled recursively - their contents are sorted individually</li>
+ * </ol>
+ *
+ * <p>The engine supports both actual sorting and preview mode, where items are counted but not moved.
+ *
+ * @see SortingResults for the result structure
+ * @see SortContext for the search context
+ * @see CategoryLoader for category matching
  */
 public final class SortingEngine {
     private SortingEngine() {}
@@ -38,14 +52,20 @@ public final class SortingEngine {
 
     /**
      * Sorts all items from the source container into categorized chests.
-     * Handles containers (bundles, shulker boxes) recursively.
-     * Automatically cleans up empty stacks in the source container after sorting.
      *
-     * @param context The sort context with position and search radius
-     * @param world The server level
-     * @param sourceContainer The container to sort items FROM
-     * @param preview If true, only calculate what would be sorted without moving items
-     * @return Results containing counts of sorted items and any overflow/unknown items
+     * <p>This is the main entry point for sorting operations. It handles:
+     * <ul>
+     *   <li>Regular items - matched by category and distributed to destination chests</li>
+     *   <li>Containers (bundles, shulker boxes) - contents sorted recursively</li>
+     *   <li>Uniform containers - if a container has 10+ stacks of the same item, the container itself is sorted</li>
+     *   <li>Cleanup - empty stacks are replaced with ItemStack.EMPTY to prevent save errors</li>
+     * </ul>
+     *
+     * @param context The sort context containing position, search radius, and cached signs/containers
+     * @param world The server level where sorting takes place
+     * @param sourceContainer The container to sort items FROM (typically the [input] chest)
+     * @param preview If true, only calculate what would be sorted without actually moving items
+     * @return Results containing counts of sorted items, overflow categories, and unknown items
      */
     public static SortingResults sortFromContainer(SortContext context, ServerLevel world, Container sourceContainer, boolean preview) {
         return sortFromContainer(context, world, sourceContainer, preview, null);
@@ -54,16 +74,19 @@ public final class SortingEngine {
     /**
      * Sorts all items from the source container into categorized chests with optional audit logging.
      *
-     * @param context The sort context with position and search radius
-     * @param world The server level
-     * @param sourceContainer The container to sort items FROM
-     * @param preview If true, only calculate what would be sorted without moving items
-     * @param audit Optional audit log to record item movements (can be null)
-     * @return Results containing counts of sorted items and any overflow/unknown items
+     * <p>Same as {@link #sortFromContainer(SortContext, ServerLevel, Container, boolean)} but with
+     * audit logging support for tracking item movements.
+     *
+     * @param context The sort context containing position, search radius, and cached signs/containers
+     * @param world The server level where sorting takes place
+     * @param sourceContainer The container to sort items FROM (typically the [input] chest)
+     * @param preview If true, only calculate what would be sorted without actually moving items
+     * @param audit Optional audit log to record item movements (can be null to disable logging)
+     * @return Results containing counts of sorted items, overflow categories, and unknown items
      */
     public static SortingResults sortFromContainer(SortContext context, ServerLevel world, Container sourceContainer,
                                                    boolean preview, SortAuditLog audit) {
-        SortingResults results = sortStacks(context, world, containerToIterable(sourceContainer), preview, audit);
+        SortingResults results = sortStacks(context, world, ContainerHelper.containerToIterable(sourceContainer), preview, audit);
 
         // Clean up empty stacks (count=0) left behind by shrink() to prevent chunk save errors
         if (!preview) {
@@ -220,6 +243,15 @@ public final class SortingEngine {
 
     /**
      * Finds all chests associated with a category sign.
+     *
+     * <p>Searches for a wall sign with text matching "[categoryName]" and returns
+     * all chests in the vertical stack attached to that sign. Chests are returned
+     * in bottom-to-top order for filling.
+     *
+     * @param context The sort context with cached sign positions
+     * @param world The server level
+     * @param categoryName The category name to search for (without brackets)
+     * @return List of ChestRef objects for the category's chests, or empty list if not found
      */
     public static List<ChestRef> findCategoryChests(SortContext context, ServerLevel world, String categoryName) {
         String signText = CommandHandler.formatSignText(categoryName);
@@ -249,7 +281,20 @@ public final class SortingEngine {
 
     /**
      * Distributes items from a stack to the given chests.
-     * Returns the number of items moved.
+     *
+     * <p>Items are distributed using a two-pass algorithm:
+     * <ol>
+     *   <li>First pass: merge with existing stacks of the same item type</li>
+     *   <li>Second pass: fill empty slots with new stacks</li>
+     * </ol>
+     *
+     * <p>Chests are processed in order (typically bottom-to-top for vertical stacks).
+     * In preview mode, the stack is not modified.
+     *
+     * @param stack The item stack to distribute (will be shrunk by the amount moved unless preview)
+     * @param chests The destination chests to fill
+     * @param preview If true, calculate space without actually moving items
+     * @return The number of items that were (or would be) moved
      */
     public static int distributeToChests(ItemStack stack, List<ChestRef> chests, boolean preview) {
         int originalCount = stack.getCount();
@@ -292,30 +337,13 @@ public final class SortingEngine {
     }
 
     /**
-     * Converts a Container to an Iterable of ItemStacks.
-     * Returns actual references to stacks in the container (not copies).
-     */
-    private static Iterable<ItemStack> containerToIterable(Container container) {
-        return () -> new Iterator<>() {
-            private int index = 0;
-            private final int size = container.getContainerSize();
-
-            @Override
-            public boolean hasNext() {
-                return index < size;
-            }
-
-            @Override
-            public ItemStack next() {
-                return container.getItem(index++);
-            }
-        };
-    }
-
-    /**
-     * Cleans up a container after sorting by replacing empty stacks (count=0) with ItemStack.EMPTY.
-     * This is necessary because shrink() can leave stacks with count=0 in the container,
-     * which causes errors when Minecraft tries to save the chunk.
+     * Cleans up a container after sorting by replacing empty stacks with ItemStack.EMPTY.
+     *
+     * <p>This is necessary because {@link ItemStack#shrink(int)} can leave stacks with count=0
+     * in the container, which causes errors when Minecraft tries to save the chunk.
+     * This method ensures all empty slots contain the canonical ItemStack.EMPTY instance.
+     *
+     * @param container The container to clean up
      */
     public static void cleanupContainer(Container container) {
         for (int i = 0; i < container.getContainerSize(); i++) {
@@ -327,7 +355,14 @@ public final class SortingEngine {
     }
 
     /**
-     * Summarizes a set of items/categories into a message string.
+     * Summarizes a set of items or categories into a formatted message string.
+     *
+     * <p>Creates a bulleted list with the given header. Used for displaying
+     * overflow categories and unknown items in sorting result messages.
+     *
+     * @param items The set of item/category names to summarize
+     * @param header The header text to display before the list
+     * @return Formatted string with header and bulleted items, or empty string if items is empty
      */
     public static String summarize(Set<String> items, String header) {
         if (items.isEmpty()) return "";

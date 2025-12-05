@@ -30,7 +30,6 @@ public final class SortInputCommand {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
     private static final int INPUT_SIGN_SEARCH_RADIUS = 20;
-    private static final int HIGHLIGHT_DURATION_TICKS = 3 * 20; // 3 seconds
 
     public static int execute(CommandSourceStack source, boolean preview) throws CommandSyntaxException {
         ServerPlayer player = source.getPlayer();

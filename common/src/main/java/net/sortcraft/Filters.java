@@ -11,6 +11,8 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.sortcraft.compat.RegistryHelper;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -55,6 +57,13 @@ final class Filters {
 
             case "stackable" ->
                 new StackableFilterRule();
+
+            case "durability" -> {
+                if (value == null || value.isEmpty()) {
+                    throw new IllegalArgumentException("Durability filter requires a value (e.g., '<50%', '>=75%', '=100%', or '*')");
+                }
+                yield new DurabilityFilterRule(value);
+            }
 
             default ->
                 throw new IllegalArgumentException("Unknown filter key: " + key);
@@ -187,5 +196,122 @@ class StackableFilterRule implements FilterRule {
   public boolean matches(ItemStack stack) {
     return stack != null && !stack.isEmpty() && stack.getItem().getDefaultMaxStackSize() != 1;
   }
+}
+
+/**
+ * Filter rule that matches items based on their durability percentage.
+ * Supports comparison operators (<, <=, >, >=, =) with percentage values,
+ * or '*' to match any damageable item.
+ *
+ * <p>Examples:
+ * <ul>
+ *   <li>{@code durability: "<50%"} - items with less than 50% durability</li>
+ *   <li>{@code durability: ">=75%"} - items with 75% or more durability</li>
+ *   <li>{@code durability: "=100%"} - pristine items (no damage)</li>
+ *   <li>{@code durability: "*"} - any damageable item (tools, armor, weapons)</li>
+ * </ul>
+ */
+class DurabilityFilterRule implements FilterRule {
+    // Matches expressions like "<50%", ">=75%", "=100%"
+    private static final Pattern DURABILITY_PATTERN =
+            Pattern.compile("^(<=?|>=?|=)(\\d{1,3})%$");
+
+    private final MatchType matchType;
+    private final ComparisonOperator operator;
+    private final int threshold;
+
+    enum MatchType {
+        ANY_DAMAGEABLE,  // "*" - matches any item that has durability
+        COMPARISON       // Comparison expression like "<50%"
+    }
+
+    enum ComparisonOperator {
+        LT("<"),
+        LE("<="),
+        GT(">"),
+        GE(">="),
+        EQ("=");
+
+        private final String symbol;
+
+        ComparisonOperator(String symbol) {
+            this.symbol = symbol;
+        }
+
+        static ComparisonOperator fromSymbol(String symbol) {
+            for (ComparisonOperator op : values()) {
+                if (op.symbol.equals(symbol)) {
+                    return op;
+                }
+            }
+            throw new IllegalArgumentException("Unknown operator: " + symbol);
+        }
+
+        boolean test(int actual, int threshold) {
+            return switch (this) {
+                case LT -> actual < threshold;
+                case LE -> actual <= threshold;
+                case GT -> actual > threshold;
+                case GE -> actual >= threshold;
+                case EQ -> actual == threshold;
+            };
+        }
+    }
+
+    public DurabilityFilterRule(String expression) {
+        expression = expression.trim();
+
+        if (expression.equals("*")) {
+            this.matchType = MatchType.ANY_DAMAGEABLE;
+            this.operator = null;
+            this.threshold = 0;
+            return;
+        }
+
+        Matcher matcher = DURABILITY_PATTERN.matcher(expression);
+        if (!matcher.matches()) {
+            throw new IllegalArgumentException(
+                    "Invalid durability expression: '" + expression + "'. " +
+                    "Expected format: <operator><number>% (e.g., '<50%', '>=75%', '=100%') or '*' for any damageable item");
+        }
+
+        this.matchType = MatchType.COMPARISON;
+        this.operator = ComparisonOperator.fromSymbol(matcher.group(1));
+        this.threshold = Integer.parseInt(matcher.group(2));
+
+        if (threshold < 0 || threshold > 100) {
+            throw new IllegalArgumentException(
+                    "Durability threshold must be 0-100%, got: " + threshold);
+        }
+    }
+
+    @Override
+    public boolean matches(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+
+        int maxDamage = stack.getMaxDamage();
+
+        // Non-damageable items (sticks, blocks, etc.) have maxDamage = 0
+        if (maxDamage == 0) {
+            // For ANY_DAMAGEABLE, non-damageable items don't match
+            if (matchType == MatchType.ANY_DAMAGEABLE) {
+                return false;
+            }
+            // For comparison, treat non-damageable items as 100% durability
+            return operator.test(100, threshold);
+        }
+
+        // Item is damageable
+        if (matchType == MatchType.ANY_DAMAGEABLE) {
+            return true;
+        }
+
+        // Calculate durability percentage: (remaining / max) * 100
+        int currentDamage = stack.getDamageValue();
+        int remainingDurability = maxDamage - currentDamage;
+        int durabilityPercent = (remainingDurability * 100) / maxDamage;
+
+        return operator.test(durabilityPercent, threshold);
+    }
 }
 

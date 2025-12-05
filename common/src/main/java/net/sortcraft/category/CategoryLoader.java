@@ -27,6 +27,20 @@ import java.util.stream.Stream;
 
 /**
  * Loads and manages category configurations from YAML files.
+ *
+ * <p>Categories define how items are grouped for sorting. Each category can specify:
+ * <ul>
+ *   <li><b>items</b> - Direct item IDs, regex patterns (/pattern/), or tag references (#tag)</li>
+ *   <li><b>includes</b> - References to other categories to inherit their items</li>
+ *   <li><b>filters</b> - Rules to match items by properties (enchantments, names, durability)</li>
+ *   <li><b>priority</b> - Order in which categories are checked (lower = first, default: 10)</li>
+ * </ul>
+ *
+ * <p>Category files are loaded from {@code config/sortcraft/categories/} on server start.
+ * Use {@link #loadCategoriesFromYaml(String)} for testing or dynamic category loading.
+ *
+ * @see CategoryNode
+ * @see net.sortcraft.FilterRule
  */
 public final class CategoryLoader {
     private CategoryLoader() {}
@@ -37,24 +51,56 @@ public final class CategoryLoader {
     private static final Map<ResourceLocation, Set<CategoryNode>> itemCategoryMap = new HashMap<>();
     private static RegistryAccess currentRegistries;
 
+    /**
+     * Returns all loaded categories, keyed by category name.
+     *
+     * @return Unmodifiable view would be safer, but returns mutable map for performance.
+     *         Do not modify the returned map directly.
+     */
     public static Map<String, CategoryNode> getCategories() {
         return categories;
     }
 
+    /**
+     * Returns the item-to-category mapping built by {@link #flattenCategories()}.
+     * Maps each item ID to the set of categories that include it.
+     *
+     * @return Map from item ResourceLocation to set of matching CategoryNodes
+     */
     public static Map<ResourceLocation, Set<CategoryNode>> getItemCategoryMap() {
         return itemCategoryMap;
     }
 
+    /**
+     * Returns the current registry access used for filter creation.
+     * Set during {@link #loadCategories(MinecraftServer)}.
+     *
+     * @return The registry access, or null if not yet initialized
+     */
     public static RegistryAccess getCurrentRegistries() {
         return currentRegistries;
     }
 
+    /**
+     * Sets the registry access for filter creation.
+     * Called automatically by {@link #loadCategories(MinecraftServer)}.
+     *
+     * @param registries The registry access to use
+     */
     public static void setCurrentRegistries(RegistryAccess registries) {
         currentRegistries = registries;
     }
 
     /**
-     * Clears all loaded categories. Called on server stop.
+     * Clears all loaded categories and resets state.
+     * Called on server stop to free resources and prepare for reload.
+     *
+     * <p>After calling this method:
+     * <ul>
+     *   <li>All categories are removed</li>
+     *   <li>The item-to-category map is cleared</li>
+     *   <li>The registry access reference is nulled</li>
+     * </ul>
      */
     public static void clear() {
         categories.clear();
@@ -63,10 +109,20 @@ public final class CategoryLoader {
     }
 
     /**
-     * Loads categories from a YAML string. Intended for testing purposes.
+     * Loads categories from a YAML string.
+     * Primarily intended for testing purposes, but can be used for dynamic category loading.
+     *
+     * <p>The YAML content should be a map of category names to category definitions:
+     * <pre>{@code
+     * my_category:
+     *   items:
+     *   - minecraft:diamond
+     *   priority: 5
+     * }</pre>
      *
      * @param yamlContent the YAML content to parse
-     * @return the number of categories loaded
+     * @return the number of categories successfully loaded
+     * @see #loadCategories(MinecraftServer) for loading from files
      */
     @SuppressWarnings("unchecked")
     public static int loadCategoriesFromYaml(String yamlContent) {
@@ -112,6 +168,16 @@ public final class CategoryLoader {
 
     /**
      * Loads categories from all YAML files in the categories directory.
+     *
+     * <p>Scans {@code config/sortcraft/categories/} for all {@code .yaml} and {@code .yml} files,
+     * loading them in alphabetical order. If the directory doesn't exist, creates it with an
+     * example category file.
+     *
+     * <p>This method also sets the current registry access from the server, which is required
+     * for filters that reference enchantments or other registry objects.
+     *
+     * @param server The Minecraft server to get registry access from
+     * @see #flattenCategories() Must be called after loading to build the item-to-category map
      */
     @SuppressWarnings("unchecked")
     public static void loadCategories(MinecraftServer server) {
@@ -268,6 +334,15 @@ public final class CategoryLoader {
 
     /**
      * Flattens all categories and builds the item-to-category map.
+     *
+     * <p>This method resolves all {@code includes} references, expanding each category
+     * to contain all items from its included categories (recursively). It also builds
+     * the reverse mapping from item IDs to categories for efficient lookup.
+     *
+     * <p>Must be called after {@link #loadCategories(MinecraftServer)} and before
+     * any sorting operations.
+     *
+     * @throws IllegalStateException if a circular include reference is detected
      */
     public static void flattenCategories() {
         for (String categoryName : categories.keySet()) flattenCategory(categoryName);
@@ -279,7 +354,15 @@ public final class CategoryLoader {
     }
 
     /**
-     * Gets matching categories for an item ID (without filter check).
+     * Gets categories that match an item ID, without checking filters.
+     *
+     * <p>Returns categories sorted by priority (lower priority first).
+     * This method is useful for diagnostics or when you need to see all
+     * potential categories before filter evaluation.
+     *
+     * @param itemId The item's ResourceLocation (e.g., "minecraft:diamond_sword")
+     * @return List of matching categories sorted by priority, or empty list if none match
+     * @see #getMatchingCategories(ItemStack) for filter-aware matching
      */
     public static List<CategoryNode> getMatchingCategoriesNoFilter(ResourceLocation itemId) {
         Set<CategoryNode> categoriesRaw = itemCategoryMap.get(itemId);
@@ -290,7 +373,17 @@ public final class CategoryLoader {
     }
 
     /**
-     * Gets matching categories for an item stack (with filter check).
+     * Gets categories that match an item stack, including filter evaluation.
+     *
+     * <p>First finds categories by item ID, then filters them based on each
+     * category's filter rules (enchantments, custom names, durability, etc.).
+     * Returns categories sorted by priority (lower priority first).
+     *
+     * <p>This is the primary method used by the sorting engine to determine
+     * where an item should be sorted.
+     *
+     * @param stack The item stack to match (must not be null or empty)
+     * @return List of matching categories sorted by priority, or empty list if none match
      */
     public static List<CategoryNode> getMatchingCategories(ItemStack stack) {
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());

@@ -189,5 +189,29 @@ public final class ContainerHelper {
         }
         return null;
     }
+
+    /**
+     * Converts a Container to an Iterable of ItemStacks.
+     * Returns actual references to stacks in the container (not copies).
+     *
+     * @param container The container to iterate over
+     * @return An iterable that provides access to each slot's ItemStack
+     */
+    public static Iterable<ItemStack> containerToIterable(Container container) {
+        return () -> new Iterator<>() {
+            private int index = 0;
+            private final int size = container.getContainerSize();
+
+            @Override
+            public boolean hasNext() {
+                return index < size;
+            }
+
+            @Override
+            public ItemStack next() {
+                return container.getItem(index++);
+            }
+        };
+    }
 }
 
