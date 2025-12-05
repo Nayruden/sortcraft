@@ -245,28 +245,61 @@ ranged:
 
 ---
 
-## 🎛️ **Filters**
+## **Item Tags**
 
-Filters allow you to sort items based on their **properties** (enchantments, custom names, etc.), not just their item type.
+You can use Minecraft's item tags to match groups of related items. Tags are prefixed with `#`.
+
+### **Syntax**
+
+```yaml
+items:
+- "#minecraft:logs"        # All log blocks
+- "#minecraft:planks"      # All plank blocks
+```
+
+### **Common Tags**
+
+| Tag                       | Description                          |
+|---------------------------|--------------------------------------|
+| `#minecraft:logs`         | All log blocks (oak, birch, etc.)    |
+| `#minecraft:planks`       | All plank blocks                     |
+| `#minecraft:wool`         | All wool colors                      |
+| `#minecraft:saplings`     | All sapling types                    |
+| `#minecraft:flowers`      | All flower items                     |
+| `#minecraft:fishes`       | All fish items                       |
+| `#minecraft:coals`        | Coal and charcoal                    |
+
+### **Combining Tags with Other Patterns**
+
+Tags can be mixed with explicit items and regex patterns:
+
+```yaml
+wood_items:
+  items:
+  - "#minecraft:logs"        # All logs via tag
+  - "#minecraft:planks"      # All planks via tag
+  - minecraft:stick          # Explicit item
+  - /.*:.*_wood$/            # Regex pattern
+```
+
+### **Discovering Tags**
+
+Use `/sort dump` to generate JSON files listing all item tags in the game. Output files are placed in `sortcraft-dump/`.
+
+---
+
+## **Filters**
+
+Filters allow you to sort items based on their **properties** (enchantments, custom names, etc.), not just their item type. Filters are applied at the category level to all items that would otherwise match.
 
 ### **Filter Syntax**
 
-Filters can be used in two places:
-
-**1. Category-level filters** (apply to all items in the category):
 ```yaml
 greater_swords:
   filters:
   - enchantment: max
   includes:
   - swords
-```
-
-**2. Item-level filters** (filter all game items, then add matches):
-```yaml
-all_enchanted:
-  items:
-  - enchantment: '*'       # Add ALL enchanted items in the game
 ```
 
 ### **Filter Negation**
@@ -440,39 +473,61 @@ audit:
 
 ### **Log Format**
 
-Audit logs are written to `logs/sortcraft/audit-YYYY-MM-DD.log` in JSONL format (one JSON object per line). Each entry includes:
+Audit logs are written to `logs/sortcraft/audit-YYYY-MM-DD.log` in JSONL format (one JSON object per line).
 
-- **operationId**: Unique identifier for the sort operation
-- **timestamp**: When the operation occurred (ISO 8601 format)
-- **playerName/playerUuid**: Who initiated the sort
-- **dimension**: Which dimension the sort occurred in
-- **operationType**: `SORT` or `PREVIEW`
-- **inputChestPos**: Position of the input chest
-- **status**: `SUCCESS`, `PARTIAL_SUCCESS`, or `FAILED`
-- **totalItemsProcessed/totalItemsSorted**: Item counts
-- **durationMs**: How long the operation took
-- **categoryCounts**: Items sorted per category (SUMMARY and FULL)
-- **movements**: Individual item movements (FULL only)
-- **unknownItems**: Items that couldn't be categorized
-- **overflowCategories**: Categories that ran out of space
+### **Example Log Entry (FULL level)**
 
-### **Example Log Entry (SUMMARY level)**
-
-```json
+```jsonc
 {
   "operationId": "a1b2c3d4-...",
   "timestamp": "2024-01-15T10:30:00Z",
   "playerName": "Steve",
+  "playerUuid": "f7c77d99-...",
   "dimension": "minecraft:overworld",
   "operationType": "SORT",
   "inputChestPos": {"x": 100, "y": 64, "z": 200},
+  "searchRadius": 64,
+  "totalItemsProcessed": 2,
+  "totalItemsSorted": 2,
+  "durationMs": 12,
   "status": "SUCCESS",
-  "totalItemsProcessed": 256,
-  "totalItemsSorted": 256,
-  "durationMs": 45,
-  "categoryCounts": {"swords": 5, "pickaxes": 12, "cobblestone": 239}
+  "errorMessage": null,
+  "movements": [                                            // movements logged on FULL only
+    {
+      "itemId": "minecraft:diamond_sword",
+      "quantity": 1,
+      "category": "named_items",
+      "destinationPos": {"x": 102, "y": 64, "z": 200},
+      "partial": false,
+      "metadata": {                                         // Only if item has metadata
+        "customName": "Excalibur",                          // Custom-named item
+        "enchantments": [                                   // Enchanted item
+          {"id": "minecraft:sharpness", "level": 5},
+          {"id": "minecraft:unbreaking", "level": 3}
+        ]
+      }
+    },
+    {
+      "itemId": "minecraft:potion",
+      "quantity": 1,
+      "category": "potions",
+      "destinationPos": {"x": 106, "y": 64, "z": 200},
+      "partial": false,
+      "metadata": {
+        "potionType": "minecraft:strong_healing"            // Potion type
+      }
+    }
+  ],
+  "categorySummary": {                                      // SUMMARY + FULL
+    "named_items": 1,
+    "potions": 1
+  },
+  "unknownItems": [],
+  "overflowCategories": []
 }
 ```
+
+**Note:** The actual log files use compact JSON (one line per entry). The example above is formatted for readability.
 
 ---
 

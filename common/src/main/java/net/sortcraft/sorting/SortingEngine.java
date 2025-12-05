@@ -13,8 +13,10 @@ import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.block.WallSignBlock;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.sortcraft.audit.AuditConfig;
 import net.sortcraft.audit.SortAuditLog;
 import net.sortcraft.category.CategoryLoader;
+import net.sortcraft.config.ConfigManager;
 import net.sortcraft.category.CategoryNode;
 import net.sortcraft.command.CommandHandler;
 import net.sortcraft.container.ChestRef;
@@ -176,6 +178,17 @@ public final class SortingEngine {
         int stackSize = stack.getCount();
         int totalMoved = 0;
         String categoriesStr = CategoryNode.categoriesToStr(cats);
+
+        // Extract metadata BEFORE distribution (stack may become empty after distribution)
+        net.sortcraft.audit.ItemMetadata preExtractedMetadata = null;
+        if (audit != null) {
+            AuditConfig auditConfig = ConfigManager.getAuditConfig();
+            boolean logMetadata = auditConfig != null && auditConfig.isLogItemMetadata();
+            if (logMetadata && !stack.isEmpty()) {
+                preExtractedMetadata = net.sortcraft.audit.ItemMetadataExtractor.extract(stack);
+            }
+        }
+
         for (CategoryNode category : cats) {
             List<ChestRef> categoryChests = findCategoryChests(context, world, category.name);
             if (categoryChests.isEmpty()) continue;
@@ -187,11 +200,11 @@ public final class SortingEngine {
                 results.categoryCounts.merge(category.name, moved, Integer::sum);
                 LOGGER.debug("[sortinput] Moved {} of item {}", moved, itemId);
 
-                // Record movement in audit log
+                // Record movement in audit log with pre-extracted metadata
                 if (audit != null) {
                     BlockPos destPos = categoryChests.isEmpty() ? null : categoryChests.get(0).getPos();
                     boolean partial = totalMoved < stackSize;
-                    audit.recordMovement(itemId.toString(), moved, category.name, destPos, partial);
+                    audit.recordMovement(itemId.toString(), moved, category.name, destPos, partial, preExtractedMetadata);
                 }
 
                 if (preview && totalMoved >= stackSize) break;

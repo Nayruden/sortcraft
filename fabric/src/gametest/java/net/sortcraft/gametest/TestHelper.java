@@ -440,6 +440,114 @@ public final class TestHelper {
         return result;
     }
 
+    // ========== Item Metadata Helpers ==========
+
+    /**
+     * Creates an ItemStack with a custom display name.
+     */
+    public static ItemStack namedStack(net.minecraft.world.item.Item item, String customName) {
+        ItemStack stack = new ItemStack(item);
+        stack.set(DataComponents.CUSTOM_NAME, Component.literal(customName));
+        return stack;
+    }
+
+    /**
+     * Creates an ItemStack with a custom name and count.
+     */
+    public static ItemStack namedStack(net.minecraft.world.item.Item item, int count, String customName) {
+        ItemStack stack = new ItemStack(item, count);
+        stack.set(DataComponents.CUSTOM_NAME, Component.literal(customName));
+        return stack;
+    }
+
+    /**
+     * Adds an enchantment to an ItemStack using the game's registry.
+     * For game tests, use the helper.getLevel() to get registry access.
+     *
+     * @param helper The GameTestHelper for registry access
+     * @param stack The ItemStack to enchant
+     * @param enchantmentId The enchantment ID (e.g., "minecraft:sharpness")
+     * @param level The enchantment level
+     * @return The enchanted ItemStack (same instance, modified)
+     */
+    public static ItemStack enchant(GameTestHelper helper, ItemStack stack, String enchantmentId, int level) {
+        ServerLevel serverLevel = helper.getLevel();
+        net.minecraft.resources.ResourceLocation id = net.minecraft.resources.ResourceLocation.parse(enchantmentId);
+        net.minecraft.resources.ResourceKey<net.minecraft.world.item.enchantment.Enchantment> key =
+                net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ENCHANTMENT, id);
+
+        var enchantmentRegistry = serverLevel.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT);
+        var holderOpt = enchantmentRegistry.get(key);
+
+        if (holderOpt.isEmpty()) {
+            throw new IllegalArgumentException("Unknown enchantment: " + enchantmentId);
+        }
+
+        net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> holder = holderOpt.get();
+
+        // Get existing enchantments or create empty
+        net.minecraft.world.item.enchantment.ItemEnchantments existing = stack.get(DataComponents.ENCHANTMENTS);
+        if (existing == null) {
+            existing = net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY;
+        }
+
+        // Create mutable, add enchantment, convert back to immutable
+        net.minecraft.world.item.enchantment.ItemEnchantments.Mutable mutable =
+                new net.minecraft.world.item.enchantment.ItemEnchantments.Mutable(existing);
+        mutable.set(holder, level);
+        stack.set(DataComponents.ENCHANTMENTS, mutable.toImmutable());
+
+        return stack;
+    }
+
+    /**
+     * Creates a potion ItemStack with the specified potion type.
+     *
+     * @param helper The GameTestHelper for registry access
+     * @param potionId The potion type ID (e.g., "minecraft:healing", "minecraft:strong_healing")
+     * @return A potion ItemStack with the specified type
+     */
+    public static ItemStack createPotion(GameTestHelper helper, String potionId) {
+        ServerLevel serverLevel = helper.getLevel();
+        net.minecraft.resources.ResourceLocation id = net.minecraft.resources.ResourceLocation.parse(potionId);
+        net.minecraft.resources.ResourceKey<net.minecraft.world.item.alchemy.Potion> key =
+                net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.POTION, id);
+
+        var potionRegistry = serverLevel.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.POTION);
+        var holderOpt = potionRegistry.get(key);
+
+        if (holderOpt.isEmpty()) {
+            throw new IllegalArgumentException("Unknown potion: " + potionId);
+        }
+
+        ItemStack potion = new ItemStack(Items.POTION);
+        potion.set(DataComponents.POTION_CONTENTS,
+                new net.minecraft.world.item.alchemy.PotionContents(holderOpt.get()));
+        return potion;
+    }
+
+    /**
+     * Creates a splash potion ItemStack with the specified potion type.
+     */
+    public static ItemStack createSplashPotion(GameTestHelper helper, String potionId) {
+        ServerLevel serverLevel = helper.getLevel();
+        net.minecraft.resources.ResourceLocation id = net.minecraft.resources.ResourceLocation.parse(potionId);
+        net.minecraft.resources.ResourceKey<net.minecraft.world.item.alchemy.Potion> key =
+                net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.POTION, id);
+
+        var potionRegistry = serverLevel.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.POTION);
+        var holderOpt = potionRegistry.get(key);
+
+        if (holderOpt.isEmpty()) {
+            throw new IllegalArgumentException("Unknown potion: " + potionId);
+        }
+
+        ItemStack potion = new ItemStack(Items.SPLASH_POTION);
+        potion.set(DataComponents.POTION_CONTENTS,
+                new net.minecraft.world.item.alchemy.PotionContents(holderOpt.get()));
+        return potion;
+    }
+
     // ========== Assertions ==========
 
     /**

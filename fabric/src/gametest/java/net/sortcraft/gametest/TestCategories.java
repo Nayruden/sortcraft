@@ -68,6 +68,15 @@ public final class TestCategories {
             - minecraft:emerald
         """;
 
+    /** Single category: potions (all types) */
+    public static final String POTIONS = """
+        potions:
+          items:
+            - minecraft:potion
+            - minecraft:splash_potion
+            - minecraft:lingering_potion
+        """;
+
     // ========== Multi-Category Definitions ==========
 
     /** Two categories: swords and containers */

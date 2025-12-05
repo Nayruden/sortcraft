@@ -29,6 +29,7 @@ public class AuditConfig {
     private int maxFileSizeMb = 50;
     private int maxFiles = 7;
     private boolean asyncWrite = false;
+    private boolean logItemMetadata = true;
 
     /**
      * Creates an AuditConfig with default values (disabled).
@@ -47,6 +48,20 @@ public class AuditConfig {
         this.maxFileSizeMb = maxFileSizeMb;
         this.maxFiles = maxFiles;
         this.asyncWrite = asyncWrite;
+    }
+
+    /**
+     * Creates an AuditConfig with all values specified including metadata logging.
+     */
+    public AuditConfig(boolean enabled, DetailLevel detailLevel, boolean logPreviews,
+                       int maxFileSizeMb, int maxFiles, boolean asyncWrite, boolean logItemMetadata) {
+        this.enabled = enabled;
+        this.detailLevel = detailLevel;
+        this.logPreviews = logPreviews;
+        this.maxFileSizeMb = maxFileSizeMb;
+        this.maxFiles = maxFiles;
+        this.asyncWrite = asyncWrite;
+        this.logItemMetadata = logItemMetadata;
     }
 
     public boolean isEnabled() {
@@ -97,6 +112,14 @@ public class AuditConfig {
         this.asyncWrite = asyncWrite;
     }
 
+    public boolean isLogItemMetadata() {
+        return logItemMetadata;
+    }
+
+    public void setLogItemMetadata(boolean logItemMetadata) {
+        this.logItemMetadata = logItemMetadata;
+    }
+
     @Override
     public String toString() {
         return "AuditConfig{" +
@@ -106,6 +129,7 @@ public class AuditConfig {
                 ", maxFileSizeMb=" + maxFileSizeMb +
                 ", maxFiles=" + maxFiles +
                 ", asyncWrite=" + asyncWrite +
+                ", logItemMetadata=" + logItemMetadata +
                 '}';
     }
 }

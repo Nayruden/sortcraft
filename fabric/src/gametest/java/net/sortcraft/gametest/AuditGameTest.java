@@ -413,4 +413,238 @@ public class AuditGameTest {
 
         helper.succeed();
     }
+
+    // ========== Test 7: Enchanted Items Metadata ==========
+
+    /**
+     * Verifies audit correctly captures enchantment metadata on sorted items.
+     * Setup: swords category, input has enchanted diamond sword
+     * Expects: Audit entry contains enchantment info in metadata
+     */
+    @GameTest
+    public void auditRecordsEnchantmentMetadata(GameTestHelper helper) {
+        TestHelper.setupCategories(TestCategories.SWORDS_SHORT);
+
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "swords");
+        BlockPos inputPos = setup.inputPos();
+
+        // Create enchanted sword with Sharpness V
+        ItemStack enchantedSword = new ItemStack(Items.DIAMOND_SWORD);
+        TestHelper.enchant(helper, enchantedSword, "minecraft:sharpness", 5);
+
+        TestHelper.insertItems(helper, inputPos, enchantedSword);
+
+        // Execute sort with audit
+        TestHelper.AuditedSortResult result = TestHelper.executeSortWithAudit(helper, inputPos);
+        SortAuditEntry entry = result.auditEntry();
+
+        // Verify success
+        if (entry.status() != OperationStatus.SUCCESS) {
+            helper.fail(Component.literal("Expected SUCCESS status but got " + entry.status()));
+            return;
+        }
+
+        // Verify 1 item sorted
+        if (entry.totalItemsSorted() != 1) {
+            helper.fail(Component.literal("Expected 1 item sorted but got " + entry.totalItemsSorted()));
+            return;
+        }
+
+        // Verify metadata contains enchantment info in JSON
+        String fullJson = TestHelper.validateAuditDetailLevels(helper, entry, true, true);
+        if (!fullJson.contains("\"metadata\"")) {
+            helper.fail(Component.literal("Expected metadata in audit JSON"));
+            return;
+        }
+        if (!fullJson.contains("\"enchantments\"")) {
+            helper.fail(Component.literal("Expected enchantments in metadata"));
+            return;
+        }
+        if (!fullJson.contains("minecraft:sharpness")) {
+            helper.fail(Component.literal("Expected sharpness enchantment in metadata"));
+            return;
+        }
+        if (!fullJson.contains("\"level\":5")) {
+            helper.fail(Component.literal("Expected level 5 in enchantment metadata"));
+            return;
+        }
+
+        helper.succeed();
+    }
+
+    // ========== Test 8: Custom Named Items Metadata ==========
+
+    /**
+     * Verifies audit correctly captures custom name metadata on sorted items.
+     * Setup: swords category, input has named diamond sword
+     * Expects: Audit entry contains custom name in metadata
+     */
+    @GameTest
+    public void auditRecordsCustomNameMetadata(GameTestHelper helper) {
+        TestHelper.setupCategories(TestCategories.SWORDS_SHORT);
+
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "swords");
+        BlockPos inputPos = setup.inputPos();
+
+        // Create named sword
+        ItemStack namedSword = TestHelper.namedStack(Items.DIAMOND_SWORD, "Excalibur");
+
+        TestHelper.insertItems(helper, inputPos, namedSword);
+
+        // Execute sort with audit
+        TestHelper.AuditedSortResult result = TestHelper.executeSortWithAudit(helper, inputPos);
+        SortAuditEntry entry = result.auditEntry();
+
+        // Verify success
+        if (entry.status() != OperationStatus.SUCCESS) {
+            helper.fail(Component.literal("Expected SUCCESS status but got " + entry.status()));
+            return;
+        }
+
+        // Verify metadata contains custom name in JSON
+        String fullJson = TestHelper.validateAuditDetailLevels(helper, entry, true, true);
+        if (!fullJson.contains("\"metadata\"")) {
+            helper.fail(Component.literal("Expected metadata in audit JSON"));
+            return;
+        }
+        if (!fullJson.contains("\"customName\"")) {
+            helper.fail(Component.literal("Expected customName in metadata"));
+            return;
+        }
+        if (!fullJson.contains("Excalibur")) {
+            helper.fail(Component.literal("Expected 'Excalibur' in custom name metadata"));
+            return;
+        }
+
+        helper.succeed();
+    }
+
+    // ========== Test 9: Potion Type Metadata ==========
+
+    /**
+     * Verifies audit correctly captures potion type metadata on sorted potions.
+     * Setup: potions category, input has healing potion
+     * Expects: Audit entry contains potion type in metadata
+     */
+    @GameTest
+    public void auditRecordsPotionTypeMetadata(GameTestHelper helper) {
+        TestHelper.setupCategories(TestCategories.POTIONS);
+
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "potions");
+        BlockPos inputPos = setup.inputPos();
+
+        // Create healing potion
+        ItemStack healingPotion = TestHelper.createPotion(helper, "minecraft:healing");
+
+        TestHelper.insertItems(helper, inputPos, healingPotion);
+
+        // Execute sort with audit
+        TestHelper.AuditedSortResult result = TestHelper.executeSortWithAudit(helper, inputPos);
+        SortAuditEntry entry = result.auditEntry();
+
+        // Verify success
+        if (entry.status() != OperationStatus.SUCCESS) {
+            helper.fail(Component.literal("Expected SUCCESS status but got " + entry.status()));
+            return;
+        }
+
+        // Verify metadata contains potion type in JSON
+        String fullJson = TestHelper.validateAuditDetailLevels(helper, entry, true, true);
+        if (!fullJson.contains("\"metadata\"")) {
+            helper.fail(Component.literal("Expected metadata in audit JSON"));
+            return;
+        }
+        if (!fullJson.contains("\"potionType\"")) {
+            helper.fail(Component.literal("Expected potionType in metadata"));
+            return;
+        }
+        if (!fullJson.contains("minecraft:healing")) {
+            helper.fail(Component.literal("Expected 'minecraft:healing' in potion type metadata"));
+            return;
+        }
+
+        helper.succeed();
+    }
+
+    // ========== Test 10: Multiple Enchantments Metadata ==========
+
+    /**
+     * Verifies audit correctly captures multiple enchantments on a single item.
+     * Setup: swords category, input has sword with Sharpness V and Unbreaking III
+     * Expects: Audit entry contains both enchantments in metadata
+     */
+    @GameTest
+    public void auditRecordsMultipleEnchantments(GameTestHelper helper) {
+        TestHelper.setupCategories(TestCategories.SWORDS_SHORT);
+
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "swords");
+        BlockPos inputPos = setup.inputPos();
+
+        // Create sword with multiple enchantments
+        ItemStack multiEnchantSword = new ItemStack(Items.DIAMOND_SWORD);
+        TestHelper.enchant(helper, multiEnchantSword, "minecraft:sharpness", 5);
+        TestHelper.enchant(helper, multiEnchantSword, "minecraft:unbreaking", 3);
+
+        TestHelper.insertItems(helper, inputPos, multiEnchantSword);
+
+        // Execute sort with audit
+        TestHelper.AuditedSortResult result = TestHelper.executeSortWithAudit(helper, inputPos);
+        SortAuditEntry entry = result.auditEntry();
+
+        // Verify success
+        if (entry.status() != OperationStatus.SUCCESS) {
+            helper.fail(Component.literal("Expected SUCCESS status but got " + entry.status()));
+            return;
+        }
+
+        // Verify metadata contains both enchantments
+        String fullJson = TestHelper.validateAuditDetailLevels(helper, entry, true, true);
+        if (!fullJson.contains("minecraft:sharpness")) {
+            helper.fail(Component.literal("Expected sharpness enchantment in metadata"));
+            return;
+        }
+        if (!fullJson.contains("minecraft:unbreaking")) {
+            helper.fail(Component.literal("Expected unbreaking enchantment in metadata"));
+            return;
+        }
+
+        helper.succeed();
+    }
+
+    // ========== Test 11: Plain Items Have No Metadata ==========
+
+    /**
+     * Verifies audit does NOT include metadata for plain items without special properties.
+     * Setup: cobblestone category, input has plain cobblestone
+     * Expects: Audit entry has no metadata field for plain items
+     */
+    @GameTest
+    public void auditOmitsMetadataForPlainItems(GameTestHelper helper) {
+        TestHelper.setupCategories(TestCategories.COBBLESTONE);
+
+        SortingTestSetup setup = TestScenarios.basicInputAndCategory(helper, "cobblestone");
+        BlockPos inputPos = setup.inputPos();
+
+        // Insert plain cobblestone (no enchantments, no name, not a potion)
+        TestHelper.insertItems(helper, inputPos, new ItemStack(Items.COBBLESTONE, 64));
+
+        // Execute sort with audit
+        TestHelper.AuditedSortResult result = TestHelper.executeSortWithAudit(helper, inputPos);
+        SortAuditEntry entry = result.auditEntry();
+
+        // Verify success
+        if (entry.status() != OperationStatus.SUCCESS) {
+            helper.fail(Component.literal("Expected SUCCESS status but got " + entry.status()));
+            return;
+        }
+
+        // Verify metadata is NOT present for plain items
+        String fullJson = TestHelper.validateAuditDetailLevels(helper, entry, true, true);
+        if (fullJson.contains("\"metadata\"")) {
+            helper.fail(Component.literal("Expected NO metadata for plain cobblestone, but found metadata in JSON"));
+            return;
+        }
+
+        helper.succeed();
+    }
 }

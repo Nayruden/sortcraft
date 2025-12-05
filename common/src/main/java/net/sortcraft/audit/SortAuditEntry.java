@@ -1,5 +1,7 @@
 package net.sortcraft.audit;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import net.minecraft.core.BlockPos;
 
 import java.time.Instant;
@@ -55,89 +57,48 @@ public record SortAuditEntry(
      * Converts this entry to a JSON string.
      */
     public String toJson(AuditConfig.DetailLevel detailLevel) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{");
+        JsonObject json = new JsonObject();
 
-        // Core fields
-        sb.append("\"operationId\":\"").append(operationId).append("\",");
-        sb.append("\"timestamp\":\"").append(ISO_FORMATTER.format(timestamp)).append("\",");
-        sb.append("\"playerName\":\"").append(escapeJson(playerName)).append("\",");
-        sb.append("\"playerUuid\":\"").append(playerUuid).append("\",");
-        sb.append("\"dimension\":\"").append(escapeJson(dimension)).append("\",");
-        sb.append("\"operationType\":\"").append(operationType).append("\",");
-        sb.append("\"inputChestPos\":");
-        appendBlockPos(sb, inputChestPos);
-        sb.append(",");
-        sb.append("\"searchRadius\":").append(searchRadius).append(",");
-        sb.append("\"totalItemsProcessed\":").append(totalItemsProcessed).append(",");
-        sb.append("\"totalItemsSorted\":").append(totalItemsSorted).append(",");
-        sb.append("\"durationMs\":").append(durationMs).append(",");
-        sb.append("\"status\":\"").append(status).append("\",");
-        sb.append("\"errorMessage\":").append(errorMessage != null ? "\"" + escapeJson(errorMessage) + "\"" : "null").append(",");
+        // Core fields (always included)
+        json.addProperty("operationId", operationId.toString());
+        json.addProperty("timestamp", ISO_FORMATTER.format(timestamp));
+        json.addProperty("playerName", playerName);
+        json.addProperty("playerUuid", playerUuid.toString());
+        json.addProperty("dimension", dimension);
+        json.addProperty("operationType", operationType.name());
+        json.add("inputChestPos", AuditGsonHelper.GSON.toJsonTree(inputChestPos));
+        json.addProperty("searchRadius", searchRadius);
+        json.addProperty("totalItemsProcessed", totalItemsProcessed);
+        json.addProperty("totalItemsSorted", totalItemsSorted);
+        json.addProperty("durationMs", durationMs);
+        json.addProperty("status", status.name());
+        json.addProperty("errorMessage", errorMessage);
 
         // Detail-level dependent fields
         if (detailLevel == AuditConfig.DetailLevel.FULL && movements != null && !movements.isEmpty()) {
-            sb.append("\"movements\":[");
-            for (int i = 0; i < movements.size(); i++) {
-                if (i > 0) sb.append(",");
-                sb.append(movements.get(i).toJson());
-            }
-            sb.append("],");
+            json.add("movements", AuditGsonHelper.GSON.toJsonTree(movements));
         }
 
         if ((detailLevel == AuditConfig.DetailLevel.SUMMARY || detailLevel == AuditConfig.DetailLevel.FULL)
                 && categorySummary != null && !categorySummary.isEmpty()) {
-            sb.append("\"categorySummary\":{");
-            boolean first = true;
-            for (Map.Entry<String, Integer> entry : categorySummary.entrySet()) {
-                if (!first) sb.append(",");
-                sb.append("\"").append(escapeJson(entry.getKey())).append("\":").append(entry.getValue());
-                first = false;
-            }
-            sb.append("},");
+            json.add("categorySummary", AuditGsonHelper.GSON.toJsonTree(categorySummary));
         }
 
         // Always include issues
-        sb.append("\"unknownItems\":");
-        appendStringSet(sb, unknownItems);
-        sb.append(",");
-        sb.append("\"overflowCategories\":");
-        appendStringSet(sb, overflowCategories);
+        json.add("unknownItems", toJsonArray(unknownItems));
+        json.add("overflowCategories", toJsonArray(overflowCategories));
 
-        sb.append("}");
-        return sb.toString();
+        return AuditGsonHelper.GSON.toJson(json);
     }
 
-    private void appendBlockPos(StringBuilder sb, BlockPos pos) {
-        if (pos == null) {
-            sb.append("null");
-        } else {
-            sb.append("{\"x\":").append(pos.getX())
-              .append(",\"y\":").append(pos.getY())
-              .append(",\"z\":").append(pos.getZ()).append("}");
-        }
-    }
-
-    private void appendStringSet(StringBuilder sb, Set<String> set) {
-        sb.append("[");
-        if (set != null && !set.isEmpty()) {
-            boolean first = true;
+    private static JsonArray toJsonArray(Set<String> set) {
+        JsonArray array = new JsonArray();
+        if (set != null) {
             for (String s : set) {
-                if (!first) sb.append(",");
-                sb.append("\"").append(escapeJson(s)).append("\"");
-                first = false;
+                array.add(s);
             }
         }
-        sb.append("]");
-    }
-
-    private static String escapeJson(String s) {
-        if (s == null) return "";
-        return s.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t");
+        return array;
     }
 }
 

@@ -99,6 +99,43 @@ public class SortAuditLog {
     }
 
     /**
+     * Records an item movement with metadata extraction from the ItemStack.
+     *
+     * @param stack          The ItemStack being moved
+     * @param itemId         The item identifier
+     * @param quantity       Number of items moved
+     * @param category       The category sorted into
+     * @param destinationPos Position of the destination chest
+     * @param partial        True if only part of the stack was moved
+     * @param logMetadata    Whether to extract and log item metadata
+     */
+    public void recordMovement(net.minecraft.world.item.ItemStack stack, String itemId, int quantity,
+                               String category, BlockPos destinationPos, boolean partial,
+                               boolean logMetadata) {
+        ItemMetadata metadata = null;
+        if (logMetadata && stack != null && !stack.isEmpty()) {
+            metadata = ItemMetadataExtractor.extract(stack);
+        }
+        movements.add(new ItemMovementRecord(itemId, quantity, category, destinationPos, partial, metadata));
+    }
+
+    /**
+     * Records an item movement with pre-extracted metadata.
+     * Use this when metadata needs to be extracted before the stack is modified.
+     *
+     * @param itemId         The item identifier
+     * @param quantity       Number of items moved
+     * @param category       The category sorted into
+     * @param destinationPos Position of the destination chest
+     * @param partial        True if only part of the stack was moved
+     * @param metadata       Pre-extracted metadata (can be null)
+     */
+    public void recordMovement(String itemId, int quantity, String category,
+                               BlockPos destinationPos, boolean partial, ItemMetadata metadata) {
+        movements.add(new ItemMovementRecord(itemId, quantity, category, destinationPos, partial, metadata));
+    }
+
+    /**
      * Records that items were processed (for tracking total items).
      *
      * @param count Number of items processed
