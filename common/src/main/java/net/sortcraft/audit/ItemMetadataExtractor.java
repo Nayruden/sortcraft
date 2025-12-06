@@ -8,6 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.sortcraft.compat.PotionHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +17,7 @@ import java.util.List;
  * Utility class to extract metadata from an ItemStack for audit logging.
  */
 public final class ItemMetadataExtractor {
-    
+
     private ItemMetadataExtractor() {}
 
     /**
@@ -36,8 +37,8 @@ public final class ItemMetadataExtractor {
         String potionType = extractPotionType(stack);
 
         // Return null if there's no metadata to log
-        if ((enchantments == null || enchantments.isEmpty()) 
-                && customName == null 
+        if ((enchantments == null || enchantments.isEmpty())
+                && customName == null
                 && potionType == null) {
             return null;
         }
@@ -99,17 +100,33 @@ public final class ItemMetadataExtractor {
 
     /**
      * Extracts the potion type from an ItemStack if it's a potion.
+     *
+     * Handles two cases:
+     * 1. Normal potions: Have a "potion" field with a registered potion type ID
+     *    Example: {potion: "minecraft:slow_falling"}
+     * 2. Custom potions: Have no "potion" field, but have "custom_name", "custom_color",
+     *    and "custom_effects" fields
+     *    Example: {custom_name: "dnt_wither", custom_color: 7561558, custom_effects: [...]}
      */
     private static String extractPotionType(ItemStack stack) {
         PotionContents contents = stack.get(DataComponents.POTION_CONTENTS);
         if (contents == null) {
             return null;
         }
-        
-        return contents.potion()
+
+        // First try to get registered potion type (for normal potions)
+        String registeredType = contents.potion()
                 .flatMap(Holder::unwrapKey)
                 .map(key -> key.location().toString())
                 .orElse(null);
+
+        if (registeredType != null) {
+            return registeredType;
+        }
+
+        // Fall back to custom potion name (for custom potions created via commands/mods)
+        // Uses version-specific helper since customName() was added in 1.21.4+
+        return PotionHelper.getCustomName(contents);
     }
 }
 
