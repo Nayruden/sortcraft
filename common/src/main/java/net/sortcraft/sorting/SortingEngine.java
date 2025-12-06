@@ -118,13 +118,24 @@ public final class SortingEngine {
             // Check if this is a container (bundle or shulker box)
             Iterable<ItemStack> innerStacks = ContainerHelper.getStacksIfContainer(stack);
             if (innerStacks != null) {
-                ResourceLocation uniformItem = getSingleItemIfUniformAndMeetsThreshold(innerStacks, UNIFORM_CONTAINER_THRESHOLD);
-                if (uniformItem != null) {
+                UniformContainerCheckResult uniformCheck = checkUniformContainerContents(innerStacks, UNIFORM_CONTAINER_THRESHOLD);
+                if (uniformCheck.meetsThreshold()) {
                     LOGGER.debug("[sortinput] Container has >={} stacks of same item '{}'. Sorting container itself.",
-                            UNIFORM_CONTAINER_THRESHOLD, uniformItem);
+                            UNIFORM_CONTAINER_THRESHOLD, uniformCheck.uniformItemId());
 
-                    List<CategoryNode> cats = CategoryLoader.getMatchingCategoriesNoFilter(uniformItem);
-                    sortSingleStack(context, world, preview, stack, cats, uniformItem, results, audit);
+                    // Use the uniform item's categories, but record the actual container in the audit
+                    List<CategoryNode> cats = CategoryLoader.getMatchingCategoriesNoFilter(uniformCheck.uniformItemId());
+                    ResourceLocation containerItemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+
+                    // Create uniform contents info for audit
+                    net.sortcraft.audit.UniformContainerContents uniformContents =
+                            new net.sortcraft.audit.UniformContainerContents(
+                                    uniformCheck.uniformItemId().toString(),
+                                    uniformCheck.stackCount(),
+                                    uniformCheck.totalItemCount()
+                            );
+
+                    sortSingleStack(context, world, preview, stack, cats, containerItemId, results, audit, uniformContents);
                     continue;
                 }
 
@@ -166,9 +177,31 @@ public final class SortingEngine {
         return results;
     }
 
-    private static ResourceLocation getSingleItemIfUniformAndMeetsThreshold(Iterable<ItemStack> stacks, int threshold) {
+    /**
+     * Result of checking if a container has uniform contents meeting the threshold.
+     *
+     * @param uniformItemId   The item ID if uniform and meets threshold, null otherwise
+     * @param stackCount      Number of non-empty stacks in the container
+     * @param totalItemCount  Total number of items across all stacks
+     */
+    private record UniformContainerCheckResult(
+            ResourceLocation uniformItemId,
+            int stackCount,
+            int totalItemCount
+    ) {
+        boolean meetsThreshold() {
+            return uniformItemId != null;
+        }
+    }
+
+    /**
+     * Checks if a container has uniform contents (all same item type) meeting the threshold.
+     * Returns detailed information about the contents for audit purposes.
+     */
+    private static UniformContainerCheckResult checkUniformContainerContents(Iterable<ItemStack> stacks, int threshold) {
         ResourceLocation singleItem = null;
-        int count = 0;
+        int stackCount = 0;
+        int totalItemCount = 0;
 
         for (ItemStack stack : stacks) {
             if (stack.isEmpty()) continue;
@@ -177,20 +210,28 @@ public final class SortingEngine {
             if (singleItem == null) {
                 singleItem = itemId;
             } else if (!singleItem.equals(itemId)) {
-                return null;
+                // Mixed items - return result indicating not uniform
+                return new UniformContainerCheckResult(null, 0, 0);
             }
-            count++;
+            stackCount++;
+            totalItemCount += stack.getCount();
         }
 
-        if (count >= threshold) {
-            return singleItem;
+        if (stackCount >= threshold) {
+            return new UniformContainerCheckResult(singleItem, stackCount, totalItemCount);
         }
-        return null;
+        return new UniformContainerCheckResult(null, stackCount, totalItemCount);
     }
 
     private static void sortSingleStack(SortContext context, ServerLevel world, boolean preview, ItemStack stack,
                                         List<CategoryNode> cats, ResourceLocation itemId, SortingResults results,
                                         SortAuditLog audit) {
+        sortSingleStack(context, world, preview, stack, cats, itemId, results, audit, null);
+    }
+
+    private static void sortSingleStack(SortContext context, ServerLevel world, boolean preview, ItemStack stack,
+                                        List<CategoryNode> cats, ResourceLocation itemId, SortingResults results,
+                                        SortAuditLog audit, net.sortcraft.audit.UniformContainerContents uniformContents) {
         if (cats.isEmpty()) {
             LOGGER.debug("[sortinput] No categories found for item: {}", itemId);
             results.unknownItems.add(itemId.toString());
@@ -209,6 +250,14 @@ public final class SortingEngine {
             boolean logMetadata = auditConfig != null && auditConfig.isLogItemMetadata();
             if (logMetadata && !stack.isEmpty()) {
                 preExtractedMetadata = net.sortcraft.audit.ItemMetadataExtractor.extract(stack);
+            }
+            // If this is a uniform container, add the uniform contents info to metadata
+            if (uniformContents != null) {
+                if (preExtractedMetadata != null) {
+                    preExtractedMetadata = preExtractedMetadata.withUniformContents(uniformContents);
+                } else {
+                    preExtractedMetadata = net.sortcraft.audit.ItemMetadata.ofUniformContents(uniformContents);
+                }
             }
         }
 

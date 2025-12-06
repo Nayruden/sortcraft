@@ -647,4 +647,83 @@ public class AuditGameTest {
 
         helper.succeed();
     }
+
+    // ========== Test 12: Uniform Container Audit ==========
+
+    /**
+     * Verifies audit correctly captures uniform container movements.
+     * When a shulker box contains 10+ stacks of the same item, it is sorted as a unit
+     * to the category of its contents. The audit should record:
+     * - The actual container item ID (shulker_box), not the contents
+     * - Metadata with uniformContents showing what's inside
+     */
+    @GameTest
+    public void auditRecordsUniformContainerMetadata(GameTestHelper helper) {
+        TestHelper.setupCategories(TestCategories.SWORDS_AND_CONTAINERS);
+
+        var positions = TestScenarios.multiCategory(helper, "swords", "containers");
+        BlockPos inputPos = positions.get("input");
+        BlockPos swordsPos = positions.get("swords");
+
+        // Create shulker with exactly 10 diamond swords (meets uniform threshold)
+        // Each stack has 1 sword, total 10 stacks = 10 swords
+        ItemStack[] contents = new ItemStack[10];
+        for (int i = 0; i < 10; i++) {
+            contents[i] = new ItemStack(Items.DIAMOND_SWORD);
+        }
+        ItemStack shulker = TestHelper.createShulkerBox(contents);
+
+        TestHelper.insertItems(helper, inputPos, shulker);
+
+        // Execute sort with audit
+        TestHelper.AuditedSortResult result = TestHelper.executeSortWithAudit(helper, inputPos, 10);
+        SortAuditEntry entry = result.auditEntry();
+
+        // Verify success
+        if (entry.status() != OperationStatus.SUCCESS) {
+            helper.fail(Component.literal("Expected SUCCESS status but got " + entry.status()));
+            return;
+        }
+
+        // Verify 1 item sorted (the container as a whole)
+        if (entry.totalItemsSorted() != 1) {
+            helper.fail(Component.literal("Expected 1 item sorted (the shulker) but got " + entry.totalItemsSorted()));
+            return;
+        }
+
+        // Verify the movement records the CONTAINER item ID, not the contents
+        BlockPos absSwordsPos = helper.absolutePos(swordsPos);
+        TestHelper.assertMovementsExist(helper, entry,
+                movement("minecraft:shulker_box", 1, "swords", absSwordsPos)
+        );
+
+        // Verify the JSON contains uniformContents metadata
+        String fullJson = TestHelper.validateAuditDetailLevels(helper, entry, true, true);
+
+        // Check for uniformContents structure
+        if (!fullJson.contains("\"uniformContents\"")) {
+            helper.fail(Component.literal("Expected uniformContents in metadata but not found. JSON: " + fullJson));
+            return;
+        }
+
+        // Verify the uniform contents has the correct item ID
+        if (!fullJson.contains("\"itemId\":\"minecraft:diamond_sword\"")) {
+            helper.fail(Component.literal("Expected uniformContents.itemId to be minecraft:diamond_sword. JSON: " + fullJson));
+            return;
+        }
+
+        // Verify stack count (10 stacks)
+        if (!fullJson.contains("\"stackCount\":10")) {
+            helper.fail(Component.literal("Expected uniformContents.stackCount to be 10. JSON: " + fullJson));
+            return;
+        }
+
+        // Verify total item count (10 swords, 1 each)
+        if (!fullJson.contains("\"totalItemCount\":10")) {
+            helper.fail(Component.literal("Expected uniformContents.totalItemCount to be 10. JSON: " + fullJson));
+            return;
+        }
+
+        helper.succeed();
+    }
 }
