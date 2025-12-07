@@ -42,7 +42,7 @@ public class SortCraft {
         LifecycleEvent.SERVER_STOPPING.register(server -> {
             SortAuditLogger.shutdown();
             CategoryLoader.clear();
-            ChestHighlighter.clearAll();
+            ChestHighlighter.clearAll(server);
             LOGGER.debug("Server stopping - cleared SortCraft static state");
         });
 
