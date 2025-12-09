@@ -46,98 +46,39 @@ If you stack chests vertically with the same category sign, it will fill the **l
 
 Shows help and usage information for all Sortcraft commands.
 
----
-
 ### `/sort input`
 
 Triggers the sorting logic for the **nearest `[input]` chest**, scanning its contents and distributing items into destination chests based on your YAML category definitions.
 
 💡 **Tip:** Right-clicking the `[input]` sign is usually faster and more convenient!
 
----
-
 ### `/sort preview`
 
-Previews what items will be sorted where, **without actually moving them**.
-
-✔ **Example usage:**
-
-```
-/sort preview
-```
-
-Outputs a categorized list showing:
-
-* Which items will go to which category
-* Item counts per category
-
----
+Previews what items will be sorted where, **without actually moving them**. Outputs a categorized list showing which items will go to which category and item counts per category.
 
 ### `/sort diagnostics`
 
-Generates a **`sortdiag.yaml` file** in your config folder with:
-
-* Current item counts
-* Storage locations
-* Slot usage by category
-
-✔ **Use this to audit storage utilization** and plan expansions.
-
----
+Generates a **`sortdiag.yaml` file** in your config folder with current item counts, storage locations, and slot usage by category. Use this to audit storage utilization and plan expansions.
 
 ### `/sort whereis <item_id>`
 
-Locates where a specific item is stored. Displays the chest locations in chat and shows **particle indicators** in the world for easy navigation.
+Locates where a specific item is stored. Displays the chest locations in chat and highlights them with **glowing outlines** visible through walls.
 
-✔ **Example usage:**
-
-```
-/sort whereis minecraft:diamond_sword
-```
-
-Finds where your diamond sword is stored.
-
----
+Example: `/sort whereis minecraft:diamond_sword`
 
 ### `/sort category <item_id>`
 
 Outputs the **categories assigned to an item** based on your YAML configuration.
 
-✔ **Example usage:**
-
-```
-/sort category minecraft:diamond_sword
-```
-
-Returns: `swords, gear, weapons`
-
----
+Example: `/sort category minecraft:diamond_sword` → Returns: `swords, gear, weapons`
 
 ### `/sort reload`
 
-Reloads all category configurations from the `config/sortcraft/categories/` directory without restarting the server.
-
-✔ **Example usage:**
-
-```
-/sort reload
-```
-
-Useful when editing category YAML files while the server is running.
-
----
+Reloads all Sortcraft configuration (`config.yaml` and category definitions) without restarting the server. Useful when editing config files while the server is running.
 
 ### `/sort dump`
 
-Generates JSON files containing all item tags from the registry. Useful for debugging and discovering available item tags for your category definitions.
-
-✔ **Example usage:**
-
-```
-/sort dump
-```
-
-Output files are placed in the `sortcraft-dump/` directory.
+Generates JSON files containing all item tags from the registry. Useful for debugging and discovering available item tags for your category definitions. Output files are placed in `config/sortcraft/`.
 
 ---
 
@@ -284,7 +225,7 @@ wood_items:
 
 ### **Discovering Tags**
 
-Use `/sort dump` to generate JSON files listing all item tags in the game. Output files are placed in `sortcraft-dump/`.
+Use `/sort dump` to generate JSON files listing all item tags in the game. Output files are placed in `config/sortcraft/`.
 
 ---
 
@@ -347,10 +288,10 @@ lesser_books:
 
 Matches items that have been renamed (e.g., in an anvil).
 
-| Value      | Description                                       |
-|------------|---------------------------------------------------|
-| `*`        | Item has any custom name                          |
-| `My Sword` | Item's display name matches exactly (case-insens) |
+| Value      | Description                                            |
+|------------|--------------------------------------------------------|
+| `*`        | Item has any custom name                               |
+| `My Sword` | Item's display name matches exactly (case-insensitive) |
 
 ```yaml
 # All renamed gear goes to a special chest
@@ -619,6 +560,3 @@ When updating to new Minecraft versions, use these official metadata sources to 
 | **NeoForge**           | `https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge`   |
 | **Architectury API**   | `https://maven.architectury.dev/dev/architectury/architectury/maven-metadata.xml`  |
 | **Minecraft Versions** | `https://piston-meta.mojang.com/mc/game/version_manifest_v2.json`                  |
-
----
-
