@@ -12,7 +12,7 @@ $versions = @("1.21.1", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.
 $outputDir = "build/libs/all-versions"
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "SortCraft Multi-Version Build Script" -ForegroundColor Cyan
+Write-Host "Sortcraft Multi-Version Build Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 

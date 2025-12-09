@@ -104,7 +104,7 @@ public final class SortAuditLogger {
         if (asyncExecutor == null || asyncExecutor.isShutdown()) {
             asyncQueue = new LinkedBlockingQueue<>(1000);
             asyncExecutor = Executors.newSingleThreadExecutor(r -> {
-                Thread t = new Thread(r, "SortCraft-AuditWriter");
+                Thread t = new Thread(r, "Sortcraft-AuditWriter");
                 t.setDaemon(true);
                 return t;
             });

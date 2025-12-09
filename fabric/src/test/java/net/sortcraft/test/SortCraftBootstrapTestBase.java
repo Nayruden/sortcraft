@@ -21,13 +21,13 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Base class for SortCraft bootstrap tests.
+ * Base class for Sortcraft bootstrap tests.
  * Provides common setup/teardown and helper methods for category testing.
  *
  * Bootstrap tests run with Minecraft's registries initialized in-memory,
  * allowing tests with real ItemStack objects without a full server.
  */
-public abstract class SortCraftBootstrapTestBase {
+public abstract class SortcraftBootstrapTestBase {
 
     /**
      * Initialize Minecraft registries once before all tests.

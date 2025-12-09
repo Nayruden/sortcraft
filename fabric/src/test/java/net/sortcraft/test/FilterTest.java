@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Bootstrap tests for filter functionality.
  * Tests enchantment, custom_name, stackable, and negation filters.
  */
-public class FilterTest extends SortCraftBootstrapTestBase {
+public class FilterTest extends SortcraftBootstrapTestBase {
 
     // ========== Custom Name Filter ==========
 

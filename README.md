@@ -1,12 +1,12 @@
-# SortCraft
+# Sortcraft
 
-**SortCraft** is a powerful, configurable bulk sorting mod for Minecraft, supporting both Fabric and NeoForge loaders. It organizes your chests with intuitive, customizable categories to keep your world neat and efficient.
+**Sortcraft** is a powerful, configurable bulk sorting mod for Minecraft, supporting both Fabric and NeoForge loaders. It organizes your chests with intuitive, customizable categories to keep your world neat and efficient.
 
 ---
 
 ## 📦 **How It Works**
 
-SortCraft uses **signs to label chests** and sorts items into them based on categories you define in YAML config files.
+Sortcraft uses **signs to label chests** and sorts items into them based on categories you define in YAML config files.
 
 ### 📝 **Chest Labeling**
 
@@ -27,13 +27,13 @@ SortCraft uses **signs to label chests** and sorts items into them based on cate
 
 ### 🖱️ **Sorting Items**
 
-**Right-click the `[input]` sign** to instantly sort all items from the input chest into their designated category chests. This is the primary way to use SortCraft!
+**Right-click the `[input]` sign** to instantly sort all items from the input chest into their designated category chests. This is the primary way to use Sortcraft!
 
 Alternatively, you can use the `/sort input` command if you're near an input chest.
 
 ### 📚 **Stacking and Fill Logic**
 
-When you have **multiple chests labeled with the same category**, SortCraft fills them in **stack fashion**:
+When you have **multiple chests labeled with the same category**, Sortcraft fills them in **stack fashion**:
 
 ✅ **Bottom-up fill order.**
 If you stack chests vertically with the same category sign, it will fill the **lowest chest first**, then the one above, and so on.
@@ -44,7 +44,7 @@ If you stack chests vertically with the same category sign, it will fill the **l
 
 ### `/sort help`
 
-Shows help and usage information for all SortCraft commands.
+Shows help and usage information for all Sortcraft commands.
 
 ---
 
@@ -143,7 +143,7 @@ Output files are placed in the `sortcraft-dump/` directory.
 
 ## 🛠️ **YAML Configuration**
 
-SortCraft uses **YAML config files** to define categories, priorities, and filters. Place your category files in `config/sortcraft/categories/` - all `.yaml` files in this directory are loaded automatically.
+Sortcraft uses **YAML config files** to define categories, priorities, and filters. Place your category files in `config/sortcraft/categories/` - all `.yaml` files in this directory are loaded automatically.
 
 ### 📁 **Category File Structure**
 
@@ -466,7 +466,7 @@ All items will be sorted into their proper chests, filling from the **bottom up*
 
 ## ⚙️ **Configuration**
 
-SortCraft configuration is stored in `config/sortcraft/`:
+Sortcraft configuration is stored in `config/sortcraft/`:
 
 ```
 config/sortcraft/
@@ -480,7 +480,7 @@ config/sortcraft/
 ### **config.yaml**
 
 ```yaml
-# SortCraft Configuration
+# Sortcraft Configuration
 
 # Log level: TRACE, DEBUG, INFO, WARN, ERROR
 # Default: WARN
@@ -500,7 +500,7 @@ searchRadius: 64
 
 ## 📊 **Audit Logging**
 
-SortCraft includes an optional audit logging system that records all sorting operations to structured JSONL files. This is useful for server administrators who want to track item movements or debug sorting issues.
+Sortcraft includes an optional audit logging system that records all sorting operations to structured JSONL files. This is useful for server administrators who want to track item movements or debug sorting issues.
 
 ### **Enabling Audit Logging**
 
@@ -587,7 +587,7 @@ Audit logs are written to `logs/sortcraft/audit-YYYY-MM-DD.log` in JSONL format 
 
 ## 🚀 **Start Sorting Your World Today**
 
-SortCraft brings **peace and order** to your Minecraft storage chaos. Configure your categories, place your signs, and let SortCraft handle the rest.
+Sortcraft brings **peace and order** to your Minecraft storage chaos. Configure your categories, place your signs, and let Sortcraft handle the rest.
 
 ---
 
@@ -595,7 +595,7 @@ SortCraft brings **peace and order** to your Minecraft storage chaos. Configure 
 
 ### Multi-Version Support
 
-SortCraft supports Minecraft versions **1.21.1, 1.21.4 through 1.21.10** (8 versions).
+Sortcraft supports Minecraft versions **1.21.1, 1.21.4 through 1.21.10** (8 versions).
 
 **Note:** MC 1.21.2 and 1.21.3 are not supported due to incompatible API changes in Architectury and Minecraft that would require extensive refactoring. These were transitional versions and most servers/clients use either 1.21.1 or 1.21.4+.
 

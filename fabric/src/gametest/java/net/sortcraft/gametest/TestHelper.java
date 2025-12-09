@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Utility class for SortCraft GameTests.
+ * Utility class for Sortcraft GameTests.
  * Provides helper methods for chest/sign placement, item manipulation, and assertions.
  */
 public final class TestHelper {

@@ -1,12 +1,12 @@
 package net.sortcraft.fabric;
 
 import net.fabricmc.api.ModInitializer;
-import net.sortcraft.SortCraft;
+import net.sortcraft.Sortcraft;
 
-public class SortCraftFabric implements ModInitializer {
+public class SortcraftFabric implements ModInitializer {
     @Override
     public void onInitialize() {
-        SortCraft.init();
+        Sortcraft.init();
     }
 }
 

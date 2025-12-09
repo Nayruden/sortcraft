@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Bootstrap tests for category parsing edge cases.
  * Tests YAML parsing, includes resolution, priority handling, and error cases.
  */
-public class CategoryParsingTest extends SortCraftBootstrapTestBase {
+public class CategoryParsingTest extends SortcraftBootstrapTestBase {
 
     // ========== Basic Parsing ==========
 

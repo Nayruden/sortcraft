@@ -18,10 +18,10 @@ import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.sortcraft.container.ContainerHelper;
 
 /**
- * Simple game tests for SortCraft.
+ * Simple game tests for Sortcraft.
  * These tests run in an actual Minecraft server environment.
  */
-public class SortCraftGameTest {
+public class SortcraftGameTest {
 
     /**
      * Tests that a wall sign can be placed on a chest and the sign text can be read.
@@ -57,7 +57,7 @@ public class SortCraftGameTest {
 
     /**
      * Tests that a vertical stack of chests can be detected.
-     * This validates the chest stacking logic used by SortCraft.
+     * This validates the chest stacking logic used by Sortcraft.
      */
     @GameTest
     public void verticalChestStackDetected(GameTestHelper helper) {
@@ -101,7 +101,7 @@ public class SortCraftGameTest {
     }
 
     /**
-     * Tests ContainerHelper.getAttachedChestPos() - a real SortCraft method.
+     * Tests ContainerHelper.getAttachedChestPos() - a real Sortcraft method.
      * This verifies that the mod correctly identifies the chest position
      * relative to a wall sign.
      */
@@ -125,7 +125,7 @@ public class SortCraftGameTest {
         BlockPos absoluteSignPos = helper.absolutePos(signPos);
         BlockState actualSignState = level.getBlockState(absoluteSignPos);
 
-        // Call SortCraft's ContainerHelper.getAttachedChestPos()
+        // Call Sortcraft's ContainerHelper.getAttachedChestPos()
         BlockPos foundChestPos = ContainerHelper.getAttachedChestPos(absoluteSignPos, actualSignState, level);
 
         if (foundChestPos == null) {
@@ -161,7 +161,7 @@ public class SortCraftGameTest {
         BlockPos absoluteSignPos = helper.absolutePos(signPos);
         BlockState actualSignState = level.getBlockState(absoluteSignPos);
 
-        // Call SortCraft's ContainerHelper.getAttachedChestPos()
+        // Call Sortcraft's ContainerHelper.getAttachedChestPos()
         BlockPos foundChestPos = ContainerHelper.getAttachedChestPos(absoluteSignPos, actualSignState, level);
 
         // Should be null since there's no chest

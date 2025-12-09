@@ -5,7 +5,7 @@ REM Usage: build-all-versions.bat
 setlocal enabledelayedexpansion
 
 echo ========================================
-echo SortCraft Multi-Version Build Script
+echo Sortcraft Multi-Version Build Script
 echo ========================================
 echo.
 

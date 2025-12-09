@@ -15,7 +15,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 /**
- * Manages SortCraft configuration loading and storage.
+ * Manages Sortcraft configuration loading and storage.
  */
 public final class ConfigManager {
     private ConfigManager() {}
@@ -43,7 +43,7 @@ public final class ConfigManager {
     }
 
     /**
-     * Gets the configuration path for SortCraft.
+     * Gets the configuration path for Sortcraft.
      */
     public static Path getConfigPath(String... subPaths) {
         Path base = Platform.getConfigDir().resolve("sortcraft");
@@ -64,7 +64,7 @@ public final class ConfigManager {
             if (!Files.exists(configPath)) {
                 Files.createDirectories(configPath.getParent());
                 String defaultConfig = """
-                        # SortCraft Configuration
+                        # Sortcraft Configuration
 
                         # Log level: TRACE, DEBUG, INFO, WARN, ERROR
                         # Default: WARN

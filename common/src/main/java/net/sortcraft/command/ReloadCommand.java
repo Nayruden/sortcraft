@@ -27,7 +27,7 @@ public final class ReloadCommand {
             CategoryLoader.loadCategories(server);
             CategoryLoader.flattenCategories();
 
-            source.sendSuccess(() -> Component.literal("SortCraft configuration reloaded successfully."), false);
+            source.sendSuccess(() -> Component.literal("Sortcraft configuration reloaded successfully."), false);
             LOGGER.info("[sortreload] Configuration reloaded successfully.");
             return 1;
         } catch (Exception e) {
