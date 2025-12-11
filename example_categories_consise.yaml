@@ -1,0 +1,161 @@
+# ============================================================================
+# SORTCRAFT CATEGORY CONFIGURATION - QUICK REFERENCE EXAMPLE
+# ============================================================================
+# Place .yaml files in config/sortcraft/categories/ - all files are loaded.
+# Use /sort reload to apply changes without restarting the server.
+# ============================================================================
+
+# -----------------------------------------------------------------------------
+# PRIORITY SYSTEM
+# -----------------------------------------------------------------------------
+# Lower priority = checked first. Default is 10. Items match the first category
+# where all filters pass. Use priority to control which category "wins".
+
+# Priority 1: Named items get sorted first (before any other category)
+named_gear:
+  priority: 1
+  filters:
+    - custom_name: '*'           # Matches ANY renamed item
+  includes:
+    - gear                       # Reference another category's items
+
+# Priority 5: High-value enchanted items
+greater_swords:
+  priority: 5
+  filters:
+    - enchantment: max           # Only max-level enchantments (Sharpness V, etc.)
+  items:
+    - /.*:.*_sword/              # Regex: matches diamond_sword, iron_sword, etc.
+
+# Priority 5: Non-max enchanted books (uses filter negation)
+lesser_books:
+  priority: 5
+  filters:
+    - "!enchantment": max        # Negation with ! prefix (must quote the key)
+  items:
+    - minecraft:enchanted_book
+
+# Priority 10: Default - most categories use this (or omit priority entirely)
+swords:
+  items:
+    - minecraft:diamond_sword    # Explicit item ID
+    - minecraft:iron_sword
+    - minecraft:golden_sword
+    - minecraft:stone_sword
+    - minecraft:wooden_sword
+    - minecraft:netherite_sword
+
+# -----------------------------------------------------------------------------
+# ITEM MATCHING PATTERNS
+# -----------------------------------------------------------------------------
+
+# Tag matching: Use # prefix to match all items in a tag
+logs:
+  items:
+    - "#minecraft:logs"          # All vanilla logs (oak, birch, spruce, etc.)
+    - "#minecraft:planks"        # All planks
+
+# Regex patterns: Use /pattern/ to match multiple items
+ores:
+  items:
+    - /minecraft:.*_ore/         # All vanilla ores
+    - /.*:raw_.*$/               # Raw materials from any mod
+
+# Mixed matching: Combine all pattern types
+building_blocks:
+  items:
+    - "#minecraft:stone_bricks"  # Tag
+    - /minecraft:.*_bricks$/     # Regex for all brick variants
+    - minecraft:cobblestone      # Explicit ID
+    - minecraft:stone
+
+# -----------------------------------------------------------------------------
+# CATEGORY INHERITANCE (includes)
+# -----------------------------------------------------------------------------
+# Use includes to inherit items from other categories. Great for rollup
+# categories that group related items together.
+
+tools:
+  items:
+    - /.*:.*_pickaxe/
+    - /.*:.*_axe/
+    - /.*:.*_shovel/
+    - /.*:.*_hoe/
+
+armor:
+  items:
+    - /.*:.*_helmet/
+    - /.*:.*_chestplate/
+    - /.*:.*_leggings/
+    - /.*:.*_boots/
+    - /.*:.*_shield/
+
+# Rollup category: combines multiple categories
+gear:
+  priority: 12                   # Higher priority = checked later (fallback)
+  includes:
+    - swords
+    - tools
+    - armor
+
+# -----------------------------------------------------------------------------
+# FILTER TYPES
+# -----------------------------------------------------------------------------
+
+# enchantment: Match enchanted items
+#   - "*"     : Any enchanted item
+#   - "max"   : Has at least one max-level enchantment
+#   - "minecraft:sharpness" : Has specific enchantment
+enchanted_any:
+  priority: 8
+  filters:
+    - enchantment: '*'           # Any enchantment at any level
+  includes:
+    - gear
+
+# custom_name: Match renamed items
+#   - "*"           : Any renamed item
+#   - "Excalibur"   : Specific name (case-insensitive)
+special_named:
+  priority: 1
+  filters:
+    - custom_name: "Excalibur"   # Only items renamed to "Excalibur"
+  includes:
+    - swords
+
+# stackable: Match items that can stack beyond 1
+#   - No value needed (just use "stackable:")
+#   - Use "!stackable" to match unstackable items (tools, weapons, armor)
+unstackables:
+  priority: 50                   # High number = checked last (catch-all)
+  filters:
+    - "!stackable":              # Matches tools, weapons, armor, etc.
+  items:
+    - /.*:.*/                    # Match everything, filter does the work
+
+# durability: Match by remaining durability percentage
+#   - "<50%"  : Less than 50%
+#   - ">=75%" : 75% or more
+#   - "=100%" : Pristine (no damage)
+#   - "*"     : Any damageable item
+damaged_gear:
+  priority: 3
+  filters:
+    - durability: "<50%"         # Needs repair
+  includes:
+    - gear
+
+# -----------------------------------------------------------------------------
+# COMBINING FILTERS (AND logic)
+# -----------------------------------------------------------------------------
+# Multiple filters = ALL must match
+
+prized_weapons:
+  priority: 1
+  filters:
+    - enchantment: max           # AND max enchanted
+    - custom_name: '*'           # AND renamed
+    - durability: ">=75%"        # AND good condition
+  includes:
+    - swords
+

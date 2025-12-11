@@ -1,4 +1,5 @@
-earth: # E A1
+# Place .yaml files in config/sortcraft/categories/ - all files are loaded.
+earth:
   items:
   # Grassy
   - biomesoplenty:origin_grass_block
@@ -24,7 +25,7 @@ earth: # E A1
   - minecraft:dirt
 
 
-masonry: # E A2
+masonry:
   items:
   - minecraft:resin_brick
   - minecraft:resin_bricks
@@ -55,7 +56,7 @@ masonry: # E A2
 
   - minecraft:flower_pot
 
-sandstone: # E A3
+sandstone:
   items:
   - minecraft:sandstone
   - minecraft:sandstone_stairs
@@ -126,7 +127,7 @@ sandstone: # E A3
   - biomesoplenty:cut_white_sandstone
   - biomesoplenty:cut_white_sandstone_slab
 
-stone: # E A4
+stone:
   items:
   - minecraft:cobblestone
   - minecraft:cobblestone_stairs
@@ -160,7 +161,7 @@ stone: # E A4
   - minecraft:stone_button
   - minecraft:stone_pressure_plate
 
-igneous: # E B1
+igneous:
   items:
   - minecraft:diorite
   - minecraft:diorite_stairs
@@ -189,7 +190,7 @@ igneous: # E B1
   - minecraft:polished_granite_slab
   - minecraft:polished_granite_stairs
 
-trimstone: # E B2
+trimstone:
   items:
   - minecraft:quartz_block
   - minecraft:quartz_stairs
@@ -220,7 +221,7 @@ trimstone: # E B2
   - minecraft:polished_tuff_slab
   - minecraft:polished_tuff_wall
 
-caves: # E B2
+caves:
   items:
   - minecraft:sculk
   - minecraft:sculk_catalyst
@@ -243,7 +244,7 @@ caves: # E B2
   - minecraft:amethyst_cluster
   - minecraft:amethyst_shard
 
-deepslate: # E B3
+deepslate:
   items:
   - minecraft:deepslate
   - minecraft:cobbled_deepslate
@@ -269,7 +270,7 @@ deepslate: # E B3
   - minecraft:deepslate_brick_slab
   - minecraft:deepslate_brick_wall
 
-blackstone: # E B4
+blackstone:
   items:
   - minecraft:gilded_blackstone
   - minecraft:blackstone
@@ -291,7 +292,7 @@ blackstone: # E B4
   - minecraft:polished_blackstone_brick_slab
   - minecraft:polished_blackstone_brick_wall
 
-nether: # E C1
+nether:
   items:
   - minecraft:netherrack
   - minecraft:warped_nylium
@@ -318,7 +319,7 @@ nether: # E C1
   - minecraft:red_nether_brick_slab
   - minecraft:red_nether_brick_wall
 
-end: # E C2
+end:
   items:
   - minecraft:purpur_block
   - minecraft:purpur_stairs
@@ -334,7 +335,7 @@ end: # E C2
   - minecraft:obsidian
   - minecraft:crying_obsidian
 
-ocean: # E C3
+ocean:
   items:
   - minecraft:prismarine
   - minecraft:prismarine_stairs
