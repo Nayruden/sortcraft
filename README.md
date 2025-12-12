@@ -1,3 +1,12 @@
+<p align="center">
+[![Discord](https://img.shields.io/discord/1448774841208668231?label=Discord&color=5865F2)](https://discord.gg/YyutMfPNp4)
+[![CurseForge Downloads](https://img.shields.io/curseforge/dt/1401341?logo=curseforge&label=&color=242629&labelColor=F16436&logoColor=1C1C1C)](https://www.curseforge.com/minecraft/mc-mods/sortcraft)
+[![Modrinth Downloads](https://img.shields.io/modrinth/dt/GEOKuBos?logo=modrinth&label=&color=242629&labelColor=5CA424&logoColor=1C1C1C)](https://modrinth.com/mod/sortcraft)
+
+[![Available for Fabric](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/fabric_vector.svg)](https://fabricmc.net/)
+[![Available for NeoForge](https://raw.githubusercontent.com/Hyperbole-Devs/vectors/8494ec1ac495cfb481dc7e458356325510933eb0/assets/cozy/supported/neoforge_vector.svg)](https://neoforged.net/)
+</p>
+
 # Sortcraft
 
 **Sortcraft** is a powerful, configurable bulk sorting mod for Minecraft, supporting both Fabric and NeoForge loaders. It organizes your chests with intuitive, customizable categories to keep your world neat and efficient.
