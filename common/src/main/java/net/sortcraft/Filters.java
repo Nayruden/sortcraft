@@ -307,9 +307,10 @@ class DurabilityFilterRule implements FilterRule {
         }
 
         // Calculate durability percentage: (remaining / max) * 100
+        // Use Math.round for accurate percentage to avoid off-by-one errors at boundaries
         int currentDamage = stack.getDamageValue();
         int remainingDurability = maxDamage - currentDamage;
-        int durabilityPercent = (remainingDurability * 100) / maxDamage;
+        int durabilityPercent = Math.round((remainingDurability * 100.0f) / maxDamage);
 
         return operator.test(durabilityPercent, threshold);
     }

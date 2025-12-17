@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,28 +48,27 @@ public final class CategoryLoader {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
 
-    private static final Map<String, CategoryNode> categories = new HashMap<>();
-    private static final Map<ResourceLocation, Set<CategoryNode>> itemCategoryMap = new HashMap<>();
-    private static RegistryAccess currentRegistries;
+    private static final Map<String, CategoryNode> categories = new ConcurrentHashMap<>();
+    private static final Map<ResourceLocation, Set<CategoryNode>> itemCategoryMap = new ConcurrentHashMap<>();
+    private static volatile RegistryAccess currentRegistries;
 
     /**
      * Returns all loaded categories, keyed by category name.
      *
-     * @return Unmodifiable view would be safer, but returns mutable map for performance.
-     *         Do not modify the returned map directly.
+     * @return Unmodifiable view of the categories map
      */
     public static Map<String, CategoryNode> getCategories() {
-        return categories;
+        return Collections.unmodifiableMap(categories);
     }
 
     /**
      * Returns the item-to-category mapping built by {@link #flattenCategories()}.
      * Maps each item ID to the set of categories that include it.
      *
-     * @return Map from item ResourceLocation to set of matching CategoryNodes
+     * @return Unmodifiable view of the map from item ResourceLocation to set of matching CategoryNodes
      */
     public static Map<ResourceLocation, Set<CategoryNode>> getItemCategoryMap() {
-        return itemCategoryMap;
+        return Collections.unmodifiableMap(itemCategoryMap);
     }
 
     /**
@@ -231,7 +231,6 @@ public final class CategoryLoader {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private static CategoryNode parseCategory(String categoryName, Object valueRaw) {
         if (categoryName == null || categoryName.isEmpty()) {
             LOGGER.warn("Cannot parse category with null or empty name");
@@ -265,7 +264,13 @@ public final class CategoryLoader {
 
             Object includeRaw = categoryConf.get("includes");
             if (includeRaw instanceof List<?> includeCategories) {
-                categoryNode.includes.addAll((List<String>) includeCategories);
+                for (Object item : includeCategories) {
+                    if (item instanceof String s) {
+                        categoryNode.includes.add(s);
+                    } else if (item != null) {
+                        LOGGER.warn("Category '{}' has non-string include value: {}", categoryName, item);
+                    }
+                }
             } else if (includeRaw != null) {
                 LOGGER.warn("Category '{}' has unrecognized includes type {}", categoryName, includeRaw.getClass().getName());
             }
@@ -274,9 +279,11 @@ public final class CategoryLoader {
             if (filtersRaw instanceof List<?> filters) {
                 for (Object filterRaw : filters) {
                     if (filterRaw instanceof Map<?, ?> filterMap) {
-                        var filter = (Map<String, String>) filterMap;
-                        for (Map.Entry<String, String> filterEntry : filter.entrySet())
-                            categoryNode.filters.add(FilterRuleFactory.fromYaml(currentRegistries, filterEntry.getKey(), filterEntry.getValue()));
+                        for (Map.Entry<?, ?> entry : filterMap.entrySet()) {
+                            String key = String.valueOf(entry.getKey());
+                            String value = entry.getValue() != null ? String.valueOf(entry.getValue()) : null;
+                            categoryNode.filters.add(FilterRuleFactory.fromYaml(currentRegistries, key, value));
+                        }
                     }
                 }
             } else if (filtersRaw != null) {
@@ -451,11 +458,14 @@ public final class CategoryLoader {
 
     private static void addExplicitItem(String itemName, String categoryName, CategoryNode categoryNode) {
         ResourceLocation id = ResourceLocation.tryParse(itemName);
-        if (id != null) {
-            categoryNode.itemIds.add(id);
-        } else {
+        if (id == null) {
             LOGGER.warn("Invalid item identifier '{}' in category '{}'", itemName, categoryName);
+            return;
         }
+        if (!BuiltInRegistries.ITEM.containsKey(id)) {
+            LOGGER.warn("Unknown item '{}' in category '{}' - item does not exist in registry", itemName, categoryName);
+        }
+        categoryNode.itemIds.add(id);
     }
 }
 

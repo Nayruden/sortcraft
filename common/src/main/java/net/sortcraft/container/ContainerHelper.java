@@ -59,11 +59,18 @@ public final class ContainerHelper {
 
     /**
      * Gets the chest position attached to a sign.
+     *
+     * @param signPos the position of the sign
+     * @param signState the block state of the sign
+     * @param world the server level
+     * @return the position of the attached chest, or null if not a wall sign or no chest attached
      */
     public static BlockPos getAttachedChestPos(BlockPos signPos, BlockState signState, ServerLevel world) {
+        // Check if the block state has the HORIZONTAL_FACING property before accessing it
+        if (!signState.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
+            return null;
+        }
         Direction attachedDirection = signState.getValue(BlockStateProperties.HORIZONTAL_FACING);
-
-        if (attachedDirection == null) return null;
         attachedDirection = attachedDirection.getOpposite();
 
         BlockPos chestPos = signPos.relative(attachedDirection);
@@ -113,14 +120,22 @@ public final class ContainerHelper {
     }
 
     /**
+     * Maximum number of chests to scan in a vertical stack.
+     * Prevents infinite loops in case of corrupted world data.
+     */
+    private static final int MAX_CHEST_STACK_HEIGHT = 256;
+
+    /**
      * Collects all chests in a vertical stack starting from the given position.
-     * Stops when a chest with a category sign is encountered below.
+     * Stops when a chest with a category sign is encountered below, or when
+     * the maximum stack height is reached.
      */
     public static List<ChestRef> collectChestStack(ServerLevel world, BlockPos startPos) {
         List<ChestRef> result = new ArrayList<>();
         BlockPos cur = startPos;
+        int iterations = 0;
 
-        while (true) {
+        while (iterations++ < MAX_CHEST_STACK_HEIGHT) {
             BlockState state = world.getBlockState(cur);
 
             Block block = state.getBlock();
@@ -209,6 +224,9 @@ public final class ContainerHelper {
 
             @Override
             public ItemStack next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException("No more items in container");
+                }
                 return container.getItem(index++);
             }
         };

@@ -285,11 +285,10 @@ public abstract class SortcraftBootstrapTestBase {
         List<CategoryNode> matches = getMatchingCategories(stack);
         List<String> actual = matches.stream().map(c -> c.name).collect(Collectors.toList());
 
+        assertEquals(expectedCategories.length, actual.size(),
+            "Expected " + expectedCategories.length + " categories but got " + actual.size() + ": " + actual);
+
         for (int i = 0; i < expectedCategories.length; i++) {
-            if (i >= actual.size()) {
-                fail("Expected category '" + expectedCategories[i] + "' at index " + i +
-                     " but only " + actual.size() + " categories matched: " + actual);
-            }
             assertEquals(expectedCategories[i], actual.get(i),
                 "Category mismatch at index " + i + ": expected '" + expectedCategories[i] +
                         "' but got '" + actual.get(i) + "'");

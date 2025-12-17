@@ -10,6 +10,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -132,7 +133,7 @@ public class SortContext {
     }
 
     public Map<BlockPos, Container> getContainerCache() {
-        return containerCache;
+        return Collections.unmodifiableMap(containerCache);
     }
 }
 
