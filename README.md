@@ -34,6 +34,7 @@ flowchart TB
 
     FILES -.->|"'ores:' in config → [ores] on sign"| GAME
 
+    style C1 fill:#222,stroke:#fff,color:#fff
     style FILES fill:#1a2a1a,stroke:#4a4,color:#cfc
     style YAML fill:#2d4a27,stroke:#6b6,color:#fff
     style GAME fill:#1a2a3c,stroke:#48c,color:#cef
@@ -69,6 +70,10 @@ ores:
     - minecraft:copper_ingot
 ```
 
+OR look at the following examples:
+* [Concise Example / Quick Reference](example_categories_consise.yaml)
+* [Full Example / What I use on my server](example_categories_full.yaml)
+
 ### 2. Build your storage
 
 - Place a chest and attach a sign with `[input]` on any line
@@ -86,6 +91,8 @@ Put diamonds, iron, gold, or copper in the input chest, then **right-click the `
 |-------|-------------|
 | [Commands](docs/COMMANDS.md) | All `/sort` commands |
 | [Configuration](docs/CONFIGURATION.md) | YAML syntax, priorities, includes, item tags |
+| ↳ [Concise Example](example_categories_consise.yaml) | Quick reference |
+| ↳ [Full Example](example_categories_full.yaml) | What I use on my server|
 | [Filters](docs/FILTERS.md) | Sort by enchantments, durability, custom names |
 | [Regex Patterns](docs/REGEX.md) | Match items with patterns like `/.*:.*_sword/` |
 | [Core Concepts](docs/CONCEPTS.md) | Priority system, category inheritance, stacking |
