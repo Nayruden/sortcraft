@@ -9,6 +9,8 @@
 
 **Sortcraft** is a multi-chest item sorter without the redstone. Label chests with signs like `[ores]` or `[tools]`, right-click your input chest, and items instantly sort themselves. Categories live in simple YAML files you control.
 
+Visually build and organize your categories using our companion webapp [CategoryCraft](https://categories.craftlabs.nexus/)! You can even load mod jar files to see your modded items!
+
 ---
 
 ## 📦 How It Works
@@ -69,6 +71,8 @@ ores:
     - minecraft:gold_ingot
     - minecraft:copper_ingot
 ```
+
+OR use [CategoryCraft](https://categories.craftlabs.nexus/) to build your categories visually.
 
 OR look at the following examples:
 * [Concise Example / Quick Reference](example_categories_consise.yaml)
