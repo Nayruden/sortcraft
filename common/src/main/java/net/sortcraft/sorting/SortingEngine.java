@@ -47,7 +47,7 @@ import java.util.*;
 public final class SortingEngine {
     private SortingEngine() {}
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
+    private static final Logger LOGGER = LoggerFactory.getLogger("SortCraft");
     private static final int UNIFORM_CONTAINER_THRESHOLD = 10;
 
     /**

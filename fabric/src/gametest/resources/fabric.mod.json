@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "sortcraft-gametest",
   "version": "1.0.0",
-  "name": "Sortcraft Game Tests",
+  "name": "SortCraft Game Tests",
   "environment": "*",
   "entrypoints": {
     "fabric-gametest": [
@@ -15,7 +15,7 @@
       "net.sortcraft.gametest.OverflowGameTest",
       "net.sortcraft.gametest.PerformanceGameTest",
       "net.sortcraft.gametest.SignTextGameTest",
-      "net.sortcraft.gametest.SortcraftGameTest",
+      "net.sortcraft.gametest.SortCraftGameTest",
       "net.sortcraft.gametest.StorageLayoutGameTest",
       "net.sortcraft.gametest.VerticalStackGameTest"
     ]

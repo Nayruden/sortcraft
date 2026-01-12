@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 public final class ReloadCommand {
     private ReloadCommand() {}
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
+    private static final Logger LOGGER = LoggerFactory.getLogger("SortCraft");
 
     public static int execute(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
@@ -32,7 +32,7 @@ public final class ReloadCommand {
             return 0;
         }
 
-        source.sendSuccess(() -> Component.literal("Sortcraft configuration reloaded successfully."), false);
+        source.sendSuccess(() -> Component.literal("SortCraft configuration reloaded successfully."), false);
         LOGGER.info("[sortreload] Configuration reloaded successfully.");
         return 1;
     }

@@ -14,13 +14,13 @@ import java.nio.file.Path;
 import java.util.Map;
 
 /**
- * Manages Sortcraft configuration loading and storage.
+ * Manages SortCraft configuration loading and storage.
  */
 public final class ConfigManager {
     private ConfigManager() {}
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
-    private static final String MODID = "sortcraft";
+    private static final Logger LOGGER = LoggerFactory.getLogger("SortCraft");
+    private static final String MODID = "SortCraft";
 
     // Configuration values with defaults
     private static int searchRadius = 64;
@@ -42,10 +42,10 @@ public final class ConfigManager {
     }
 
     /**
-     * Gets the configuration path for Sortcraft.
+     * Gets the configuration path for SortCraft.
      */
     public static Path getConfigPath(String... subPaths) {
-        Path base = Platform.getConfigDir().resolve("sortcraft");
+        Path base = Platform.getConfigDir().resolve("SortCraft");
         for (String subPath : subPaths) {
             base = base.resolve(subPath);
         }
@@ -65,7 +65,7 @@ public final class ConfigManager {
             if (!Files.exists(configPath)) {
                 Files.createDirectories(configPath.getParent());
                 String defaultConfig = """
-                        # Sortcraft Configuration
+                        # SortCraft Configuration
 
                         # Log level: TRACE, DEBUG, INFO, WARN, ERROR
                         # Default: WARN

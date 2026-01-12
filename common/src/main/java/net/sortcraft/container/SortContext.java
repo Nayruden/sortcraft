@@ -19,7 +19,7 @@ import java.util.Map;
  * Built at command start and discarded after command completes.
  */
 public class SortContext {
-    private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
+    private static final Logger LOGGER = LoggerFactory.getLogger("SortCraft");
 
     // Maps sign text (e.g., "[food]") to the closest sign with that text
     private final Map<String, SignBlockEntity> signCache = new HashMap<>();

@@ -37,7 +37,7 @@ import java.util.stream.Stream;
  *   <li><b>priority</b> - Order in which categories are checked (lower = first, default: 10)</li>
  * </ul>
  *
- * <p>Category files are loaded from {@code config/sortcraft/categories/} on server start.
+ * <p>Category files are loaded from {@code config/SortCraft/categories/} on server start.
  * Use {@link #loadCategoriesFromYaml(String)} for testing or dynamic category loading.
  *
  * @see CategoryNode
@@ -46,7 +46,7 @@ import java.util.stream.Stream;
 public final class CategoryLoader {
     private CategoryLoader() {}
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
+    private static final Logger LOGGER = LoggerFactory.getLogger("SortCraft");
 
     private static final Map<String, CategoryNode> categories = new ConcurrentHashMap<>();
     private static final Map<ResourceLocation, Set<CategoryNode>> itemCategoryMap = new ConcurrentHashMap<>();
@@ -169,7 +169,7 @@ public final class CategoryLoader {
     /**
      * Loads categories from all YAML files in the categories directory.
      *
-     * <p>Scans {@code config/sortcraft/categories/} for all {@code .yaml} and {@code .yml} files,
+     * <p>Scans {@code config/SortCraft/categories/} for all {@code .yaml} and {@code .yml} files,
      * loading them in alphabetical order. If the directory doesn't exist, creates it with an
      * example category file.
      *

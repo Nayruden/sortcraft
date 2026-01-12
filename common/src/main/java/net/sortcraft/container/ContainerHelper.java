@@ -31,7 +31,7 @@ public final class ContainerHelper {
     private static final Pattern CATEGORY_SIGN_PATTERN = Pattern.compile("\\[.+?]");
     private ContainerHelper() {}
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
+    private static final Logger LOGGER = LoggerFactory.getLogger("SortCraft");
     public static final int SHULKER_BOX_SIZE = 27;
 
     /**

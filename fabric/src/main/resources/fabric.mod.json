@@ -13,7 +13,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.sortcraft.fabric.SortcraftFabric"
+      "net.sortcraft.fabric.SortCraftFabric"
     ]
   },
   "mixins": [

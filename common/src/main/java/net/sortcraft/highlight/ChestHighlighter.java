@@ -161,7 +161,7 @@ public final class ChestHighlighter {
     private static void applyTeamColor(ServerLevel world, Entity marker, ChatFormatting color) {
         if (color != null) {
             Scoreboard scoreboard = world.getScoreboard();
-            String teamName = "sortcraft_" + color.getName();
+            String teamName = "SortCraft_" + color.getName();
             PlayerTeam team = scoreboard.getPlayerTeam(teamName);
             if (team == null) {
                 team = scoreboard.addPlayerTeam(teamName);

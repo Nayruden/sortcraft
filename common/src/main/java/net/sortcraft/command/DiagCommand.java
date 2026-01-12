@@ -127,11 +127,11 @@ public final class DiagCommand {
                 yaml.dump(finalYaml, writer);
             }
         } catch (IOException e) {
-            source.sendFailure(Component.literal("Failed to write sortcraft/sortdiag.yaml: " + e.getMessage()));
+            source.sendFailure(Component.literal("Failed to write SortCraft/sortdiag.yaml: " + e.getMessage()));
             return 0;
         }
 
-        source.sendSuccess(() -> Component.literal("Sorter diagnostic written to sortcraft/sortdiag.yaml"), false);
+        source.sendSuccess(() -> Component.literal("Sorter diagnostic written to SortCraft/sortdiag.yaml"), false);
         return 1;
     }
 }

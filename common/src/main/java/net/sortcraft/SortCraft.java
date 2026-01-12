@@ -23,10 +23,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Sortcraft mod entry point.
+ * SortCraft mod entry point.
  * Handles initialization and event registration.
  */
-public class Sortcraft {
+public class SortCraft {
     public static final String MODID = "sortcraft";
     private static final Logger LOGGER = LoggerFactory.getLogger(MODID);
 
@@ -43,7 +43,7 @@ public class Sortcraft {
             SortAuditLogger.shutdown();
             CategoryLoader.clear();
             ChestHighlighter.clearAll(server);
-            LOGGER.debug("Server stopping - cleared Sortcraft static state");
+            LOGGER.debug("Server stopping - cleared SortCraft static state");
         });
 
         // Tick handler to manage highlight entity lifetime
