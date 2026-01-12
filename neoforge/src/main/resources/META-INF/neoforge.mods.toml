@@ -3,6 +3,9 @@ loaderVersion = "[4,)"
 license = "MIT"
 issueTrackerURL = ""
 
+[[mixins]]
+config = "sortcraft-common.mixins.json"
+
 [[mods]]
 modId = "${mod_id}"
 version = "${mod_version}"

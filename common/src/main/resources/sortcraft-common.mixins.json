@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.sortcraft.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "accessor.BlockDisplayAccessor"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
+

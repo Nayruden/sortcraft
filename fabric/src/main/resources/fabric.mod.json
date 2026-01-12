@@ -16,7 +16,9 @@
       "net.sortcraft.fabric.SortcraftFabric"
     ]
   },
-  "mixins": [],
+  "mixins": [
+    "sortcraft-common.mixins.json"
+  ],
   "depends": {
     "fabricloader": ">=${fabric_loader_version}",
     "minecraft": "${supported_minecraft_versions}",

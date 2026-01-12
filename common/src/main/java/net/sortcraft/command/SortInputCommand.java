@@ -1,9 +1,11 @@
 package net.sortcraft.command;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
@@ -13,13 +15,13 @@ import net.sortcraft.config.ConfigManager;
 import net.sortcraft.container.ChestRef;
 import net.sortcraft.container.ContainerHelper;
 import net.sortcraft.container.SortContext;
+import net.sortcraft.highlight.ChestHighlighter;
 import net.sortcraft.sorting.SortingEngine;
 import net.sortcraft.sorting.SortingResults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Handles /sort input and /sort preview commands.
@@ -101,6 +103,9 @@ public final class SortInputCommand {
                     int count = entry.getValue();
                     source.sendSuccess(() -> Component.literal("- " + cat + ": " + count + " item" + (count != 1 ? "s" : "")), false);
                 }
+
+                // Highlight destination chests for preview
+                highlightPreviewChests(player, world, context, counts.keySet(), results.overflowCategories);
             }
             return 1;
         }
@@ -115,6 +120,74 @@ public final class SortInputCommand {
         }
 
         return 1;
+    }
+
+    /**
+     * Highlights destination chests for preview mode.
+     * Clears any previous preview highlights for the player, then highlights
+     * category chests with color coding (AQUA for success, RED for overflow).
+     * Respects MAX_PREVIEW_HIGHLIGHTS limit and deduplicates positions.
+     *
+     * @param player The player triggering the preview
+     * @param world The server level
+     * @param context The sort context with cached sign positions
+     * @param categories Categories that will receive items
+     * @param overflowCategories Categories that are full (overflow)
+     */
+    private static void highlightPreviewChests(ServerPlayer player, ServerLevel world, SortContext context,
+                                                Set<String> categories, Set<String> overflowCategories) {
+        MinecraftServer server = world.getServer();
+        UUID playerUUID = player.getUUID();
+
+        // Clear any previous preview highlights for this player
+        ChestHighlighter.clearPlayerHighlights(server, playerUUID);
+
+        // Track already-highlighted positions to avoid duplicates
+        Set<BlockPos> highlightedPositions = new HashSet<>();
+        int highlightCount = 0;
+
+        // First pass: highlight successful destinations (AQUA)
+        for (String category : categories) {
+            if (highlightCount >= ChestHighlighter.MAX_PREVIEW_HIGHLIGHTS) break;
+            if (overflowCategories.contains(category)) continue; // Handle overflow separately
+
+            List<ChestRef> chests = SortingEngine.findCategoryChests(context, world, category);
+            if (chests.isEmpty()) continue;
+
+            // Only highlight the first chest in the stack (not entire stack)
+            BlockPos pos = chests.get(0).getPos();
+            if (highlightedPositions.contains(pos)) continue;
+
+            highlightedPositions.add(pos);
+            ChestHighlighter.highlightChestForPlayer(world, pos,
+                    ChestHighlighter.PREVIEW_DURATION_TICKS, ChatFormatting.AQUA, playerUUID);
+            highlightCount++;
+        }
+
+        // Second pass: highlight overflow destinations (RED)
+        for (String category : overflowCategories) {
+            if (highlightCount >= ChestHighlighter.MAX_PREVIEW_HIGHLIGHTS) break;
+
+            List<ChestRef> chests = SortingEngine.findCategoryChests(context, world, category);
+            if (chests.isEmpty()) continue;
+
+            // Only highlight the first chest in the stack
+            BlockPos pos = chests.get(0).getPos();
+            if (highlightedPositions.contains(pos)) continue;
+
+            highlightedPositions.add(pos);
+            ChestHighlighter.highlightChestForPlayer(world, pos,
+                    ChestHighlighter.PREVIEW_DURATION_TICKS, ChatFormatting.RED, playerUUID);
+            highlightCount++;
+        }
+
+        // Notify if we hit the limit
+        if (categories.size() + overflowCategories.size() > ChestHighlighter.MAX_PREVIEW_HIGHLIGHTS) {
+            int skipped = (categories.size() + overflowCategories.size()) - highlightCount;
+            player.sendSystemMessage(Component.literal(
+                    "§7(Showing " + highlightCount + " of " + (categories.size() + overflowCategories.size()) +
+                    " destination categories - " + skipped + " not highlighted)"));
+        }
     }
 }
 

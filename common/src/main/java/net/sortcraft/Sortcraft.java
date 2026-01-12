@@ -55,6 +55,7 @@ public class Sortcraft {
         });
 
         // Right-click on [input] sign triggers sorting
+        // Sneak + right-click triggers preview mode with chest highlighting
         InteractionEvent.RIGHT_CLICK_BLOCK.register((player, hand, pos, direction) -> {
             if (!(player instanceof ServerPlayer serverPlayer)) return EventHelper.pass();
             if (hand != InteractionHand.MAIN_HAND) return EventHelper.pass();
@@ -68,8 +69,10 @@ public class Sortcraft {
 
             if (findTextOnSign(signBe, CommandHandler.getInputSignText()) != null) {
                 CommandSourceStack source = serverPlayer.createCommandSourceStack();
+                // Check if player is sneaking (respects keybind remapping)
+                boolean isPreview = serverPlayer.isShiftKeyDown();
                 try {
-                    SortInputCommand.execute(source, false);
+                    SortInputCommand.execute(source, isPreview);
                 } catch (Exception e) {
                     LOGGER.error("Error executing sort from sign click", e);
                 }
