@@ -24,6 +24,8 @@ import net.sortcraft.audit.ItemMovementRecord;
 import net.sortcraft.audit.SortAuditEntry;
 import net.sortcraft.audit.SortAuditLog;
 import net.sortcraft.category.CategoryLoader;
+import net.sortcraft.container.ChestRef;
+import net.sortcraft.container.ContainerHelper;
 import net.sortcraft.container.SortContext;
 import net.sortcraft.sorting.SortingEngine;
 import net.sortcraft.sorting.SortingResults;
@@ -57,21 +59,26 @@ public final class TestHelper {
 
     /**
      * Executes the sorting operation from a given input chest position.
-     * This properly removes items from the input chest as they are sorted.
+     * This properly removes items from the input chest stack as they are sorted.
+     * Supports vertical stacks of input chests (items from all chests in the stack are sorted).
      *
      * @param helper    The GameTestHelper
-     * @param inputPos  The relative position of the input chest
+     * @param inputPos  The relative position of the input chest (typically the top chest with the sign)
      * @param radius    The search radius for category chests
      * @return The SortingResults from the operation
      */
     public static SortingResults executeSort(GameTestHelper helper, BlockPos inputPos, int radius) {
         ServerLevel level = helper.getLevel();
-        SortContext context = new SortContext(level, helper.absolutePos(inputPos), radius);
-        Container inputContainer = getChestContainer(helper, inputPos);
-        if (inputContainer == null) {
+        BlockPos absInputPos = helper.absolutePos(inputPos);
+        SortContext context = new SortContext(level, absInputPos, radius);
+
+        // Collect all chests in the input stack (starts from sign's chest and goes downward)
+        List<ChestRef> inputChests = ContainerHelper.collectChestStack(level, absInputPos);
+        if (inputChests.isEmpty()) {
             throw new IllegalStateException("No chest container at " + inputPos);
         }
-        return SortingEngine.sortFromContainer(context, level, inputContainer, false);
+
+        return SortingEngine.sortFromContainers(context, level, inputChests, false, null);
     }
 
     /**
@@ -84,20 +91,25 @@ public final class TestHelper {
     /**
      * Executes the sorting operation in preview mode (no actual changes).
      * This calculates what would be sorted without modifying any containers.
+     * Supports vertical stacks of input chests.
      *
      * @param helper    The GameTestHelper
-     * @param inputPos  The relative position of the input chest
+     * @param inputPos  The relative position of the input chest (typically the top chest with the sign)
      * @param radius    The search radius for category chests
      * @return The SortingResults from the preview operation
      */
     public static SortingResults executeSortPreview(GameTestHelper helper, BlockPos inputPos, int radius) {
         ServerLevel level = helper.getLevel();
-        SortContext context = new SortContext(level, helper.absolutePos(inputPos), radius);
-        Container inputContainer = getChestContainer(helper, inputPos);
-        if (inputContainer == null) {
+        BlockPos absInputPos = helper.absolutePos(inputPos);
+        SortContext context = new SortContext(level, absInputPos, radius);
+
+        // Collect all chests in the input stack (starts from sign's chest and goes downward)
+        List<ChestRef> inputChests = ContainerHelper.collectChestStack(level, absInputPos);
+        if (inputChests.isEmpty()) {
             throw new IllegalStateException("No chest container at " + inputPos);
         }
-        return SortingEngine.sortFromContainer(context, level, inputContainer, true);
+
+        return SortingEngine.sortFromContainers(context, level, inputChests, true, null);
     }
 
     /**
@@ -664,9 +676,10 @@ public final class TestHelper {
     /**
      * Executes a sort operation with audit logging enabled.
      * Creates a mock player context for audit purposes.
+     * Supports vertical stacks of input chests.
      *
      * @param helper   The GameTestHelper
-     * @param inputPos The relative position of the input chest
+     * @param inputPos The relative position of the input chest (typically the top chest with the sign)
      * @param radius   The search radius for category chests
      * @return AuditedSortResult containing both sorting results and audit entry
      */
@@ -674,8 +687,10 @@ public final class TestHelper {
         ServerLevel level = helper.getLevel();
         BlockPos absInputPos = helper.absolutePos(inputPos);
         SortContext context = new SortContext(level, absInputPos, radius);
-        Container inputContainer = getChestContainer(helper, inputPos);
-        if (inputContainer == null) {
+
+        // Collect all chests in the input stack (starts from sign's chest and goes downward)
+        List<ChestRef> inputChests = ContainerHelper.collectChestStack(level, absInputPos);
+        if (inputChests.isEmpty()) {
             throw new IllegalStateException("No chest container at " + inputPos);
         }
 
@@ -689,7 +704,7 @@ public final class TestHelper {
                 false
         );
 
-        SortingResults results = SortingEngine.sortFromContainer(context, level, inputContainer, false, audit);
+        SortingResults results = SortingEngine.sortFromContainers(context, level, inputChests, false, audit);
         SortAuditEntry entry = audit.complete(results);
 
         return new AuditedSortResult(results, entry);

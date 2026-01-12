@@ -72,6 +72,22 @@ public final class TestScenarios {
 
         Map<String, BlockPos> result = new LinkedHashMap<>();
         result.put("input", INPUT_POS);
+        result.putAll(categoriesOnly(helper, categoryNames));
+
+        return result;
+    }
+
+    /**
+     * Sets up category chests only, without creating an input chest.
+     * Useful when tests need custom input setups (like input stacks).
+     * Categories are placed at x = 3, 5, 7, ... (spaced 2 blocks apart).
+     *
+     * @param helper         The GameTestHelper
+     * @param categoryNames  Category names in order
+     * @return Map where each category name -> its position
+     */
+    public static Map<String, BlockPos> categoriesOnly(GameTestHelper helper, String... categoryNames) {
+        Map<String, BlockPos> result = new LinkedHashMap<>();
 
         int x = 3;
         for (String category : categoryNames) {

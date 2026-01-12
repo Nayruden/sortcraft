@@ -51,49 +51,41 @@ public final class SortingEngine {
     private static final int UNIFORM_CONTAINER_THRESHOLD = 10;
 
     /**
-     * Sorts all items from the source container into categorized chests.
+     * Sorts all items from a stack of input chests into categorized chests with optional audit logging.
      *
-     * <p>This is the main entry point for sorting operations. It handles:
-     * <ul>
-     *   <li>Regular items - matched by category and distributed to destination chests</li>
-     *   <li>Containers (bundles, shulker boxes) - contents sorted recursively</li>
-     *   <li>Uniform containers - if a container has 10+ stacks of the same item, the container itself is sorted</li>
-     *   <li>Cleanup - empty stacks are replaced with ItemStack.EMPTY to prevent save errors</li>
-     * </ul>
+     * <p>This method processes multiple chests in order (typically bottom-to-top for input stacks),
+     * sorting items from each chest into the appropriate category chests.
      *
      * @param context The sort context containing position, search radius, and cached signs/containers
      * @param world The server level where sorting takes place
-     * @param sourceContainer The container to sort items FROM (typically the [input] chest)
-     * @param preview If true, only calculate what would be sorted without actually moving items
-     * @return Results containing counts of sorted items, overflow categories, and unknown items
-     */
-    public static SortingResults sortFromContainer(SortContext context, ServerLevel world, Container sourceContainer, boolean preview) {
-        return sortFromContainer(context, world, sourceContainer, preview, null);
-    }
-
-    /**
-     * Sorts all items from the source container into categorized chests with optional audit logging.
-     *
-     * <p>Same as {@link #sortFromContainer(SortContext, ServerLevel, Container, boolean)} but with
-     * audit logging support for tracking item movements.
-     *
-     * @param context The sort context containing position, search radius, and cached signs/containers
-     * @param world The server level where sorting takes place
-     * @param sourceContainer The container to sort items FROM (typically the [input] chest)
+     * @param inputChests The list of input chests to sort items FROM (in processing order)
      * @param preview If true, only calculate what would be sorted without actually moving items
      * @param audit Optional audit log to record item movements (can be null to disable logging)
      * @return Results containing counts of sorted items, overflow categories, and unknown items
      */
-    public static SortingResults sortFromContainer(SortContext context, ServerLevel world, Container sourceContainer,
-                                                   boolean preview, SortAuditLog audit) {
-        SortingResults results = sortStacks(context, world, ContainerHelper.containerToIterable(sourceContainer), preview, audit);
+    public static SortingResults sortFromContainers(SortContext context, ServerLevel world, List<ChestRef> inputChests,
+                                                    boolean preview, SortAuditLog audit) {
+        SortingResults combinedResults = new SortingResults();
 
-        // Clean up empty stacks (count=0) left behind by shrink() to prevent chunk save errors
-        if (!preview) {
-            cleanupContainer(sourceContainer);
+        for (ChestRef chestRef : inputChests) {
+            Container container = chestRef.getInventory();
+            SortingResults chestResults = sortStacks(context, world, ContainerHelper.containerToIterable(container), preview, audit);
+
+            // Merge results from this chest into combined results
+            combinedResults.sorted += chestResults.sorted;
+            combinedResults.overflowCategories.addAll(chestResults.overflowCategories);
+            combinedResults.unknownItems.addAll(chestResults.unknownItems);
+            combinedResults.leftovers.addAll(chestResults.leftovers);
+            chestResults.categoryCounts.forEach((category, count) ->
+                    combinedResults.categoryCounts.merge(category, count, Integer::sum));
+
+            // Clean up empty stacks in this container
+            if (!preview) {
+                cleanupContainer(container);
+            }
         }
 
-        return results;
+        return combinedResults;
     }
 
     /**

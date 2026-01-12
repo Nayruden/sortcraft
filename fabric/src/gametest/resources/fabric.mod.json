@@ -9,6 +9,7 @@
       "net.sortcraft.gametest.AuditGameTest",
       "net.sortcraft.gametest.CategoryMatchingGameTest",
       "net.sortcraft.gametest.ChestLayoutGameTest",
+      "net.sortcraft.gametest.InputStackGameTest",
       "net.sortcraft.gametest.ItemDistributionGameTest",
       "net.sortcraft.gametest.NestedContainerGameTest",
       "net.sortcraft.gametest.OverflowGameTest",

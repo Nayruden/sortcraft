@@ -6,13 +6,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.Container;
-import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
 import net.sortcraft.audit.SortAuditLog;
 import net.sortcraft.audit.SortAuditLogger;
 import net.sortcraft.config.ConfigManager;
+import net.sortcraft.container.ChestRef;
 import net.sortcraft.container.ContainerHelper;
 import net.sortcraft.container.SortContext;
 import net.sortcraft.sorting.SortingEngine;
@@ -20,6 +18,7 @@ import net.sortcraft.sorting.SortingResults;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -61,28 +60,22 @@ public final class SortInputCommand {
             return 0;
         }
 
-        BlockState state = world.getBlockState(chestPos);
-        if (!(state.getBlock() instanceof ChestBlock chestBlock)) {
-            source.sendSuccess(() -> Component.literal("Block attached to the input sign is not a chest."), false);
-            LOGGER.debug("[sortinput] Block at {} is not a ChestBlock.", chestPos);
-            return 0;
-        }
-
-        Container inputInv = ChestBlock.getContainer(chestBlock, state, world, chestPos, true);
-        if (inputInv == null) {
+        // Collect all chests in the input stack (starts from sign's chest and goes downward)
+        List<ChestRef> inputChests = ContainerHelper.collectChestStack(world, chestPos);
+        if (inputChests.isEmpty()) {
             source.sendSuccess(() -> Component.literal("Could not access input chest inventory."), false);
-            LOGGER.debug("[sortinput] Failed to access chest inventory at {}", chestPos);
+            LOGGER.debug("[sortinput] Failed to access chest stack starting at {}", chestPos);
             return 0;
         }
 
-        LOGGER.debug("[sortinput] Input chest inventory loaded. Beginning sort.");
+        LOGGER.debug("[sortinput] Input chest stack loaded: {} chest(s). Beginning sort.", inputChests.size());
 
-        // Start audit logging if enabled
+        // Start audit logging if enabled (use the top chest position for audit)
         SortAuditLog audit = SortAuditLogger.isEnabled() && (!preview || SortAuditLogger.shouldLogPreviews())
                 ? SortAuditLog.start(player, world, chestPos, searchRadius, preview)
                 : null;
 
-        SortingResults results = SortingEngine.sortFromContainer(context, world, inputInv, preview, audit);
+        SortingResults results = SortingEngine.sortFromContainers(context, world, inputChests, preview, audit);
 
         // Complete and log the audit entry
         if (audit != null) {
