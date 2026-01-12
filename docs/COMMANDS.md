@@ -26,6 +26,8 @@ Previews what items will be sorted where, **without actually moving them**. Outp
 
 Use this to verify your configuration before actually sorting.
 
+💡 **Tip:** You can also **Shift + right-click** the `[input]` sign to trigger a preview!
+
 ---
 
 ## `/sort diagnostics`

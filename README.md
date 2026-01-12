@@ -87,6 +87,8 @@ OR look at the following examples:
 
 Put diamonds, iron, gold, or copper in the input chest, then **right-click the `[input]` sign**. Items matching your `ores:` category move to the `[ores]` chest.
 
+💡 **Tip:** Use **Shift + right-click** to preview what would be sorted without moving items!
+
 ---
 
 ## 📚 Documentation

@@ -209,6 +209,14 @@ flowchart TB
 
 ---
 
+## Input Chest Stacking
+
+Just like destination chests, you can stack multiple `[input]` chests vertically. When you right-click the sign or use `/sort input`, all chests in the stack are sorted at once.
+
+This is useful when you have large amounts of items to sort—just dump everything into a column of input chests and trigger a single sort operation.
+
+---
+
 ## Three Ways to Match Items
 
 | Method | Syntax | Best For |
