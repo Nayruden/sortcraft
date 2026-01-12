@@ -177,10 +177,11 @@ public final class CategoryLoader {
      * for filters that reference enchantments or other registry objects.
      *
      * @param server The Minecraft server to get registry access from
+     * @return true if all categories loaded successfully, false if any errors occurred
      * @see #flattenCategories() Must be called after loading to build the item-to-category map
      */
     @SuppressWarnings("unchecked")
-    public static void loadCategories(MinecraftServer server) {
+    public static boolean loadCategories(MinecraftServer server) {
         currentRegistries = server.registryAccess();
         Path categoriesDir = ConfigManager.getConfigPath("categories");
         try {
@@ -206,6 +207,7 @@ public final class CategoryLoader {
             }
 
             int filesLoaded = 0;
+            boolean hasErrors = false;
             for (Path yamlFile : yamlFiles) {
                 try (InputStream in = Files.newInputStream(yamlFile)) {
                     Object data = yaml.load(in);
@@ -220,14 +222,15 @@ public final class CategoryLoader {
                     loadCategoriesFromMap((Map<String, Object>) data, yamlFile.getFileName().toString());
                     filesLoaded++;
                 } catch (Exception err) {
-                    LOGGER.error("Error loading categories from file: {}", yamlFile.getFileName(), err);
+                    LOGGER.error("Error loading categories from file '{}': {}", yamlFile.getFileName(), err.getMessage());
+                    hasErrors = true;
                 }
             }
             LOGGER.info("Loaded {} categories from {} files in {}", categories.size(), filesLoaded, categoriesDir);
-        } catch (IOException err) {
-            LOGGER.error("IO error while loading categories directory", err);
+            return !hasErrors;
         } catch (Exception err) {
-            LOGGER.error("Fatal error while loading categories directory", err);
+            LOGGER.error("Error loading categories directory: {}", err.getMessage());
+            return false;
         }
     }
 

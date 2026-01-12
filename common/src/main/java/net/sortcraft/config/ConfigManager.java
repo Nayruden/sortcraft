@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -55,9 +54,11 @@ public final class ConfigManager {
 
     /**
      * Loads the configuration from config.yaml.
+     *
+     * @return true if configuration loaded successfully, false if an error occurred
      */
     @SuppressWarnings("unchecked")
-    public static void loadConfig() {
+    public static boolean loadConfig() {
         Path configPath = getConfigPath("config.yaml");
         org.apache.logging.log4j.Level logLevel = org.apache.logging.log4j.Level.WARN;
         try {
@@ -125,8 +126,10 @@ public final class ConfigManager {
             Configurator.setLevel(MODID, logLevel);
             LOGGER.info("Loaded config: logLevel={}, searchRadius={}, audit.enabled={}",
                     logLevel, searchRadius, auditConfig.isEnabled());
-        } catch (IOException e) {
-            LOGGER.error("Error loading config.yaml", e);
+            return true;
+        } catch (Exception e) {
+            LOGGER.error("Error loading config.yaml: {}", e.getMessage());
+            return false;
         }
     }
 

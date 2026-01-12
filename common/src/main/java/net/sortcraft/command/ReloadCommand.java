@@ -21,20 +21,20 @@ public final class ReloadCommand {
         CommandSourceStack source = context.getSource();
         MinecraftServer server = source.getServer();
 
-        try {
-            ConfigManager.loadConfig();
-            CategoryLoader.clear();
-            CategoryLoader.loadCategories(server);
-            CategoryLoader.flattenCategories();
+        boolean configOk = ConfigManager.loadConfig();
+        CategoryLoader.clear();
+        boolean categoriesOk = CategoryLoader.loadCategories(server);
+        CategoryLoader.flattenCategories();
 
-            source.sendSuccess(() -> Component.literal("Sortcraft configuration reloaded successfully."), false);
-            LOGGER.info("[sortreload] Configuration reloaded successfully.");
-            return 1;
-        } catch (Exception e) {
-            source.sendFailure(Component.literal("Error reloading configuration: " + e.getMessage()));
-            LOGGER.error("[sortreload] Failed to reload configuration.", e);
+        if (!configOk || !categoriesOk) {
+            source.sendFailure(Component.literal("Error reloading configuration. Check server logs for details."));
+            LOGGER.error("[sortreload] Failed to reload configuration.");
             return 0;
         }
+
+        source.sendSuccess(() -> Component.literal("Sortcraft configuration reloaded successfully."), false);
+        LOGGER.info("[sortreload] Configuration reloaded successfully.");
+        return 1;
     }
 }
 
