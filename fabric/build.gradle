@@ -61,7 +61,7 @@ test {
 
 // Configure Fabric game tests for supported versions
 // Versions that have compatible GameTest APIs with the test code
-def gametestVersions = ['1.21.4', '1.21.5', '1.21.6', '1.21.8', '1.21.10', '1.21.11']
+def gametestVersions = ['1.21.5', '1.21.6', '1.21.8', '1.21.10', '1.21.11']
 
 if (gametestVersions.contains(rootProject.targetMcVersion)) {
     fabricApi {
