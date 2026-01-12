@@ -1,6 +1,6 @@
 # Audit Logging
 
-Sortcraft includes an optional audit logging system that records all sorting operations to structured JSONL files. This is useful for server administrators who want to track item movements or debug sorting issues.
+SortCraft includes an optional audit logging system that records all sorting operations to structured JSONL files. This is useful for server administrators who want to track item movements or debug sorting issues.
 
 ---
 

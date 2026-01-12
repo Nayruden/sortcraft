@@ -1,6 +1,6 @@
 # Configuration
 
-Sortcraft uses YAML config files to define categories, priorities, and filters.
+SortCraft uses YAML config files to define categories, priorities, and filters.
 
 ---
 

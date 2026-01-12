@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Use this guide to diagnose common Sortcraft issues.
+Use this guide to diagnose common SortCraft issues.
 
 ---
 

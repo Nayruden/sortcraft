@@ -5,9 +5,9 @@
 [![Available for Fabric](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/supported/fabric_vector.svg)](https://fabricmc.net/)
 [![Available for NeoForge](https://raw.githubusercontent.com/Hyperbole-Devs/vectors/8494ec1ac495cfb481dc7e458356325510933eb0/assets/cozy/supported/neoforge_vector.svg)](https://neoforged.net/)
 
-# Sortcraft
+# SortCraft
 
-**Sortcraft** is a multi-chest item sorter without the redstone. Label chests with signs like `[ores]` or `[tools]`, right-click your input chest, and items instantly sort themselves. Categories live in simple YAML files you control.
+**SortCraft** is a multi-chest item sorter without the redstone. Label chests with signs like `[ores]` or `[tools]`, right-click your input chest, and items instantly sort themselves. Categories live in simple YAML files you control.
 
 Visually build and organize your categories using our companion webapp [CategoryCraft](https://categories.craftlabs.nexus/)! You can even load mod jar files to see your modded items!
 
@@ -107,7 +107,7 @@ Put diamonds, iron, gold, or copper in the input chest, then **right-click the `
 
 ## 🔧 Development & Building
 
-Sortcraft supports Minecraft **1.21.1, 1.21.4–1.21.10** on both Fabric and NeoForge.
+SortCraft supports Minecraft **1.21.1, 1.21.4–1.21.6, 1.21.8, 1.21.10–1.21.11** on both Fabric and NeoForge.
 
 ```powershell
 .\build-all-versions.ps1

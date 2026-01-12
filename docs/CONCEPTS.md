@@ -1,6 +1,6 @@
 # Core Concepts
 
-This guide explains the key mental models for understanding how Sortcraft works.
+This guide explains the key mental models for understanding how SortCraft works.
 
 ---
 

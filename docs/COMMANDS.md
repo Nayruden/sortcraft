@@ -1,6 +1,8 @@
-# Sortcraft Commands
+# SortCraft Commands
 
-All Sortcraft commands start with `/sort`.
+All SortCraft commands start with `/sort`.
+
+> **Note:** Some commands (`/sort reload`, `/sort dump`, `/sort diagnostics`) require operator privileges on servers.
 
 ---
 
