@@ -11,6 +11,8 @@
 
 Visually build and organize your categories using our companion webapp [CategoryCraft](https://categories.craftlabs.nexus/)! You can even load mod jar files to see your modded items!
 
+View our [quickstart video](https://youtu.be/faIobziYPi4) or jump to the 5-Minute Quick Start section below for concise instructions.
+
 ---
 
 ## 📦 How It Works

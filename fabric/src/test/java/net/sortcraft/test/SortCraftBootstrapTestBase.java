@@ -4,7 +4,7 @@ import net.minecraft.SharedConstants;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.sortcraft.compat.Id;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -167,11 +167,10 @@ public abstract class SortCraftBootstrapTestBase {
     }
 
     /**
-     * Gets the Identifier for an item.
-     * Note: In MC 1.21.11+, ResourceLocation was renamed to Identifier.
+     * Gets the Id for an item (version-agnostic wrapper for ResourceLocation/Identifier).
      */
-    protected Identifier getItemId(Item item) {
-        return BuiltInRegistries.ITEM.getKey(item);
+    protected Id getItemId(Item item) {
+        return Id.of(BuiltInRegistries.ITEM.getKey(item));
     }
 
     // ========== Assertion Helpers ==========
