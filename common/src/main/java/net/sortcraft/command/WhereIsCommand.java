@@ -8,12 +8,12 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.sortcraft.compat.Id;
 import net.sortcraft.compat.RegistryHelper;
 import net.sortcraft.config.ConfigManager;
 import net.sortcraft.container.ContainerHelper;
@@ -45,8 +45,8 @@ public final class WhereIsCommand {
         BlockPos playerPos = player.blockPosition();
         String itemName = StringArgumentType.getString(context, "item");
 
-        ResourceLocation itemId = ResourceLocation.tryParse(itemName);
-        if (itemId == null || !BuiltInRegistries.ITEM.containsKey(itemId)) {
+        Id itemId = Id.tryParse(itemName);
+        if (itemId == null || !BuiltInRegistries.ITEM.containsKey(itemId.unwrap())) {
             source.sendFailure(Component.literal("Unknown item: " + itemName));
             return 0;
         }

@@ -4,10 +4,10 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.sortcraft.compat.Id;
 import net.sortcraft.compat.RegistryHelper;
 
 import java.util.*;
@@ -141,7 +141,7 @@ class EnchantmentFilterRule implements FilterRule {
     }
 
     if (matchType == MatchType.SINGLE) {
-      ResourceLocation id = ResourceLocation.tryParse(configValue);
+      Id id = Id.tryParse(configValue);
       if (id == null) {
         throw new IllegalArgumentException("Invalid enchantment id: " + configValue);
       }

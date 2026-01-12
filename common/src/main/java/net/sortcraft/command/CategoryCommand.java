@@ -6,9 +6,9 @@ import net.minecraft.commands.CommandSourceStack;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.category.CategoryNode;
+import net.sortcraft.compat.Id;
 
 import java.util.Set;
 
@@ -22,8 +22,8 @@ public final class CategoryCommand {
         CommandSourceStack source = context.getSource();
         String itemName = StringArgumentType.getString(context, "item");
 
-        ResourceLocation id = ResourceLocation.tryParse(itemName);
-        if (id == null || !BuiltInRegistries.ITEM.containsKey(id)) {
+        Id id = Id.tryParse(itemName);
+        if (id == null || !BuiltInRegistries.ITEM.containsKey(id.unwrap())) {
             source.sendFailure(Component.literal("Unknown item: " + itemName));
             return 0;
         }

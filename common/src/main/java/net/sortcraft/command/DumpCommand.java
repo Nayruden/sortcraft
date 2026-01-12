@@ -7,9 +7,9 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
+import net.sortcraft.compat.Id;
 import net.sortcraft.compat.RegistryHelper;
 import net.sortcraft.config.ConfigManager;
 import org.slf4j.Logger;
@@ -33,7 +33,7 @@ public final class DumpCommand {
             Map<String, List<String>> itemsToTags = new HashMap<>();
             Map<String, List<String>> tagsToItems = new HashMap<>();
 
-            for (ResourceLocation id : BuiltInRegistries.ITEM.keySet()) {
+            for (Id id : Id.allItemIds()) {
                 Item item = RegistryHelper.getItemByKey(id);
                 Holder<Item> entry = BuiltInRegistries.ITEM.wrapAsHolder(item);
 

@@ -3,14 +3,13 @@ package net.sortcraft.gametest;
 import net.fabricmc.fabric.api.gametest.v1.GameTest;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.category.CategoryNode;
+import net.sortcraft.compat.Id;
 
 import java.util.List;
 
@@ -129,7 +128,7 @@ public class CategoryMatchingGameTest {
     public void itemCategoryMapIsPopulated(GameTestHelper helper) {
         TestHelper.setupCategories(TestCategories.SWORDS_REGEX);
 
-        ResourceLocation diamondSwordId = BuiltInRegistries.ITEM.getKey(Items.DIAMOND_SWORD);
+        Id diamondSwordId = Id.ofItem(Items.DIAMOND_SWORD);
 
         if (!CategoryLoader.getItemCategoryMap().containsKey(diamondSwordId)) {
             helper.fail(Component.literal("Item category map should contain diamond_sword"));
@@ -300,4 +299,5 @@ public class CategoryMatchingGameTest {
         helper.succeed();
     }
 }
+
 

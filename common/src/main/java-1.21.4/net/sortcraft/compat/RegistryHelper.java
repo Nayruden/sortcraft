@@ -20,8 +20,8 @@ public final class RegistryHelper {
     /**
      * Get an item from the registry, throwing if not found.
      */
-    public static Item getItemOrThrow(ResourceLocation id) {
-        return BuiltInRegistries.ITEM.get(id)
+    public static Item getItemOrThrow(Id id) {
+        return BuiltInRegistries.ITEM.get(id.unwrap())
             .orElseThrow(() -> new IllegalArgumentException("Unknown item: " + id))
             .value();
     }
@@ -29,8 +29,8 @@ public final class RegistryHelper {
     /**
      * Get an item from the registry, returning null if not found.
      */
-    public static Item getItemOrNull(ResourceLocation id) {
-        return BuiltInRegistries.ITEM.get(id)
+    public static Item getItemOrNull(Id id) {
+        return BuiltInRegistries.ITEM.get(id.unwrap())
             .map(ref -> ref.value())
             .orElse(null);
     }
@@ -38,27 +38,27 @@ public final class RegistryHelper {
     /**
      * Get an item by key, returning the default item if not found.
      */
-    public static Item getItemByKey(ResourceLocation id) {
-        return BuiltInRegistries.ITEM.getValue(id);
+    public static Item getItemByKey(Id id) {
+        return BuiltInRegistries.ITEM.getValue(id.unwrap());
     }
 
     /**
-     * Get an enchantment by its ResourceLocation from the registry access.
+     * Get an enchantment by its Id from the registry access.
      * Returns null if not found.
      */
-    public static Enchantment getEnchantmentOrNull(RegistryAccess registries, ResourceLocation id) {
+    public static Enchantment getEnchantmentOrNull(RegistryAccess registries, Id id) {
         HolderLookup.RegistryLookup<Enchantment> enchantmentRegistry = registries.lookupOrThrow(Registries.ENCHANTMENT);
-        ResourceKey<Enchantment> key = ResourceKey.create(Registries.ENCHANTMENT, id);
+        ResourceKey<Enchantment> key = ResourceKey.create(Registries.ENCHANTMENT, id.unwrap());
         return enchantmentRegistry.get(key)
             .map(holder -> holder.value())
             .orElse(null);
     }
 
     /**
-     * Get an enchantment by its ResourceLocation from the registry access.
+     * Get an enchantment by its Id from the registry access.
      * Throws if not found.
      */
-    public static Enchantment getEnchantmentOrThrow(RegistryAccess registries, ResourceLocation id) {
+    public static Enchantment getEnchantmentOrThrow(RegistryAccess registries, Id id) {
         Enchantment enchantment = getEnchantmentOrNull(registries, id);
         if (enchantment == null) {
             throw new IllegalArgumentException("Unknown enchantment: " + id);

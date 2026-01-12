@@ -1,7 +1,7 @@
 package net.sortcraft.category;
 
-import net.minecraft.resources.ResourceLocation;
 import net.sortcraft.FilterRule;
+import net.sortcraft.compat.Id;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -13,8 +13,8 @@ import java.util.stream.Collectors;
 public class CategoryNode implements Comparable<CategoryNode> {
     public final String name;
     public final Set<String> includes = new HashSet<>();
-    public final Set<ResourceLocation> itemIds = new HashSet<>();
-    public Set<ResourceLocation> flattenedItemIds = null;
+    public final Set<Id> itemIds = new HashSet<>();
+    public Set<Id> flattenedItemIds = null;
     public final List<FilterRule> filters = new ArrayList<>();
     public int priority = 10;
 

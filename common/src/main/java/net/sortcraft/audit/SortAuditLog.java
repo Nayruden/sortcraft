@@ -3,6 +3,7 @@ package net.sortcraft.audit;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.sortcraft.compat.IdentifierHelper;
 import net.sortcraft.sorting.SortingResults;
 
 import java.time.Instant;
@@ -31,7 +32,7 @@ public class SortAuditLog {
         this.startTime = Instant.now();
         this.playerName = player.getName().getString();
         this.playerUuid = player.getUUID();
-        this.dimension = world.dimension().location().toString();
+        this.dimension = IdentifierHelper.keyToString(world.dimension());
         this.operationType = preview ? OperationType.PREVIEW : OperationType.SORT;
         this.inputChestPos = inputChestPos;
         this.searchRadius = searchRadius;

@@ -59,9 +59,11 @@ test {
     }
 }
 
-// Configure Fabric game tests (only for 1.21.5 - the test version)
-// Other versions may have incompatible GameTest APIs
-if (rootProject.targetMcVersion == '1.21.5') {
+// Configure Fabric game tests for supported versions
+// Versions that have compatible GameTest APIs with the test code
+def gametestVersions = ['1.21.4', '1.21.5', '1.21.6', '1.21.8', '1.21.10', '1.21.11']
+
+if (gametestVersions.contains(rootProject.targetMcVersion)) {
     fabricApi {
         configureTests {
             createSourceSet = true
@@ -72,9 +74,18 @@ if (rootProject.targetMcVersion == '1.21.5') {
         }
     }
 
-    // Add SnakeYAML to gametest runtime (needed because common module references it)
+    // Add dependencies to gametest source set
     dependencies {
+        // SnakeYAML (needed because common module references it)
         gametestImplementation "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
+        // Common module for access to compat layer (Id, IdentifierHelper, etc.)
+        gametestImplementation project(path: ':common', configuration: 'namedElements')
+    }
+
+    // Ensure gametest classpath extends from common configuration for version-specific classes
+    configurations {
+        gametestCompileClasspath.extendsFrom common
+        gametestRuntimeClasspath.extendsFrom common
     }
 }
 

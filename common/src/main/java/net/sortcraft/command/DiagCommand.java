@@ -5,7 +5,6 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
@@ -13,6 +12,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.category.CategoryNode;
+import net.sortcraft.compat.Id;
 import net.sortcraft.compat.RegistryHelper;
 import net.sortcraft.config.ConfigManager;
 import net.sortcraft.container.ChestRef;
@@ -50,7 +50,7 @@ public final class DiagCommand {
         for (Map.Entry<String, CategoryNode> entry : CategoryLoader.getCategories().entrySet()) {
             String categoryName = entry.getKey();
             CategoryNode categoryNode = entry.getValue();
-            Set<ResourceLocation> items = categoryNode.flattenedItemIds;
+            Set<Id> items = categoryNode.flattenedItemIds;
 
             if (items == null || items.isEmpty()) continue;
 
@@ -61,7 +61,7 @@ public final class DiagCommand {
             int totalSlots = chests.size() * CHEST_SLOT_COUNT;
             int usedSlots = 0;
 
-            for (ResourceLocation id : items) {
+            for (Id id : items) {
                 Item item = RegistryHelper.getItemByKey(id);
                 if (item == null) continue;
 

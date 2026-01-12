@@ -7,6 +7,7 @@ import net.minecraft.commands.SharedSuggestionProvider;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.sortcraft.compat.PermissionHelper;
 
 /**
  * Registers all /sort subcommands.
@@ -34,7 +35,7 @@ public final class CommandHandler {
                         .then(Commands.literal("preview")
                                 .executes(ctx -> SortInputCommand.execute(ctx.getSource(), true)))
                         .then(Commands.literal("diagnostics")
-                                .requires(source -> source.hasPermission(2))
+                                .requires(source -> PermissionHelper.hasOpLevel(source, 2))
                                 .executes(DiagCommand::execute))
                         .then(Commands.literal("whereis")
                                 .then(Commands.argument("item", StringArgumentType.greedyString())
@@ -49,10 +50,10 @@ public final class CommandHandler {
                         .then(Commands.literal("help")
                                 .executes(CommandHandler::executeHelp))
                         .then(Commands.literal("dump")
-                                .requires(source -> source.hasPermission(2))
+                                .requires(source -> PermissionHelper.hasOpLevel(source, 2))
                                 .executes(DumpCommand::execute))
                         .then(Commands.literal("reload")
-                                .requires(source -> source.hasPermission(2))
+                                .requires(source -> PermissionHelper.hasOpLevel(source, 2))
                                 .executes(ReloadCommand::execute))
         );
     }

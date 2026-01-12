@@ -3,11 +3,11 @@ package net.sortcraft.audit;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+import net.sortcraft.compat.IdentifierHelper;
 import net.sortcraft.compat.PotionHelper;
 
 import java.util.ArrayList;
@@ -75,8 +75,7 @@ public final class ItemMetadataExtractor {
         for (Holder<Enchantment> holder : component.keySet()) {
             int level = component.getLevel(holder);
             String enchantmentId = holder.unwrapKey()
-                    .map(ResourceKey::location)
-                    .map(Object::toString)
+                    .map(IdentifierHelper::keyToString)
                     .orElse("unknown");
             result.add(new EnchantmentInfo(enchantmentId, level));
         }
@@ -117,7 +116,7 @@ public final class ItemMetadataExtractor {
         // First try to get registered potion type (for normal potions)
         String registeredType = contents.potion()
                 .flatMap(Holder::unwrapKey)
-                .map(key -> key.location().toString())
+                .map(IdentifierHelper::keyToString)
                 .orElse(null);
 
         if (registeredType != null) {

@@ -27,6 +27,7 @@ import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.container.ChestRef;
 import net.sortcraft.container.ContainerHelper;
 import net.sortcraft.container.SortContext;
+import net.sortcraft.compat.IdentifierHelper;
 import net.sortcraft.sorting.SortingEngine;
 import net.sortcraft.sorting.SortingResults;
 
@@ -484,7 +485,8 @@ public final class TestHelper {
      */
     public static ItemStack enchant(GameTestHelper helper, ItemStack stack, String enchantmentId, int level) {
         ServerLevel serverLevel = helper.getLevel();
-        net.minecraft.resources.ResourceLocation id = net.minecraft.resources.ResourceLocation.parse(enchantmentId);
+        // Use IdentifierHelper.parse() to get the version-correct Identifier/ResourceLocation
+        var id = IdentifierHelper.parse(enchantmentId);
         net.minecraft.resources.ResourceKey<net.minecraft.world.item.enchantment.Enchantment> key =
                 net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ENCHANTMENT, id);
 
@@ -521,7 +523,8 @@ public final class TestHelper {
      */
     public static ItemStack createPotion(GameTestHelper helper, String potionId) {
         ServerLevel serverLevel = helper.getLevel();
-        net.minecraft.resources.ResourceLocation id = net.minecraft.resources.ResourceLocation.parse(potionId);
+        // Use IdentifierHelper.parse() to get the version-correct Identifier/ResourceLocation
+        var id = IdentifierHelper.parse(potionId);
         net.minecraft.resources.ResourceKey<net.minecraft.world.item.alchemy.Potion> key =
                 net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.POTION, id);
 
@@ -543,7 +546,8 @@ public final class TestHelper {
      */
     public static ItemStack createSplashPotion(GameTestHelper helper, String potionId) {
         ServerLevel serverLevel = helper.getLevel();
-        net.minecraft.resources.ResourceLocation id = net.minecraft.resources.ResourceLocation.parse(potionId);
+        // Use IdentifierHelper.parse() to get the version-correct Identifier/ResourceLocation
+        var id = IdentifierHelper.parse(potionId);
         net.minecraft.resources.ResourceKey<net.minecraft.world.item.alchemy.Potion> key =
                 net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.POTION, id);
 
@@ -695,10 +699,11 @@ public final class TestHelper {
         }
 
         // Create audit log with test player info
+        // Use IdentifierHelper.keyToString() for version-compatible dimension key access
         SortAuditLog audit = SortAuditLog.startForTest(
                 "TestPlayer",
                 UUID.fromString("00000000-0000-0000-0000-000000000001"),
-                level.dimension().location().toString(),
+                IdentifierHelper.keyToString(level.dimension()),
                 absInputPos,
                 radius,
                 false
@@ -866,3 +871,4 @@ public final class TestHelper {
         return new ItemMovementRecord(itemId, quantity, category, destinationPos, false);
     }
 }
+

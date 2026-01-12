@@ -6,9 +6,9 @@ plugins {
 
 // Multi-version support: Load version-specific properties
 // Use -Pmc_version=1.21.4 to build for a specific version, defaults to 1.21.5
-// Supported versions: 1.21.1, 1.21.4-1.21.10
+// Supported versions: 1.21.1, 1.21.4-1.21.6, 1.21.8, 1.21.10-1.21.11
 def targetVersion = project.hasProperty('mc_version') ? project.property('mc_version') : '1.21.5'
-def supportedVersions = ['1.21.1', '1.21.4', '1.21.5', '1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10']
+def supportedVersions = ['1.21.1', '1.21.4', '1.21.5', '1.21.6', '1.21.8', '1.21.10', '1.21.11']
 
 // Load version-specific properties from versions directory
 def versionPropsFile = file("versions/${targetVersion}/gradle.properties")
@@ -119,7 +119,7 @@ tasks.register('buildAllVersions') {
         println "Multi-Version Build Instructions"
         println "=========================================="
         println ""
-        println "Supported Minecraft versions: 1.21.1, 1.21.4-1.21.10"
+        println "Supported Minecraft versions: 1.21.1, 1.21.4-1.21.6, 1.21.8, 1.21.10-1.21.11"
         println ""
         println "To build for a specific version:"
         println "  ./gradlew build -Pmc_version=1.21.4"

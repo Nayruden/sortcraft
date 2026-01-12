@@ -6,7 +6,8 @@ $ErrorActionPreference = "Stop"
 
 # Supported Minecraft versions
 # Note: 1.21.2 and 1.21.3 are excluded due to incompatible API changes that require extensive refactoring
-$versions = @("1.21.1", "1.21.4", "1.21.5", "1.21.6", "1.21.7", "1.21.8", "1.21.9", "1.21.10")
+# Note: 1.21.7 and 1.21.9 are excluded
+$versions = @("1.21.1", "1.21.4", "1.21.5", "1.21.6", "1.21.8", "1.21.10", "1.21.11")
 
 # Output directory for collected JARs
 $outputDir = "build/libs/all-versions"
@@ -23,7 +24,7 @@ if (Test-Path $outputDir) {
 New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 
 # Version to run tests on (only test on this version to save time)
-$testVersion = "1.21.5"
+$testVersion = "1.21.11"
 
 # Build each version
 foreach ($version in $versions) {
