@@ -21,7 +21,7 @@ View our [quickstart video](https://youtu.be/faIobziYPi4) or jump to the 5-Minut
 flowchart TB
     subgraph FILES["📁 CONFIG FILES"]
         direction TB
-        subgraph YAML["config/sortcraft/categories/basic.yaml"]
+        subgraph YAML["config/SortCraft/categories/basic.yaml"]
             C1["<div style='text-align:left'>ores:<br>&nbsp;&nbsp;items:<br>&nbsp;&nbsp;&nbsp;&nbsp;- minecraft:diamond<br>&nbsp;&nbsp;&nbsp;&nbsp;- minecraft:iron_ingot</div>"]
         end
     end
@@ -63,7 +63,7 @@ Right click the `[input]` sign to sort. All destination chests must be within a 
 
 ### 1. Create a category file
 
-Create `config/sortcraft/categories/basic.yaml`:
+Create `config/SortCraft/categories/basic.yaml`:
 
 ```yaml
 ores:
