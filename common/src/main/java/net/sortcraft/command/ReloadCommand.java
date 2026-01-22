@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 public final class ReloadCommand {
     private ReloadCommand() {}
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("SortCraft");
+    private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
 
     public static int execute(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();

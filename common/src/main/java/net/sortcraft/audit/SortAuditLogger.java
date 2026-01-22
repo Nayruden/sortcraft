@@ -20,9 +20,9 @@ import java.util.stream.Stream;
 public final class SortAuditLogger {
     private SortAuditLogger() {}
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("SortCraft");
+    private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final String AUDIT_DIR = "logs/SortCraft";
+    private static final String AUDIT_DIR = "logs/sortcraft";
     private static final String AUDIT_FILE_PREFIX = "audit-";
     private static final String AUDIT_FILE_SUFFIX = ".log";
 

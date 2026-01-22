@@ -4,13 +4,19 @@ All notable changes to SortCraft will be documented in this file.
 
 ---
 
+## [1.2.1] - 2026-01-22
+
+### Fixed
+
+- **Folder case name** — Fixed the config and log folder names to be lowercase `sortcraft` instead of `SortCraft`. Starting with version `1.2.0`, the folder was created as `SortCraft`, which is not consistent with prior versions.
+
 ## [1.2.0] - 2026-01-12
 
 ### Added
 
 - **Minecraft 1.21.11 support** — SortCraft now works on Minecraft 1.21.11
 - **Chest stack sorting** — You can now sort entire vertical stacks of input chests with a single click. Place `[input]` signs on a column of chests, and right-click to sort all of them at once
-- **Shift + right-click preview** — Shift + right-click on an `[input]` sign to preview what would be sorted without actually moving items
+- **Shift + right-click preview** — Shift + right-click on an `[input]` sign to preview what would be sorted without actually moving items (identical to `/sort preview`)
 - **Improved chest highlighting** — Enhanced visual feedback when using `/sort whereis`
 
 ### Changed

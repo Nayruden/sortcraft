@@ -19,8 +19,8 @@ import java.util.Map;
 public final class ConfigManager {
     private ConfigManager() {}
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("SortCraft");
-    private static final String MODID = "SortCraft";
+    private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
+    private static final String MODID = "sortcraft";
 
     // Configuration values with defaults
     private static int searchRadius = 64;
@@ -45,7 +45,7 @@ public final class ConfigManager {
      * Gets the configuration path for SortCraft.
      */
     public static Path getConfigPath(String... subPaths) {
-        Path base = Platform.getConfigDir().resolve("SortCraft");
+        Path base = Platform.getConfigDir().resolve("sortcraft");
         for (String subPath : subPaths) {
             base = base.resolve(subPath);
         }

@@ -25,7 +25,7 @@ import java.util.*;
 public final class DumpCommand {
     private DumpCommand() {}
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("SortCraft");
+    private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public static int execute(CommandContext<CommandSourceStack> context) {

@@ -46,7 +46,7 @@ import java.util.stream.Stream;
 public final class CategoryLoader {
     private CategoryLoader() {}
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("SortCraft");
+    private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
 
     private static final Map<String, CategoryNode> categories = new ConcurrentHashMap<>();
     private static final Map<Id, Set<CategoryNode>> itemCategoryMap = new ConcurrentHashMap<>();

@@ -29,7 +29,7 @@ import java.util.*;
 public final class SortInputCommand {
     private SortInputCommand() {}
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("SortCraft");
+    private static final Logger LOGGER = LoggerFactory.getLogger("sortraft");
     private static final int INPUT_SIGN_SEARCH_RADIUS = 20;
 
     public static int execute(CommandSourceStack source, boolean preview) throws CommandSyntaxException {
