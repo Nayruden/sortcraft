@@ -62,6 +62,7 @@ shadowJar {
     configurations = [project.configurations.shadowBundle]
     archiveClassifier = 'dev-shadow'
     exclude 'architectury.common.json'
+    relocate 'org.yaml.snakeyaml', 'net.sortcraft.shadow.snakeyaml'
 }
 
 remapJar {
