@@ -4,10 +4,9 @@
 
 $ErrorActionPreference = "Stop"
 
-# Supported Minecraft versions
-# Note: 1.21.2 and 1.21.3 are excluded due to incompatible API changes that require extensive refactoring
-# Note: 1.21.7 and 1.21.9 are excluded
-$versions = @("1.21.1", "1.21.4", "1.21.5", "1.21.6", "1.21.8", "1.21.10", "1.21.11")
+# Read supported versions from canonical versions.json
+$versionsConfig = Get-Content -Path "versions.json" -Raw | ConvertFrom-Json
+$versions = $versionsConfig.supported
 
 # Output directory for collected JARs
 $outputDir = "build/libs/all-versions"
@@ -15,6 +14,7 @@ $outputDir = "build/libs/all-versions"
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Sortcraft Multi-Version Build Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "Versions: $($versions -join ', ')" -ForegroundColor Cyan
 Write-Host ""
 
 # Clean output directory
@@ -23,10 +23,7 @@ if (Test-Path $outputDir) {
 }
 New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 
-# Version to run tests on (only test on this version to save time)
-$testVersion = "1.21.11"
-
-# Build each version
+# Build each version (tests run on all versions)
 foreach ($version in $versions) {
     Write-Host ""
     Write-Host "----------------------------------------" -ForegroundColor Yellow
@@ -36,14 +33,8 @@ foreach ($version in $versions) {
     # Clean before building each version to avoid conflicts
     & ./gradlew.bat clean "-Pmc_version=$version" --quiet
 
-    # Build - skip tests for non-primary versions
-    if ($version -eq $testVersion) {
-        Write-Host "  (with tests)" -ForegroundColor Cyan
-        $result = & ./gradlew.bat build "-Pmc_version=$version"
-    } else {
-        Write-Host "  (skipping tests)" -ForegroundColor DarkGray
-        $result = & ./gradlew.bat build "-Pmc_version=$version" -x test
-    }
+    # Build with tests for all versions
+    & ./gradlew.bat build "-Pmc_version=$version"
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "ERROR: Build failed for Minecraft $version" -ForegroundColor Red
@@ -51,8 +42,8 @@ foreach ($version in $versions) {
     }
 
     # Copy JARs to output directory
-    $fabricJar = Get-ChildItem -Path "fabric/build/libs" -Filter "*+$version.jar" | Where-Object { $_.Name -notmatch "(-sources|-dev)" }
-    $neoforgeJar = Get-ChildItem -Path "neoforge/build/libs" -Filter "*+$version.jar" | Where-Object { $_.Name -notmatch "(-sources|-dev)" }
+    $fabricJar = Get-ChildItem -Path "fabric/build/libs" -Filter "*+$version.jar" | Where-Object { $_.Name -notmatch "(-sources|-dev|-shadow)" }
+    $neoforgeJar = Get-ChildItem -Path "neoforge/build/libs" -Filter "*+$version.jar" | Where-Object { $_.Name -notmatch "(-sources|-dev|-shadow)" }
 
     if ($fabricJar) {
         Copy-Item -Path $fabricJar.FullName -Destination $outputDir

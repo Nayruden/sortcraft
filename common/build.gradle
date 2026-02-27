@@ -5,19 +5,13 @@ architectury {
 // Add version-specific source sets
 // For 1.21.11+, use java-1.21.11; for 1.21.4-1.21.10, use java-1.21.4; for 1.21.1, use java-1.21.1
 // Note: MC 1.21.2 and 1.21.3 are not supported (incompatible API changes)
-def mcVersion = rootProject.minecraft_version
-def versionParts = mcVersion.split('\\.')
-def mcMinor = versionParts[1].toInteger()
-def mcPatch = versionParts.length > 2 ? versionParts[2].toInteger() : 0
-def isVersion1_21_11OrLater = (mcMinor > 21) || (mcMinor == 21 && mcPatch >= 11)
-def isVersion1_21_4OrLater = (mcMinor > 21) || (mcMinor == 21 && mcPatch >= 4)
-
+// Version flags are centralized in root build.gradle (rootProject.ext)
 sourceSets {
     main {
         java {
-            if (isVersion1_21_11OrLater) {
+            if (rootProject.ext.isVersion1_21_11OrLater) {
                 srcDir 'src/main/java-1.21.11'
-            } else if (isVersion1_21_4OrLater) {
+            } else if (rootProject.ext.isVersion1_21_4OrLater) {
                 srcDir 'src/main/java-1.21.4'
             } else {
                 srcDir 'src/main/java-1.21.1'

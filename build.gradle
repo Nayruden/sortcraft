@@ -5,10 +5,11 @@ plugins {
 }
 
 // Multi-version support: Load version-specific properties
-// Use -Pmc_version=1.21.4 to build for a specific version, defaults to 1.21.5
-// Supported versions: 1.21.1, 1.21.4-1.21.6, 1.21.8, 1.21.10-1.21.11
-def targetVersion = project.hasProperty('mc_version') ? project.property('mc_version') : '1.21.5'
-def supportedVersions = ['1.21.1', '1.21.4', '1.21.5', '1.21.6', '1.21.8', '1.21.10', '1.21.11']
+// Use -Pmc_version=1.21.4 to build for a specific version
+// Canonical version list is defined in versions.json
+def versionsConfig = new groovy.json.JsonSlurper().parse(file('versions.json'))
+def supportedVersions = versionsConfig.supported as List<String>
+def targetVersion = project.hasProperty('mc_version') ? project.property('mc_version') : versionsConfig['default']
 
 // Load version-specific properties from versions directory
 def versionPropsFile = file("versions/${targetVersion}/gradle.properties")
@@ -23,14 +24,19 @@ versionProps.each { key, value ->
 }
 println "Building for Minecraft ${targetVersion}"
 
-// Parse version for comparison
+// Parse version for comparison — centralized for all subprojects
 def versionParts = targetVersion.split('\\.')
 def mcMajor = versionParts[0].toInteger()
 def mcMinor = versionParts[1].toInteger()
 def mcPatch = versionParts.length > 2 ? versionParts[2].toInteger() : 0
 ext.mcVersionCode = mcMajor * 10000 + mcMinor * 100 + mcPatch
-ext.isVersion1_21_4OrLater = (mcMinor > 21) || (mcMinor == 21 && mcPatch >= 4)
 ext.targetMcVersion = targetVersion
+ext.supportedVersions = supportedVersions
+ext.isVersion1_21_4OrLater = (mcMinor > 21) || (mcMinor == 21 && mcPatch >= 4)
+ext.isVersion1_21_5OrLater = (mcMinor > 21) || (mcMinor == 21 && mcPatch >= 5)
+ext.isVersion1_21_10OrLater = (mcMinor > 21) || (mcMinor == 21 && mcPatch >= 10)
+ext.isVersion1_21_11OrLater = (mcMinor > 21) || (mcMinor == 21 && mcPatch >= 11)
+ext.gametestSupported = ext.isVersion1_21_5OrLater
 println "MC Version Code: ${ext.mcVersionCode}, isVersion1_21_4OrLater: ${ext.isVersion1_21_4OrLater}"
 
 architectury {
@@ -108,28 +114,64 @@ tasks.register('buildAndCollect') {
     }
 }
 
-// Task to show build instructions
+// Task to build all supported Minecraft versions sequentially
 tasks.register('buildAllVersions') {
     group = 'build'
-    description = 'Shows instructions for building all supported Minecraft versions'
+    description = 'Builds all supported Minecraft versions sequentially'
 
     doLast {
+        def versions = ext.supportedVersions
+        def collectDir = file("${rootProject.layout.buildDirectory.get().asFile}/libs/all-versions")
+        collectDir.mkdirs()
+
+        def failed = []
+        versions.each { ver ->
+            println ""
+            println "=========================================="
+            println "Building for Minecraft ${ver}"
+            println "=========================================="
+            def gradlew = org.gradle.internal.os.OperatingSystem.current().isWindows()
+                ? "${rootDir}/gradlew.bat" : "${rootDir}/gradlew"
+            def result = project.exec {
+                executable = gradlew
+                args = ['clean', 'build', "-Pmc_version=${ver}"]
+                ignoreExitValue = true
+            }
+            if (result.exitValue != 0) {
+                failed << ver
+                println "ERROR: Build failed for Minecraft ${ver}"
+            } else {
+                // Collect JARs
+                ['fabric', 'neoforge'].each { loader ->
+                    def libsDir = file("${loader}/build/libs")
+                    if (libsDir.exists()) {
+                        libsDir.eachFileMatch(~".*\\+${ver}\\.jar") { jar ->
+                            if (!jar.name.contains('-sources') && !jar.name.contains('-dev') && !jar.name.contains('-shadow')) {
+                                project.copy {
+                                    from jar
+                                    into collectDir
+                                }
+                                println "  Collected: ${jar.name}"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         println ""
         println "=========================================="
-        println "Multi-Version Build Instructions"
+        if (failed.isEmpty()) {
+            println "All ${versions.size()} versions built successfully!"
+        } else {
+            println "Build complete with ${failed.size()} failure(s): ${failed.join(', ')}"
+        }
+        println "Output JARs in: ${collectDir}"
         println "=========================================="
-        println ""
-        println "Supported Minecraft versions: 1.21.1, 1.21.4-1.21.6, 1.21.8, 1.21.10-1.21.11"
-        println ""
-        println "To build for a specific version:"
-        println "  ./gradlew build -Pmc_version=1.21.4"
-        println "  ./gradlew build -Pmc_version=1.21.5"
-        println ""
-        println "To build all versions at once:"
-        println "  Windows (PowerShell): ./build-all-versions.ps1"
-        println "  Windows (CMD):        build-all-versions.bat"
-        println ""
-        println "Output JARs will be collected in: build/libs/all-versions/"
-        println ""
+
+        if (!failed.isEmpty()) {
+            throw new GradleException("Build failed for versions: ${failed.join(', ')}")
+        }
     }
 }
+

@@ -3,13 +3,23 @@ name: Build
 on: [push, pull_request]
 
 jobs:
+  # Read supported versions from versions.json so the matrix is always in sync
+  setup:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: set-matrix
+        run: echo "matrix=$(jq -c '{mc_version: .supported}' versions.json)" >> "$GITHUB_OUTPUT"
+
   build:
     name: MC ${{ matrix.mc_version }}
+    needs: setup
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
-      matrix:
-        mc_version: ["1.21.1", "1.21.4", "1.21.5", "1.21.6", "1.21.8", "1.21.10", "1.21.11"]
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,7 +58,8 @@ jobs:
           for dir in fabric/build/libs neoforge/build/libs; do
             if [ -d "$dir" ]; then
               find "$dir" -maxdepth 1 -type f -name "*+${{ matrix.mc_version }}.jar" \
-                ! -name "*-sources*" ! -name "*-dev*" -exec cp {} build/libs/all-versions/ \;
+                ! -name "*-sources*" ! -name "*-dev*" ! -name "*-shadow*" \
+                -exec cp {} build/libs/all-versions/ \;
             fi
           done
 
@@ -57,4 +68,22 @@ jobs:
         with:
           name: sortcraft-${{ matrix.mc_version }}
           path: build/libs/all-versions/*.jar
+          if-no-files-found: error
+
+  # Merge all per-version artifacts into a single download
+  collect:
+    name: Collect all JARs
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: all-jars
+          pattern: sortcraft-*
+          merge-multiple: true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sortcraft-all-versions
+          path: all-jars/*.jar
           if-no-files-found: error
