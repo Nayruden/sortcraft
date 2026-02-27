@@ -18,6 +18,11 @@ All notable changes to SortCraft will be documented in this file.
 
 - **Shared gametest utilities** — Common gametest helpers (TestHelper, TestScenarios, TestCategories, etc.) moved to `common/src/gametest/java` so they are shared across Fabric and NeoForge loaders
 
+### Tests
+
+- **New gametest classes** — ContainerTypeGameTest (bundle/shulker box sorting), FilterFeatureGameTest (OR logic, enchantment filters), ShareConfigSortGameTest (share config integration), StorageDrawersGameTest (modded storage)
+- **New unit tests** — CategorySetTest, SortContextCategorySetTest, ShareIdValidationTest, AuditShareIdTest, IsolatedCategoryLoadingTest, GameTestParityTest
+
 - **Centralized version configuration** — Supported Minecraft versions are now defined in a single `versions.json` file, used by Gradle, build scripts, and GitHub Actions CI
 - **Improved build scripts** — `buildAllVersions` Gradle task now performs actual builds instead of printing instructions; `build-all-versions.ps1` reads from `versions.json` and runs tests on all versions
 - **CI improvements** — GitHub Actions build matrix is dynamically generated from `versions.json`; `-shadow` JARs are excluded from artifacts; a new `collect` job merges all per-version artifacts into a single download
