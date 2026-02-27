@@ -11,6 +11,8 @@ All notable changes to SortCraft will be documented in this file.
 - **Modded storage support** — SortCraft can now sort into modded storage blocks (Storage Drawers, Sophisticated Storage, etc.) via a new platform-agnostic `SortCraftStorage` abstraction. Fabric uses the Transfer API; NeoForge uses `IItemHandler`
 - **Share config support** — Input signs can reference a CategoryCraft share ID to use a shared category configuration instead of the global one. Enabled via `share_configs_enabled` in server config
 - **`/sort shareconfig <id>` command** — Test and inspect a CategoryCraft share config by ID, showing category and item counts
+- **OR logic in filter rules** — Filter rules now support `|` (OR) operator to match items against multiple conditions
+- **Enchantment filter fix** — Enchantment-based filter rules now correctly match enchanted items
 
 ### Changed
 

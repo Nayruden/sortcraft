@@ -37,6 +37,40 @@ final class Filters {
             return new NegatedFilterRule(createFilterRule(registries, key, value));
         }
 
+        return createSingleFilterRule(registries, key, value);
+    }
+
+    /**
+     * Creates a filter rule from a YAML list value.
+     * Multiple values are OR'd together via OrFilterRule.
+     * Negation (!) wraps the entire OR group: NOT(A OR B).
+     *
+     * @param registries the registry access
+     * @param key the filter key (may start with ! for negation)
+     * @param values the list of filter values
+     * @return the created FilterRule
+     */
+    static FilterRule createFilterRuleFromList(RegistryAccess registries, String key, List<String> values) {
+        boolean negate = key.startsWith("!");
+        if (negate) {
+            key = key.substring(1);
+        }
+
+        List<FilterRule> innerRules = new ArrayList<>();
+        for (String value : values) {
+            innerRules.add(createSingleFilterRule(registries, key, value));
+        }
+
+        FilterRule rule = innerRules.size() == 1 ? innerRules.get(0) : new OrFilterRule(innerRules);
+
+        if (negate) {
+            rule = new NegatedFilterRule(rule);
+        }
+
+        return rule;
+    }
+
+    private static FilterRule createSingleFilterRule(RegistryAccess registries, String key, String value) {
         return switch (key.toLowerCase()) {
             case "enchantment" -> {
                 if (value == null || value.isEmpty()) {
@@ -68,6 +102,20 @@ final class Filters {
             default ->
                 throw new IllegalArgumentException("Unknown filter key: " + key);
         };
+    }
+}
+
+class OrFilterRule implements FilterRule {
+    private final List<FilterRule> rules;
+
+    public OrFilterRule(List<FilterRule> rules) {
+        this.rules = rules;
+    }
+
+    @Override
+    public boolean matches(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        return rules.stream().anyMatch(r -> r.matches(stack));
     }
 }
 
@@ -159,8 +207,8 @@ class EnchantmentFilterRule implements FilterRule {
     ItemEnchantments storedEnchantmentsComponent = stack.get(DataComponents.STORED_ENCHANTMENTS);
 
     List<ItemEnchantments> components = new ArrayList<>();
-    if (enchantmentsComponent != null) components.add(enchantmentsComponent);
-    if (storedEnchantmentsComponent != null) components.add(storedEnchantmentsComponent);
+    if (enchantmentsComponent != null && !enchantmentsComponent.keySet().isEmpty()) components.add(enchantmentsComponent);
+    if (storedEnchantmentsComponent != null && !storedEnchantmentsComponent.keySet().isEmpty()) components.add(storedEnchantmentsComponent);
     if (components.isEmpty()) return false;
 
     return switch (matchType) {

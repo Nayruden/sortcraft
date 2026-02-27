@@ -2,6 +2,8 @@ package net.sortcraft;
 
 import net.minecraft.core.RegistryAccess;
 
+import java.util.List;
+
 /**
  * Factory for creating FilterRule instances from YAML configuration.
  */
@@ -24,6 +26,27 @@ public final class FilterRuleFactory {
 
         // Delegate to Filters class for actual implementation
         return Filters.createFilterRule(registries, key, value);
+    }
+
+    /**
+     * Creates a FilterRule from a YAML list value.
+     * Multiple values are OR'd together. Negation (!) wraps the entire OR group.
+     *
+     * @param registries the registry access
+     * @param key the filter key (may start with ! for negation)
+     * @param values the list of filter values
+     * @return the created FilterRule
+     * @throws IllegalArgumentException if the key is null/empty or values is empty
+     */
+    public static FilterRule fromYamlList(RegistryAccess registries, String key, List<String> values) {
+        if (key == null || key.isEmpty()) {
+            throw new IllegalArgumentException("Filter key cannot be null or empty");
+        }
+        if (values == null || values.isEmpty()) {
+            throw new IllegalArgumentException("Filter value list cannot be null or empty");
+        }
+
+        return Filters.createFilterRuleFromList(registries, key, values);
     }
 }
 
