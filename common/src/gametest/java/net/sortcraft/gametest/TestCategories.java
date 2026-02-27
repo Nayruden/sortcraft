@@ -236,5 +236,103 @@ public final class TestCategories {
           includes:
             - weapons
         """;
+
+    // ========== OR Filter Category Definitions ==========
+
+    /** Swords with OR enchantment filter: matches sharpness OR unbreaking */
+    public static final String OR_ENCHANTMENT_SWORDS = """
+        enchanted_swords:
+          filters:
+          - enchantment:
+              - minecraft:sharpness
+              - minecraft:unbreaking
+          items:
+            - /.*:.*_sword/
+        """;
+
+    /** Swords with negated OR enchantment filter: matches NEITHER sharpness NOR unbreaking */
+    public static final String NEGATED_OR_ENCHANTMENT_SWORDS = """
+        plain_swords:
+          filters:
+          - "!enchantment":
+              - minecraft:sharpness
+              - minecraft:unbreaking
+          items:
+            - /.*:.*_sword/
+        """;
+
+    /** Swords with OR custom_name filter: matches name "Excalibur" OR "Sting" */
+    public static final String OR_CUSTOM_NAME_SWORDS = """
+        named_swords:
+          filters:
+          - custom_name:
+              - Excalibur
+              - Sting
+          items:
+            - /.*:.*_sword/
+        """;
+
+    /** Swords with single-element list enchantment filter (should behave like scalar) */
+    public static final String SINGLE_ELEMENT_LIST_SWORDS = """
+        sharp_swords:
+          filters:
+          - enchantment:
+              - minecraft:sharpness
+          items:
+            - /.*:.*_sword/
+        """;
+
+    /** Swords with OR enchantment AND custom_name (AND across entries, OR within) */
+    public static final String OR_AND_COMBINED = """
+        special_swords:
+          filters:
+          - enchantment:
+              - minecraft:sharpness
+              - minecraft:unbreaking
+          - custom_name: '*'
+          items:
+            - /.*:.*_sword/
+        """;
+
+    // ========== Wildcard Category Definitions ==========
+
+    /** Wildcard category matching all items (no filters) */
+    public static final String WILDCARD_ALL = """
+        everything:
+          items:
+            - "*"
+        """;
+
+    /** Wildcard category with enchantment filter */
+    public static final String WILDCARD_ENCHANTED = """
+        enchanted_all:
+          filters:
+          - enchantment: '*'
+          items:
+            - "*"
+        """;
+
+    /** Priority test: specific swords category + wildcard catch-all */
+    public static final String WILDCARD_PRIORITY = """
+        swords:
+          priority: 1
+          items:
+            - /.*:.*_sword/
+        everything_else:
+          priority: 20
+          items:
+            - "*"
+        """;
+
+    /** Wildcard with OR enchantment filter */
+    public static final String WILDCARD_OR_FILTER = """
+        or_enchanted:
+          filters:
+          - enchantment:
+              - minecraft:sharpness
+              - minecraft:unbreaking
+          items:
+            - "*"
+        """;
 }
 

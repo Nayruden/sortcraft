@@ -9,13 +9,17 @@
       "net.sortcraft.gametest.AuditGameTest",
       "net.sortcraft.gametest.CategoryMatchingGameTest",
       "net.sortcraft.gametest.ChestLayoutGameTest",
+      "net.sortcraft.gametest.ContainerTypeGameTest",
+      "net.sortcraft.gametest.FilterFeatureGameTest",
       "net.sortcraft.gametest.InputStackGameTest",
       "net.sortcraft.gametest.ItemDistributionGameTest",
       "net.sortcraft.gametest.NestedContainerGameTest",
       "net.sortcraft.gametest.OverflowGameTest",
       "net.sortcraft.gametest.PerformanceGameTest",
+      "net.sortcraft.gametest.ShareConfigSortGameTest",
       "net.sortcraft.gametest.SignTextGameTest",
       "net.sortcraft.gametest.SortCraftGameTest",
+      "net.sortcraft.gametest.StorageDrawersGameTest",
       "net.sortcraft.gametest.StorageLayoutGameTest",
       "net.sortcraft.gametest.VerticalStackGameTest"
     ]
@@ -24,4 +28,3 @@
     "sortcraft": "*"
   }
 }
-

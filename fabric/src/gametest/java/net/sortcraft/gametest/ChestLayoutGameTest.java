@@ -6,16 +6,12 @@ import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.Container;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.ChestBlock;
-import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.ChestType;
 import net.sortcraft.container.ContainerHelper;
+import net.sortcraft.container.SortCraftStorage;
 
 import java.util.List;
 
@@ -44,7 +40,7 @@ public class ChestLayoutGameTest {
         BlockPos absSignPos = helper.absolutePos(chestPos.north());
         BlockState signState = level.getBlockState(absSignPos);
 
-        BlockPos foundChest = ContainerHelper.getAttachedChestPos(absSignPos, signState, level);
+        BlockPos foundChest = ContainerHelper.getAttachedContainerPos(absSignPos, signState, level);
         if (!absChestPos.equals(foundChest)) {
             helper.fail(Component.literal("Sign did not find attached chest"));
         }
@@ -65,7 +61,7 @@ public class ChestLayoutGameTest {
         BlockPos absSignPos = helper.absolutePos(chestPos.south());
         BlockState signState = level.getBlockState(absSignPos);
 
-        BlockPos foundChest = ContainerHelper.getAttachedChestPos(absSignPos, signState, level);
+        BlockPos foundChest = ContainerHelper.getAttachedContainerPos(absSignPos, signState, level);
         if (!absChestPos.equals(foundChest)) {
             helper.fail(Component.literal("Sign did not find attached chest facing SOUTH"));
         }
@@ -86,7 +82,7 @@ public class ChestLayoutGameTest {
         BlockPos absSignPos = helper.absolutePos(chestPos.east());
         BlockState signState = level.getBlockState(absSignPos);
 
-        BlockPos foundChest = ContainerHelper.getAttachedChestPos(absSignPos, signState, level);
+        BlockPos foundChest = ContainerHelper.getAttachedContainerPos(absSignPos, signState, level);
         if (!absChestPos.equals(foundChest)) {
             helper.fail(Component.literal("Sign did not find attached chest facing EAST"));
         }
@@ -107,7 +103,7 @@ public class ChestLayoutGameTest {
         BlockPos absSignPos = helper.absolutePos(chestPos.west());
         BlockState signState = level.getBlockState(absSignPos);
 
-        BlockPos foundChest = ContainerHelper.getAttachedChestPos(absSignPos, signState, level);
+        BlockPos foundChest = ContainerHelper.getAttachedContainerPos(absSignPos, signState, level);
         if (!absChestPos.equals(foundChest)) {
             helper.fail(Component.literal("Sign did not find attached chest facing WEST"));
         }
@@ -137,10 +133,10 @@ public class ChestLayoutGameTest {
         }
 
         // Verify the container has 54 slots (double chest)
-        Container container = TestHelper.getChestContainer(helper, primaryPos);
-        if (container == null || container.getContainerSize() != 54) {
+        SortCraftStorage storage = TestHelper.getStorage(helper, primaryPos);
+        if (storage == null || storage.getSlotCount() != 54) {
             helper.fail(Component.literal("Expected 54 slots for double chest but got " +
-                    (container == null ? "null" : container.getContainerSize())));
+                    (storage == null ? "null" : storage.getSlotCount())));
             return;
         }
 
@@ -160,9 +156,9 @@ public class ChestLayoutGameTest {
         BlockPos secondaryPos = primaryPos.relative(secondaryDir);
         TestHelper.placeCategorySign(helper, secondaryPos, Direction.SOUTH, "test");
 
-        // Container should still work from secondary position
-        Container container = TestHelper.getChestContainer(helper, secondaryPos);
-        if (container == null || container.getContainerSize() != 54) {
+        // Storage should still work from secondary position
+        SortCraftStorage storage = TestHelper.getStorage(helper, secondaryPos);
+        if (storage == null || storage.getSlotCount() != 54) {
             helper.fail(Component.literal("Expected 54 slots from secondary position"));
             return;
         }
@@ -179,8 +175,8 @@ public class ChestLayoutGameTest {
         TestHelper.placeDoubleChest(helper, primaryPos, Direction.EAST, false);
         TestHelper.placeCategorySign(helper, primaryPos, Direction.EAST, "test");
 
-        Container container = TestHelper.getChestContainer(helper, primaryPos);
-        if (container == null || container.getContainerSize() != 54) {
+        SortCraftStorage storage = TestHelper.getStorage(helper, primaryPos);
+        if (storage == null || storage.getSlotCount() != 54) {
             helper.fail(Component.literal("Expected 54 slots for EAST-facing double chest"));
             return;
         }
@@ -197,8 +193,8 @@ public class ChestLayoutGameTest {
         TestHelper.placeDoubleChest(helper, primaryPos, Direction.WEST, true);
         TestHelper.placeCategorySign(helper, primaryPos, Direction.WEST, "test");
 
-        Container container = TestHelper.getChestContainer(helper, primaryPos);
-        if (container == null || container.getContainerSize() != 54) {
+        SortCraftStorage storage = TestHelper.getStorage(helper, primaryPos);
+        if (storage == null || storage.getSlotCount() != 54) {
             helper.fail(Component.literal("Expected 54 slots for WEST-facing double chest"));
             return;
         }
@@ -207,7 +203,7 @@ public class ChestLayoutGameTest {
     }
 
     /**
-     * Test that getChestBlocks returns both positions for a double chest.
+     * Test that getContainerBlocks returns both positions for a double chest.
      */
     @GameTest
     public void doubleChestGetsBothBlocks(GameTestHelper helper) {
@@ -217,7 +213,7 @@ public class ChestLayoutGameTest {
         ServerLevel level = helper.getLevel();
         BlockPos absPos = helper.absolutePos(primaryPos);
 
-        List<BlockPos> blocks = ContainerHelper.getChestBlocks(absPos, level);
+        List<BlockPos> blocks = ContainerHelper.getContainerBlocks(absPos, level);
         if (blocks.size() != 2) {
             helper.fail(Component.literal("Expected 2 blocks for double chest but got " + blocks.size()));
             return;
@@ -227,7 +223,7 @@ public class ChestLayoutGameTest {
     }
 
     /**
-     * Test that getChestBlocks returns 1 position for a single chest.
+     * Test that getContainerBlocks returns 1 position for a single chest.
      */
     @GameTest
     public void singleChestGetsOneBlock(GameTestHelper helper) {
@@ -237,7 +233,7 @@ public class ChestLayoutGameTest {
         ServerLevel level = helper.getLevel();
         BlockPos absPos = helper.absolutePos(chestPos);
 
-        List<BlockPos> blocks = ContainerHelper.getChestBlocks(absPos, level);
+        List<BlockPos> blocks = ContainerHelper.getContainerBlocks(absPos, level);
         if (blocks.size() != 1) {
             helper.fail(Component.literal("Expected 1 block for single chest but got " + blocks.size()));
             return;

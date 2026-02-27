@@ -32,7 +32,7 @@ public class VerticalStackGameTest {
         ServerLevel level = helper.getLevel();
         BlockPos absChestPos = helper.absolutePos(chestPos);
 
-        List<ChestRef> stack = ContainerHelper.collectChestStack(level, absChestPos);
+        List<ChestRef> stack = ContainerHelper.collectContainerStack(level, absChestPos);
         if (stack.size() != 1) {
             helper.fail(Component.literal("Expected stack of 1 but got " + stack.size()));
             return;
@@ -59,7 +59,7 @@ public class VerticalStackGameTest {
         ServerLevel level = helper.getLevel();
         BlockPos absTopChestPos = helper.absolutePos(topChest);
 
-        List<ChestRef> stack = ContainerHelper.collectChestStack(level, absTopChestPos);
+        List<ChestRef> stack = ContainerHelper.collectContainerStack(level, absTopChestPos);
         if (stack.size() != 3) {
             helper.fail(Component.literal("Expected stack of 3 but got " + stack.size()));
             return;
@@ -91,7 +91,7 @@ public class VerticalStackGameTest {
         ServerLevel level = helper.getLevel();
         BlockPos absTopChestPos = helper.absolutePos(topChest);
 
-        List<ChestRef> stack = ContainerHelper.collectChestStack(level, absTopChestPos);
+        List<ChestRef> stack = ContainerHelper.collectContainerStack(level, absTopChestPos);
         if (stack.size() != 5) {
             helper.fail(Component.literal("Expected stack of 5 but got " + stack.size()));
             return;
@@ -119,7 +119,7 @@ public class VerticalStackGameTest {
         ServerLevel level = helper.getLevel();
         BlockPos absMiddleChestPos = helper.absolutePos(middleChest);
 
-        List<ChestRef> stack = ContainerHelper.collectChestStack(level, absMiddleChestPos);
+        List<ChestRef> stack = ContainerHelper.collectContainerStack(level, absMiddleChestPos);
         // Should collect: chest at Y=3, Y=2, Y=1 = 3 chests
         if (stack.size() != 3) {
             helper.fail(Component.literal("Expected stack of 3 (middle + below) but got " + stack.size()));
@@ -145,7 +145,7 @@ public class VerticalStackGameTest {
         ServerLevel level = helper.getLevel();
         BlockPos absBottomPos = helper.absolutePos(bottomPos);
 
-        List<ChestRef> stack = ContainerHelper.collectChestStack(level, absBottomPos);
+        List<ChestRef> stack = ContainerHelper.collectContainerStack(level, absBottomPos);
         // Should only collect the bottom chest
         if (stack.size() != 1) {
             helper.fail(Component.literal("Expected stack of 1 (bottom only) but got " + stack.size()));
@@ -181,11 +181,11 @@ public class VerticalStackGameTest {
 
         // Check swords stack (from top chest)
         BlockPos absSwordsChestPos = helper.absolutePos(positions.get(4));
-        List<ChestRef> swordsStack = ContainerHelper.collectChestStack(level, absSwordsChestPos);
+        List<ChestRef> swordsStack = ContainerHelper.collectContainerStack(level, absSwordsChestPos);
 
         // Check pickaxes stack (from lower chest)
         BlockPos absPickaxesChestPos = helper.absolutePos(positions.get(1));
-        List<ChestRef> pickaxesStack = ContainerHelper.collectChestStack(level, absPickaxesChestPos);
+        List<ChestRef> pickaxesStack = ContainerHelper.collectContainerStack(level, absPickaxesChestPos);
 
         // Swords should have 3 chests (5,4,3 - stops at pickaxes sign on chest 2)
         if (swordsStack.size() != 3) {
@@ -223,15 +223,15 @@ public class VerticalStackGameTest {
 
         // Tools: chests 6,5 (2 chests)
         BlockPos absToolsChestPos = helper.absolutePos(positions.get(5));
-        List<ChestRef> toolsStack = ContainerHelper.collectChestStack(level, absToolsChestPos);
+        List<ChestRef> toolsStack = ContainerHelper.collectContainerStack(level, absToolsChestPos);
 
         // Weapons: chests 4,3 (2 chests)
         BlockPos absWeaponsChestPos = helper.absolutePos(positions.get(3));
-        List<ChestRef> weaponsStack = ContainerHelper.collectChestStack(level, absWeaponsChestPos);
+        List<ChestRef> weaponsStack = ContainerHelper.collectContainerStack(level, absWeaponsChestPos);
 
         // Armor: chests 2,1 (2 chests)
         BlockPos absArmorChestPos = helper.absolutePos(positions.get(1));
-        List<ChestRef> armorStack = ContainerHelper.collectChestStack(level, absArmorChestPos);
+        List<ChestRef> armorStack = ContainerHelper.collectContainerStack(level, absArmorChestPos);
 
         if (toolsStack.size() != 2 || weaponsStack.size() != 2 || armorStack.size() != 2) {
             helper.fail(Component.literal("Expected all stacks to have 2 chests. Got: tools=" +
@@ -262,10 +262,10 @@ public class VerticalStackGameTest {
         ServerLevel level = helper.getLevel();
 
         BlockPos absSwordsChestPos = helper.absolutePos(stack1.get(2));
-        List<ChestRef> swordsStack = ContainerHelper.collectChestStack(level, absSwordsChestPos);
+        List<ChestRef> swordsStack = ContainerHelper.collectContainerStack(level, absSwordsChestPos);
 
         BlockPos absPickaxesChestPos = helper.absolutePos(stack2.get(3));
-        List<ChestRef> pickaxesStack = ContainerHelper.collectChestStack(level, absPickaxesChestPos);
+        List<ChestRef> pickaxesStack = ContainerHelper.collectContainerStack(level, absPickaxesChestPos);
 
         if (swordsStack.size() != 3) {
             helper.fail(Component.literal("Expected swords stack of 3 but got " + swordsStack.size()));

@@ -12,9 +12,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.WallSignBlock;
-import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -26,7 +24,10 @@ import net.sortcraft.audit.SortAuditLog;
 import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.container.ChestRef;
 import net.sortcraft.container.ContainerHelper;
+import net.sortcraft.container.ContainerStorage;
 import net.sortcraft.container.SortContext;
+import net.sortcraft.container.SortCraftStorage;
+import net.sortcraft.container.StorageLookup;
 import net.sortcraft.compat.IdentifierHelper;
 import net.sortcraft.sorting.SortingEngine;
 import net.sortcraft.sorting.SortingResults;
@@ -48,10 +49,32 @@ public final class TestHelper {
      * Clears existing categories and loads new ones from YAML configurations.
      * Automatically calls flattenCategories() after loading.
      *
+     * <p>Note: This overload does not set registry access. Use
+     * {@link #setupCategories(GameTestHelper, String...)} for categories that
+     * contain enchantment filters or other filters requiring registry access.
+     *
      * @param yamlConfigs One or more YAML configuration strings
      */
     public static void setupCategories(String... yamlConfigs) {
         CategoryLoader.clear();
+        for (String yaml : yamlConfigs) {
+            CategoryLoader.loadCategoriesFromYaml(yaml);
+        }
+        CategoryLoader.flattenCategories();
+    }
+
+    /**
+     * Clears existing categories and loads new ones from YAML configurations,
+     * with registry access from the game test helper.
+     * Required for categories that use enchantment filters or other registry-dependent filters.
+     * Automatically calls flattenCategories() after loading.
+     *
+     * @param helper      The GameTestHelper for registry access
+     * @param yamlConfigs One or more YAML configuration strings
+     */
+    public static void setupCategories(GameTestHelper helper, String... yamlConfigs) {
+        CategoryLoader.clear();
+        CategoryLoader.setCurrentRegistries(helper.getLevel().registryAccess());
         for (String yaml : yamlConfigs) {
             CategoryLoader.loadCategoriesFromYaml(yaml);
         }
@@ -73,10 +96,10 @@ public final class TestHelper {
         BlockPos absInputPos = helper.absolutePos(inputPos);
         SortContext context = new SortContext(level, absInputPos, radius);
 
-        // Collect all chests in the input stack (starts from sign's chest and goes downward)
-        List<ChestRef> inputChests = ContainerHelper.collectChestStack(level, absInputPos);
+        // Collect all containers in the input stack (starts from sign's container and goes downward)
+        List<ChestRef> inputChests = ContainerHelper.collectContainerStack(level, absInputPos);
         if (inputChests.isEmpty()) {
-            throw new IllegalStateException("No chest container at " + inputPos);
+            throw new IllegalStateException("No container at " + inputPos);
         }
 
         return SortingEngine.sortFromContainers(context, level, inputChests, false, null);
@@ -92,11 +115,11 @@ public final class TestHelper {
     /**
      * Executes the sorting operation in preview mode (no actual changes).
      * This calculates what would be sorted without modifying any containers.
-     * Supports vertical stacks of input chests.
+     * Supports vertical stacks of input containers.
      *
      * @param helper    The GameTestHelper
-     * @param inputPos  The relative position of the input chest (typically the top chest with the sign)
-     * @param radius    The search radius for category chests
+     * @param inputPos  The relative position of the input container (typically the top container with the sign)
+     * @param radius    The search radius for category containers
      * @return The SortingResults from the preview operation
      */
     public static SortingResults executeSortPreview(GameTestHelper helper, BlockPos inputPos, int radius) {
@@ -104,8 +127,8 @@ public final class TestHelper {
         BlockPos absInputPos = helper.absolutePos(inputPos);
         SortContext context = new SortContext(level, absInputPos, radius);
 
-        // Collect all chests in the input stack (starts from sign's chest and goes downward)
-        List<ChestRef> inputChests = ContainerHelper.collectChestStack(level, absInputPos);
+        // Collect all containers in the input stack (starts from sign's container and goes downward)
+        List<ChestRef> inputChests = ContainerHelper.collectContainerStack(level, absInputPos);
         if (inputChests.isEmpty()) {
             throw new IllegalStateException("No chest container at " + inputPos);
         }
@@ -185,6 +208,68 @@ public final class TestHelper {
         return positions;
     }
 
+    // ========== Generic Container Placement ==========
+
+    /**
+     * Places a barrel at the given position.
+     * Barrels have 27 slots (same as a single chest).
+     * @param facing Direction the barrel faces (default is UP)
+     */
+    public static void placeBarrel(GameTestHelper helper, BlockPos pos, Direction facing) {
+        BlockState state = Blocks.BARREL.defaultBlockState()
+                .setValue(BlockStateProperties.FACING, facing);
+        helper.setBlock(pos, state);
+    }
+
+    /**
+     * Places a hopper at the given position.
+     * Hoppers have 5 slots. Facing determines the output direction.
+     * @param outputDir Direction the hopper outputs to (cannot be UP)
+     */
+    public static void placeHopper(GameTestHelper helper, BlockPos pos, Direction outputDir) {
+        BlockState state = Blocks.HOPPER.defaultBlockState()
+                .setValue(BlockStateProperties.FACING_HOPPER, outputDir);
+        helper.setBlock(pos, state);
+    }
+
+    /**
+     * Places a dispenser at the given position.
+     * Dispensers have 9 slots.
+     */
+    public static void placeDispenser(GameTestHelper helper, BlockPos pos, Direction facing) {
+        BlockState state = Blocks.DISPENSER.defaultBlockState()
+                .setValue(BlockStateProperties.FACING, facing);
+        helper.setBlock(pos, state);
+    }
+
+    /**
+     * Places a dropper at the given position.
+     * Droppers have 9 slots.
+     */
+    public static void placeDropper(GameTestHelper helper, BlockPos pos, Direction facing) {
+        BlockState state = Blocks.DROPPER.defaultBlockState()
+                .setValue(BlockStateProperties.FACING, facing);
+        helper.setBlock(pos, state);
+    }
+
+    /**
+     * Places a vertical stack of barrels.
+     * @param bottomPos Position of the bottom barrel
+     * @param height Number of barrels in the stack
+     * @param facing Direction each barrel faces
+     * @return List of barrel positions from bottom to top
+     */
+    public static List<BlockPos> placeBarrelStack(GameTestHelper helper, BlockPos bottomPos,
+                                                   int height, Direction facing) {
+        List<BlockPos> positions = new ArrayList<>();
+        for (int i = 0; i < height; i++) {
+            BlockPos pos = bottomPos.above(i);
+            placeBarrel(helper, pos, facing);
+            positions.add(pos);
+        }
+        return positions;
+    }
+
     // ========== Sign Placement ==========
 
     /**
@@ -257,46 +342,65 @@ public final class TestHelper {
     // ========== Item Manipulation ==========
 
     /**
-     * Inserts items into a chest at the given position.
+     * Inserts items into a container at the given position.
+     * Supports any storage type (chests, barrels, hoppers, dispensers, modded storage, etc.).
+     * For vanilla Containers, uses direct slot access for predictable placement.
+     * For other storage types (Transfer API, IItemHandler), uses storage.insert().
      * @return true if all items were inserted successfully
      */
-    public static boolean insertItems(GameTestHelper helper, BlockPos chestPos, ItemStack... items) {
+    public static boolean insertItems(GameTestHelper helper, BlockPos containerPos, ItemStack... items) {
         ServerLevel level = helper.getLevel();
-        BlockPos absPos = helper.absolutePos(chestPos);
-        BlockState state = level.getBlockState(absPos);
+        BlockPos absPos = helper.absolutePos(containerPos);
 
-        if (!(state.getBlock() instanceof ChestBlock chestBlock)) {
-            return false;
+        java.util.Optional<SortCraftStorage> storageOpt = StorageLookup.getStorageAt(level, absPos);
+        if (storageOpt.isEmpty()) return false;
+
+        SortCraftStorage storage = storageOpt.get();
+
+        // Fast path: vanilla Container — direct slot-based placement
+        if (storage instanceof ContainerStorage cs) {
+            Container container = cs.unwrap();
+            int slot = 0;
+            for (ItemStack item : items) {
+                if (slot >= container.getContainerSize()) return false;
+                container.setItem(slot++, item.copy());
+            }
+            return true;
         }
 
-        Container container = ChestBlock.getContainer(chestBlock, state, level, absPos, true);
-        if (container == null) return false;
-
-        int slot = 0;
+        // Fallback: non-Container storage (Transfer API, IItemHandler) — use insert()
         for (ItemStack item : items) {
-            if (slot >= container.getContainerSize()) return false;
-            container.setItem(slot++, item.copy());
+            int inserted = storage.insert(item.copy(), false);
+            if (inserted < item.getCount()) return false;
         }
         return true;
     }
 
     /**
-     * Inserts items into specific slots of a chest.
+     * Inserts items into specific slots of a container.
+     * Supports vanilla Container types for direct slot access.
+     * For non-Container storage types, falls back to insert() (slot parameter ignored).
      */
-    public static boolean insertItemAt(GameTestHelper helper, BlockPos chestPos, int slot, ItemStack item) {
+    public static boolean insertItemAt(GameTestHelper helper, BlockPos containerPos, int slot, ItemStack item) {
         ServerLevel level = helper.getLevel();
-        BlockPos absPos = helper.absolutePos(chestPos);
-        BlockState state = level.getBlockState(absPos);
+        BlockPos absPos = helper.absolutePos(containerPos);
 
-        if (!(state.getBlock() instanceof ChestBlock chestBlock)) {
-            return false;
+        java.util.Optional<SortCraftStorage> storageOpt = StorageLookup.getStorageAt(level, absPos);
+        if (storageOpt.isEmpty()) return false;
+
+        SortCraftStorage storage = storageOpt.get();
+
+        // Fast path: vanilla Container — direct slot access
+        if (storage instanceof ContainerStorage cs) {
+            Container container = cs.unwrap();
+            if (slot >= container.getContainerSize()) return false;
+            container.setItem(slot, item.copy());
+            return true;
         }
 
-        Container container = ChestBlock.getContainer(chestBlock, state, level, absPos, true);
-        if (container == null || slot >= container.getContainerSize()) return false;
-
-        container.setItem(slot, item.copy());
-        return true;
+        // Fallback: non-Container storage — use insert() (slot ignored)
+        int inserted = storage.insert(item.copy(), false);
+        return inserted >= item.getCount();
     }
 
     /**
@@ -323,48 +427,33 @@ public final class TestHelper {
     }
 
     /**
-     * Gets all non-empty items from a chest.
+     * Gets all non-empty items from a container.
+     * Supports any storage type (chests, barrels, hoppers, dispensers, modded storage, etc.).
      */
-    public static List<ItemStack> getChestContents(GameTestHelper helper, BlockPos chestPos) {
+    public static List<ItemStack> getChestContents(GameTestHelper helper, BlockPos containerPos) {
         ServerLevel level = helper.getLevel();
-        BlockPos absPos = helper.absolutePos(chestPos);
-        BlockState state = level.getBlockState(absPos);
+        BlockPos absPos = helper.absolutePos(containerPos);
 
-        List<ItemStack> contents = new ArrayList<>();
-        if (!(state.getBlock() instanceof ChestBlock chestBlock)) {
-            return contents;
-        }
+        java.util.Optional<SortCraftStorage> storageOpt = StorageLookup.getStorageAt(level, absPos);
+        if (storageOpt.isEmpty()) return new ArrayList<>();
 
-        Container container = ChestBlock.getContainer(chestBlock, state, level, absPos, true);
-        if (container == null) return contents;
-
-        for (int i = 0; i < container.getContainerSize(); i++) {
-            ItemStack stack = container.getItem(i);
-            if (!stack.isEmpty()) {
-                contents.add(stack.copy());
-            }
-        }
-        return contents;
+        return storageOpt.get().getContents();
     }
 
     /**
-     * Gets the item in a specific slot of a chest.
+     * Gets the item in a specific slot of a container.
+     * Supports any storage type (chests, barrels, hoppers, dispensers, modded storage, etc.).
      */
-    public static ItemStack getItemAt(GameTestHelper helper, BlockPos chestPos, int slot) {
+    public static ItemStack getItemAt(GameTestHelper helper, BlockPos containerPos, int slot) {
         ServerLevel level = helper.getLevel();
-        BlockPos absPos = helper.absolutePos(chestPos);
-        BlockState state = level.getBlockState(absPos);
+        BlockPos absPos = helper.absolutePos(containerPos);
 
-        if (!(state.getBlock() instanceof ChestBlock chestBlock)) {
+        java.util.Optional<SortCraftStorage> storageOpt = StorageLookup.getStorageAt(level, absPos);
+        if (storageOpt.isEmpty() || slot >= storageOpt.get().getSlotCount()) {
             return ItemStack.EMPTY;
         }
 
-        Container container = ChestBlock.getContainer(chestBlock, state, level, absPos, true);
-        if (container == null || slot >= container.getContainerSize()) {
-            return ItemStack.EMPTY;
-        }
-
-        return container.getItem(slot).copy();
+        return storageOpt.get().getStack(slot);
     }
 
     /**
@@ -387,18 +476,24 @@ public final class TestHelper {
     }
 
     /**
-     * Gets the container for a chest (handles double chests).
+     * Gets the storage at the given position (handles double chests and all other storage types).
      */
-    public static Container getChestContainer(GameTestHelper helper, BlockPos chestPos) {
+    public static SortCraftStorage getStorage(GameTestHelper helper, BlockPos containerPos) {
         ServerLevel level = helper.getLevel();
-        BlockPos absPos = helper.absolutePos(chestPos);
-        BlockState state = level.getBlockState(absPos);
+        BlockPos absPos = helper.absolutePos(containerPos);
+        return StorageLookup.getStorageAt(level, absPos).orElse(null);
+    }
 
-        if (!(state.getBlock() instanceof ChestBlock chestBlock)) {
-            return null;
+    /**
+     * Gets the raw vanilla Container at the given position.
+     * This is needed for tests that check internal state like slot identity (e.g., cleanup regression tests).
+     */
+    public static Container getRawContainer(GameTestHelper helper, BlockPos containerPos) {
+        SortCraftStorage storage = getStorage(helper, containerPos);
+        if (storage instanceof ContainerStorage cs) {
+            return cs.unwrap();
         }
-
-        return ChestBlock.getContainer(chestBlock, state, level, absPos, true);
+        return null;
     }
 
     // ========== Container Item Helpers (Bundle/Shulker) ==========
@@ -692,10 +787,10 @@ public final class TestHelper {
         BlockPos absInputPos = helper.absolutePos(inputPos);
         SortContext context = new SortContext(level, absInputPos, radius);
 
-        // Collect all chests in the input stack (starts from sign's chest and goes downward)
-        List<ChestRef> inputChests = ContainerHelper.collectChestStack(level, absInputPos);
+        // Collect all containers in the input stack (starts from sign's container and goes downward)
+        List<ChestRef> inputChests = ContainerHelper.collectContainerStack(level, absInputPos);
         if (inputChests.isEmpty()) {
-            throw new IllegalStateException("No chest container at " + inputPos);
+            throw new IllegalStateException("No container at " + inputPos);
         }
 
         // Create audit log with test player info

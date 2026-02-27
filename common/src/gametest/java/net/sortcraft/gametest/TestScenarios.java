@@ -168,6 +168,101 @@ public final class TestScenarios {
         return setup;
     }
 
+    // ========== Generic Container Scenarios ==========
+
+    /**
+     * Sets up a barrel as the input container and a chest as the category container.
+     */
+    public static SortingTestSetup barrelInputChestCategory(GameTestHelper helper, String categoryName) {
+        TestHelper.placeBarrel(helper, INPUT_POS, Direction.UP);
+        TestHelper.placeInputSign(helper, INPUT_POS, DEFAULT_FACING);
+        TestHelper.placeSingleChest(helper, FIRST_CATEGORY_POS, DEFAULT_FACING);
+        TestHelper.placeCategorySign(helper, FIRST_CATEGORY_POS, DEFAULT_FACING, categoryName);
+
+        return new SortingTestSetup(INPUT_POS, List.of(FIRST_CATEGORY_POS));
+    }
+
+    /**
+     * Sets up a chest as the input container and a barrel as the category container.
+     */
+    public static SortingTestSetup chestInputBarrelCategory(GameTestHelper helper, String categoryName) {
+        TestHelper.placeSingleChest(helper, INPUT_POS, DEFAULT_FACING);
+        TestHelper.placeInputSign(helper, INPUT_POS, DEFAULT_FACING);
+        TestHelper.placeBarrel(helper, FIRST_CATEGORY_POS, Direction.UP);
+        TestHelper.placeCategorySign(helper, FIRST_CATEGORY_POS, DEFAULT_FACING, categoryName);
+
+        return new SortingTestSetup(INPUT_POS, List.of(FIRST_CATEGORY_POS));
+    }
+
+    /**
+     * Sets up a hopper as the input container and a chest as the category container.
+     * Note: hoppers have only 5 slots.
+     */
+    public static SortingTestSetup hopperInputChestCategory(GameTestHelper helper, String categoryName) {
+        TestHelper.placeHopper(helper, INPUT_POS, Direction.DOWN);
+        TestHelper.placeInputSign(helper, INPUT_POS, DEFAULT_FACING);
+        TestHelper.placeSingleChest(helper, FIRST_CATEGORY_POS, DEFAULT_FACING);
+        TestHelper.placeCategorySign(helper, FIRST_CATEGORY_POS, DEFAULT_FACING, categoryName);
+
+        return new SortingTestSetup(INPUT_POS, List.of(FIRST_CATEGORY_POS));
+    }
+
+    /**
+     * Sets up a chest as the input and a dispenser as the category container.
+     * Note: dispensers have only 9 slots.
+     */
+    public static SortingTestSetup chestInputDispenserCategory(GameTestHelper helper, String categoryName) {
+        TestHelper.placeSingleChest(helper, INPUT_POS, DEFAULT_FACING);
+        TestHelper.placeInputSign(helper, INPUT_POS, DEFAULT_FACING);
+        TestHelper.placeDispenser(helper, FIRST_CATEGORY_POS, DEFAULT_FACING);
+        TestHelper.placeCategorySign(helper, FIRST_CATEGORY_POS, DEFAULT_FACING, categoryName);
+
+        return new SortingTestSetup(INPUT_POS, List.of(FIRST_CATEGORY_POS));
+    }
+
+    /**
+     * Sets up a chest as the input and a dropper as the category container.
+     * Note: droppers have only 9 slots.
+     */
+    public static SortingTestSetup chestInputDropperCategory(GameTestHelper helper, String categoryName) {
+        TestHelper.placeSingleChest(helper, INPUT_POS, DEFAULT_FACING);
+        TestHelper.placeInputSign(helper, INPUT_POS, DEFAULT_FACING);
+        TestHelper.placeDropper(helper, FIRST_CATEGORY_POS, DEFAULT_FACING);
+        TestHelper.placeCategorySign(helper, FIRST_CATEGORY_POS, DEFAULT_FACING, categoryName);
+
+        return new SortingTestSetup(INPUT_POS, List.of(FIRST_CATEGORY_POS));
+    }
+
+    /**
+     * Sets up a barrel as input with a category barrel - all barrels, no chests.
+     */
+    public static SortingTestSetup barrelInputBarrelCategory(GameTestHelper helper, String categoryName) {
+        TestHelper.placeBarrel(helper, INPUT_POS, Direction.UP);
+        TestHelper.placeInputSign(helper, INPUT_POS, DEFAULT_FACING);
+        TestHelper.placeBarrel(helper, FIRST_CATEGORY_POS, Direction.UP);
+        TestHelper.placeCategorySign(helper, FIRST_CATEGORY_POS, DEFAULT_FACING, categoryName);
+
+        return new SortingTestSetup(INPUT_POS, List.of(FIRST_CATEGORY_POS));
+    }
+
+    /**
+     * Sets up an input chest with a vertical stack of barrels as category.
+     */
+    public static SortingTestSetup inputChestWithBarrelCategoryStack(GameTestHelper helper,
+                                                                      String categoryName,
+                                                                      int stackHeight) {
+        TestHelper.placeSingleChest(helper, INPUT_POS, DEFAULT_FACING);
+        TestHelper.placeInputSign(helper, INPUT_POS, DEFAULT_FACING);
+
+        List<BlockPos> stackPositions = TestHelper.placeBarrelStack(
+            helper, FIRST_CATEGORY_POS, stackHeight, Direction.UP
+        );
+        BlockPos topBarrel = stackPositions.get(stackPositions.size() - 1);
+        TestHelper.placeCategorySign(helper, topBarrel, DEFAULT_FACING, categoryName);
+
+        return new SortingTestSetup(INPUT_POS, stackPositions);
+    }
+
     // ========== Nested Container Scenarios ==========
 
     /**

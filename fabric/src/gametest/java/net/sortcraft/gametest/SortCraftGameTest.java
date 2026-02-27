@@ -101,8 +101,8 @@ public class SortCraftGameTest {
     }
 
     /**
-     * Tests ContainerHelper.getAttachedChestPos() - a real SortCraft method.
-     * This verifies that the mod correctly identifies the chest position
+     * Tests ContainerHelper.getAttachedContainerPos() - a real SortCraft method.
+     * This verifies that the mod correctly identifies the container position
      * relative to a wall sign.
      */
     @GameTest
@@ -125,11 +125,11 @@ public class SortCraftGameTest {
         BlockPos absoluteSignPos = helper.absolutePos(signPos);
         BlockState actualSignState = level.getBlockState(absoluteSignPos);
 
-        // Call SortCraft's ContainerHelper.getAttachedChestPos()
-        BlockPos foundChestPos = ContainerHelper.getAttachedChestPos(absoluteSignPos, actualSignState, level);
+        // Call SortCraft's ContainerHelper.getAttachedContainerPos()
+        BlockPos foundChestPos = ContainerHelper.getAttachedContainerPos(absoluteSignPos, actualSignState, level);
 
         if (foundChestPos == null) {
-            helper.fail(Component.literal("ContainerHelper.getAttachedChestPos() returned null - chest not found"));
+            helper.fail(Component.literal("ContainerHelper.getAttachedContainerPos() returned null - container not found"));
             return;
         }
 
@@ -144,7 +144,7 @@ public class SortCraftGameTest {
     }
 
     /**
-     * Tests ContainerHelper.getAttachedChestPos() returns null when no chest is attached.
+     * Tests ContainerHelper.getAttachedContainerPos() returns null when no container is attached.
      */
     @GameTest
     public void containerHelperReturnsNullWhenNoChest(GameTestHelper helper) {
@@ -161,8 +161,8 @@ public class SortCraftGameTest {
         BlockPos absoluteSignPos = helper.absolutePos(signPos);
         BlockState actualSignState = level.getBlockState(absoluteSignPos);
 
-        // Call SortCraft's ContainerHelper.getAttachedChestPos()
-        BlockPos foundChestPos = ContainerHelper.getAttachedChestPos(absoluteSignPos, actualSignState, level);
+        // Call SortCraft's ContainerHelper.getAttachedContainerPos()
+        BlockPos foundChestPos = ContainerHelper.getAttachedContainerPos(absoluteSignPos, actualSignState, level);
 
         // Should be null since there's no chest
         if (foundChestPos != null) {
@@ -192,7 +192,7 @@ public class SortCraftGameTest {
         TestHelper.executeSort(helper, setup.inputPos());
 
         // Get the raw container and verify no slots have count=0 stacks
-        Container container = TestHelper.getChestContainer(helper, setup.inputPos());
+        Container container = TestHelper.getRawContainer(helper, setup.inputPos());
         if (container == null) {
             helper.fail(Component.literal("Could not get input container"));
             return;
@@ -226,7 +226,7 @@ public class SortCraftGameTest {
         TestHelper.executeSort(helper, setup.inputPos());
 
         // Verify input chest is empty and all slots contain ItemStack.EMPTY
-        Container container = TestHelper.getChestContainer(helper, setup.inputPos());
+        Container container = TestHelper.getRawContainer(helper, setup.inputPos());
         if (container == null) {
             helper.fail(Component.literal("Could not get input container"));
             return;
@@ -276,7 +276,7 @@ public class SortCraftGameTest {
         TestHelper.executeSort(helper, inputPos);
 
         // Verify: slot 0 should be empty (sword was sorted)
-        Container container = TestHelper.getChestContainer(helper, inputPos);
+        Container container = TestHelper.getRawContainer(helper, inputPos);
         if (container == null) {
             helper.fail(Component.literal("Could not get input container"));
             return;
