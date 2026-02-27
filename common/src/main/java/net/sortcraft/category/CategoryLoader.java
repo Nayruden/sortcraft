@@ -17,7 +17,6 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -189,12 +188,10 @@ public final class CategoryLoader {
         try {
             if (!Files.exists(categoriesDir)) {
                 Files.createDirectories(categoriesDir);
-                String example = "# Example categories configuration\n"
-                        + "example_category:\n"
-                        + "  items:\n"
-                        + "  - minecraft:iron_ingot\n"
-                        + "  - minecraft:gold_ingot\n";
-                Files.write(categoriesDir.resolve("example.yaml"), example.getBytes(StandardCharsets.UTF_8));
+                try (InputStream defaultRes = CategoryLoader.class.getResourceAsStream("/default_categories.yaml")) {
+                    byte[] example = defaultRes.readAllBytes();
+                    Files.write(categoriesDir.resolve("example.yaml"), example);
+                }
                 LOGGER.warn("Categories directory not found, created example at {}", categoriesDir);
             }
 

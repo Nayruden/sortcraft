@@ -33,6 +33,31 @@ searchRadius: 64
 |----------------|---------|--------------------------------------------------------------|
 | `logLevel`     | `WARN`  | Controls logging verbosity. Use `DEBUG` for troubleshooting. |
 | `searchRadius` | `64`    | Maximum distance (in blocks) to search for category signs.   |
+| `shareConfigs` | `true`  | Enable [CategoryCraft share configs](#share-configs) on input signs. |
+
+---
+
+## Share Configs
+
+Share configs let you use a [CategoryCraft](https://categorycraft.com) category configuration on a per-sorter basis, overriding the global categories defined in your YAML files.
+
+### Getting a Share ID
+
+1. Go to [CategoryCraft](https://categorycraft.com) and set up your categories the way you want them. **Make sure you are not in chest mode** — chest mode (in settings) won't work with SortCraft.
+2. Click **Export → Share Link**.
+3. Copy the generated link. Everything after the `/s/` in the URL is your share ID. For example, if the link is `https://categorycraft.com/s/ksJgx-mb`, the share ID is `ksJgx-mb`.
+
+Share IDs are exactly 8 characters long, consisting of letters, digits, hyphens, and underscores.
+
+### Using a Share ID In-Game
+
+Write the share ID on your `[input]` sign on any line other than the one that says `[input]`. When you trigger a sort, SortCraft will download and cache that share config, then use it instead of your global categories for that sorter.
+
+You can test a share ID before putting it on a sign with the `/sort shareconfig <id>` command, which will show you how many categories and items it contains.
+
+### Caching
+
+Share configs are immutable — a given share ID always resolves to the same categories. SortCraft caches them in memory and on disk (`config/sortcraft/cache/`), so they are only downloaded once. Use `/sort reload` to clear the memory cache if needed (disk cache is retained).
 
 ---
 

@@ -1,0 +1,92 @@
+# Edit this config interactively online at https://categories.craftlabs.nexus/s/CpcF67PJ
+# Then export from the web app and overwrite this file
+# OR create the shared link and add the share ID to your input sign on a new line
+# Everything after the /s/ in the URL is the share ID
+
+Gear:
+  items:
+    - "#minecraft:pickaxes"
+    - "#minecraft:trimmable_armor"
+    - "#minecraft:enchantable/weapon"
+    - "#minecraft:shovels"
+    - "#minecraft:hoes"
+    - minecraft:elytra
+    - minecraft:shield
+    - "#minecraft:arrows"
+    - minecraft:trident
+    - minecraft:totem_of_undying
+Food:
+  items:
+    - minecraft:carrot
+    - minecraft:golden_carrot
+    - minecraft:baked_potato
+    - minecraft:potato
+    - minecraft:bread
+    - minecraft:beetroot_seeds
+    - minecraft:melon_seeds
+    - minecraft:wheat_seeds
+    - minecraft:apple
+    - minecraft:enchanted_golden_apple
+    - minecraft:golden_apple
+    - minecraft:wheat
+    - minecraft:pumpkin_pie
+    - minecraft:cake
+    - minecraft:cookie
+    - minecraft:cooked_cod
+    - minecraft:cooked_salmon
+    - "#minecraft:meat"
+Ores:
+  items:
+    - minecraft:coal_ore
+    - minecraft:copper_block
+    - minecraft:copper_ingot
+    - minecraft:copper_ore
+    - minecraft:deepslate_coal_ore
+    - minecraft:deepslate_copper_ore
+    - minecraft:deepslate_diamond_ore
+    - minecraft:deepslate_emerald_ore
+    - minecraft:deepslate_gold_ore
+    - minecraft:deepslate_iron_ore
+    - minecraft:deepslate_lapis_ore
+    - minecraft:deepslate_redstone_ore
+    - minecraft:diamond
+    - minecraft:diamond_block
+    - minecraft:diamond_ore
+    - minecraft:emerald
+    - minecraft:emerald_block
+    - minecraft:emerald_ore
+    - minecraft:gold_block
+    - minecraft:gold_ingot
+    - minecraft:gold_nugget
+    - minecraft:gold_ore
+    - minecraft:iron_block
+    - minecraft:iron_ingot
+    - minecraft:iron_nugget
+    - minecraft:iron_ore
+    - minecraft:lapis_lazuli
+    - minecraft:lapis_ore
+    - minecraft:nether_gold_ore
+    - minecraft:nether_quartz_ore
+    - minecraft:raw_copper
+    - minecraft:raw_copper_block
+    - minecraft:raw_gold
+    - minecraft:raw_gold_block
+    - minecraft:raw_iron
+    - minecraft:raw_iron_block
+    - minecraft:redstone_ore
+Bulk:
+  items:
+    - "#minecraft:dirt"
+    - minecraft:cobbled_deepslate
+    - minecraft:cobblestone
+    - minecraft:deepslate
+    - minecraft:netherrack
+    - "#minecraft:sand"
+    - minecraft:stone
+Wood:
+  items:
+    - /_wood$/
+    - /_planks$/
+    - /_log$/
+    - /_hyphae$/
+    - /_stem$/
