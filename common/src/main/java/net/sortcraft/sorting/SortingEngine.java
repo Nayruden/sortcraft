@@ -4,7 +4,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.component.ItemContainerContents;
@@ -14,13 +13,14 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.sortcraft.audit.AuditConfig;
 import net.sortcraft.audit.SortAuditLog;
 import net.sortcraft.category.CategoryLoader;
-import net.sortcraft.config.ConfigManager;
 import net.sortcraft.category.CategoryNode;
+import net.sortcraft.config.ConfigManager;
 import net.sortcraft.command.CommandHandler;
 import net.sortcraft.compat.Id;
 import net.sortcraft.container.ChestRef;
 import net.sortcraft.container.ContainerHelper;
 import net.sortcraft.container.SortContext;
+import net.sortcraft.container.SortCraftStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,8 +67,16 @@ public final class SortingEngine {
         SortingResults combinedResults = new SortingResults();
 
         for (ChestRef chestRef : inputChests) {
-            Container container = chestRef.getInventory();
-            SortingResults chestResults = sortStacks(context, world, ContainerHelper.containerToIterable(container), preview, audit);
+            SortCraftStorage storage = chestRef.getStorage();
+            SortingResults chestResults;
+            try {
+                chestResults = sortStacks(context, world, storage.allStacks(), preview, audit);
+            } finally {
+                // Always clean up, even if sorting throws — prevents corrupted zero-count stacks
+                if (!preview) {
+                    storage.cleanup();
+                }
+            }
 
             // Merge results from this chest into combined results
             combinedResults.sorted += chestResults.sorted;
@@ -77,11 +85,6 @@ public final class SortingEngine {
             combinedResults.leftovers.addAll(chestResults.leftovers);
             chestResults.categoryCounts.forEach((category, count) ->
                     combinedResults.categoryCounts.merge(category, count, Integer::sum));
-
-            // Clean up empty stacks in this container
-            if (!preview) {
-                cleanupContainer(container);
-            }
         }
 
         return combinedResults;
@@ -310,13 +313,13 @@ public final class SortingEngine {
             return Collections.emptyList();
         }
 
-        BlockPos chestPos = ContainerHelper.getAttachedChestPos(signPos, signState, world);
-        if (chestPos == null) {
-            LOGGER.trace("[findchests] Sign at {} is not attached to a chest", signPos);
+        BlockPos containerPos = ContainerHelper.getAttachedContainerPos(signPos, signState, world);
+        if (containerPos == null) {
+            LOGGER.trace("[findchests] Sign at {} is not attached to a container", signPos);
             return Collections.emptyList();
         }
 
-        return ContainerHelper.collectChestStack(world, chestPos);
+        return ContainerHelper.collectContainerStack(world, containerPos);
     }
 
     /**
@@ -338,60 +341,24 @@ public final class SortingEngine {
      */
     public static int distributeToChests(ItemStack stack, List<ChestRef> chests, boolean preview) {
         int originalCount = stack.getCount();
-        int toSort = originalCount;
-        int maxStackSize = Math.min(stack.getMaxStackSize(), 64);
+        int remaining = originalCount;
 
         for (ChestRef ref : chests) {
-            Container inv = ref.getInventory();
+            SortCraftStorage storage = ref.getStorage();
 
-            // First pass: merge with existing stacks
-            for (int slot = 0; slot < inv.getContainerSize() && toSort > 0; slot++) {
-                ItemStack target = inv.getItem(slot);
-                if (!target.isEmpty() && ItemStack.isSameItemSameComponents(stack, target) && target.getCount() < target.getMaxStackSize()) {
-                    int space = target.getMaxStackSize() - target.getCount();
-                    int move = Math.min(space, toSort);
-                    if (!preview) target.grow(move);
-                    toSort -= move;
-                }
-            }
+            // Create a copy with the remaining count to insert
+            ItemStack toInsert = stack.copy();
+            toInsert.setCount(remaining);
 
-            // Second pass: fill empty slots
-            for (int slot = 0; slot < inv.getContainerSize() && toSort > 0; slot++) {
-                if (inv.getItem(slot).isEmpty()) {
-                    int move = Math.min(toSort, maxStackSize);
-                    if (!preview) {
-                        ItemStack toPut = stack.copy();
-                        toPut.setCount(move);
-                        inv.setItem(slot, toPut);
-                    }
-                    toSort -= move;
-                }
-            }
+            int inserted = storage.insert(toInsert, preview);
+            remaining -= inserted;
 
-            if (toSort == 0) break;
+            if (remaining <= 0) break;
         }
 
-        int moved = originalCount - toSort;
+        int moved = originalCount - remaining;
         if (!preview) stack.shrink(moved);
         return moved;
-    }
-
-    /**
-     * Cleans up a container after sorting by replacing empty stacks with ItemStack.EMPTY.
-     *
-     * <p>This is necessary because {@link ItemStack#shrink(int)} can leave stacks with count=0
-     * in the container, which causes errors when Minecraft tries to save the chunk.
-     * This method ensures all empty slots contain the canonical ItemStack.EMPTY instance.
-     *
-     * @param container The container to clean up
-     */
-    public static void cleanupContainer(Container container) {
-        for (int i = 0; i < container.getContainerSize(); i++) {
-            ItemStack stack = container.getItem(i);
-            if (stack.isEmpty()) {
-                container.setItem(i, ItemStack.EMPTY);
-            }
-        }
     }
 
     /**

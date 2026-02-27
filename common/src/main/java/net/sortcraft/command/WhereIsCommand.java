@@ -10,7 +10,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.sortcraft.compat.Id;
@@ -18,6 +17,7 @@ import net.sortcraft.compat.RegistryHelper;
 import net.sortcraft.config.ConfigManager;
 import net.sortcraft.container.ContainerHelper;
 import net.sortcraft.container.SortContext;
+import net.sortcraft.container.SortCraftStorage;
 import net.sortcraft.highlight.ChestHighlighter;
 
 import java.util.Comparator;
@@ -55,7 +55,7 @@ public final class WhereIsCommand {
 
         SortContext sortContext = new SortContext(world, playerPos, ConfigManager.getSearchRadius());
         sortContext.buildContainerCache();
-        Map<BlockPos, Container> containerCache = sortContext.getContainerCache();
+        Map<BlockPos, SortCraftStorage> containerCache = sortContext.getContainerCache();
 
         if (containerCache.isEmpty()) {
             source.sendSuccess(() -> Component.literal("No nearby containers found."), false);
@@ -63,8 +63,8 @@ public final class WhereIsCommand {
         }
 
         Map<BlockPos, Iterable<ItemStack>> foundStorage = new HashMap<>();
-        for (Map.Entry<BlockPos, Container> entry : containerCache.entrySet()) {
-            foundStorage.put(entry.getKey(), ContainerHelper.containerToIterable(entry.getValue()));
+        for (Map.Entry<BlockPos, SortCraftStorage> entry : containerCache.entrySet()) {
+            foundStorage.put(entry.getKey(), entry.getValue().allStacks());
         }
 
         List<BlockPos> validPositions = foundStorage.entrySet().stream()

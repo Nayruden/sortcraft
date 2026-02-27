@@ -1,26 +1,28 @@
 package net.sortcraft.container;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.Container;
 
 /**
- * Reference to a chest at a specific position with its inventory.
+ * Reference to a storage block at a specific position with its storage abstraction.
  */
 public class ChestRef {
     private final BlockPos pos;
-    private final Container inventory;
+    private final SortCraftStorage storage;
 
-    public ChestRef(BlockPos pos, Container inventory) {
+    public ChestRef(BlockPos pos, SortCraftStorage storage) {
         this.pos = pos;
-        this.inventory = inventory;
+        this.storage = storage;
     }
 
     public BlockPos getPos() {
         return pos;
     }
 
-    public Container getInventory() {
-        return inventory;
+    /**
+     * Returns the storage abstraction for this block.
+     */
+    public SortCraftStorage getStorage() {
+        return storage;
     }
 }
 

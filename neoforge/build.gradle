@@ -7,6 +7,21 @@ architectury {
     neoForge()
 }
 
+// Version-specific source sets for NeoForge API differences
+// NeoForge 21.9+ (MC 1.21.10+) replaced Capabilities.ItemHandler.BLOCK with Capabilities.Item.BLOCK
+// Version flags are centralized in root build.gradle (rootProject.ext)
+sourceSets {
+    main {
+        java {
+            if (rootProject.ext.isVersion1_21_10OrLater) {
+                srcDir 'src/main/java-1.21.10'
+            } else {
+                srcDir 'src/main/java-pre1.21.10'
+            }
+        }
+    }
+}
+
 loom {
     accessWidenerPath = project(':common').loom.accessWidenerPath
 }
@@ -38,6 +53,10 @@ dependencies {
 
     // Shadow SnakeYAML into the mod jar
     shadowBundle "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
+    // NeoForge dev runs (including GameTests) execute from source outputs, not the shaded jar.
+    // Put SnakeYAML on the userdev classpath exactly once; duplicate entries can break the
+    // Architectury transformer duplicate-class pruning step.
+    developmentNeoForge "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
 }
 
 processResources {
@@ -62,6 +81,10 @@ shadowJar {
     configurations = [project.configurations.shadowBundle]
     archiveClassifier = 'dev-shadow'
     exclude 'architectury.common.json'
+    // Relocate SnakeYAML to a private namespace to prevent JPMS split-package
+    // conflicts when another mod (or Sinytra Connector) also loads the library
+    // as a named module exporting org.yaml.snakeyaml.
+    relocate 'org.yaml', 'net.sortcraft.shadow.org.yaml'
 }
 
 remapJar {

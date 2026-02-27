@@ -53,17 +53,17 @@ public final class SortInputCommand {
             return 0;
         }
 
-        BlockPos chestPos = ContainerHelper.getAttachedChestPos(inputSign.getBlockPos(), inputSign.getBlockState(), world);
-        LOGGER.debug("[sortinput] Attached chest position resolved: {}", chestPos);
+        BlockPos chestPos = ContainerHelper.getAttachedContainerPos(inputSign.getBlockPos(), inputSign.getBlockState(), world);
+        LOGGER.debug("[sortinput] Attached container position resolved: {}", chestPos);
 
         if (chestPos == null) {
-            source.sendSuccess(() -> Component.literal("Input sign isn't attached to a chest."), false);
-            LOGGER.debug("[sortinput] Sign at {} is not attached to a chest.", inputSign.getBlockPos());
+            source.sendSuccess(() -> Component.literal("Input sign isn't attached to a container."), false);
+            LOGGER.debug("[sortinput] Sign at {} is not attached to a container.", inputSign.getBlockPos());
             return 0;
         }
 
-        // Collect all chests in the input stack (starts from sign's chest and goes downward)
-        List<ChestRef> inputChests = ContainerHelper.collectChestStack(world, chestPos);
+        // Collect all containers in the input stack (starts from sign's container and goes downward)
+        List<ChestRef> inputChests = ContainerHelper.collectContainerStack(world, chestPos);
         if (inputChests.isEmpty()) {
             source.sendSuccess(() -> Component.literal("Could not access input chest inventory."), false);
             LOGGER.debug("[sortinput] Failed to access chest stack starting at {}", chestPos);
@@ -189,5 +189,6 @@ public final class SortInputCommand {
                     " destination categories - " + skipped + " not highlighted)"));
         }
     }
+
 }
 

@@ -57,6 +57,8 @@ You define categories in YAML config files. Sign text must match your category n
 
 Right click the `[input]` sign to sort. All destination chests must be within a configurable search radius of the input chest (default 64 blocks).
 
+> **Modded Storage:** SortCraft works with modded storage blocks like Storage Drawers and Sophisticated Storage. Any block that exposes a Fabric Transfer API `Storage<ItemVariant>` or NeoForge `IItemHandler` can be used as a destination.
+
 ---
 
 ## 🚀 5-Minute Quick Start

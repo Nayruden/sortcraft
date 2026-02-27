@@ -59,11 +59,9 @@ test {
     }
 }
 
-// Configure Fabric game tests for supported versions
-// Versions that have compatible GameTest APIs with the test code
-def gametestVersions = ['1.21.5', '1.21.6', '1.21.8', '1.21.10', '1.21.11']
-
-if (gametestVersions.contains(rootProject.targetMcVersion)) {
+// Configure Fabric game tests for supported versions (MC >= 1.21.5)
+// Version flags are centralized in root build.gradle (rootProject.ext)
+if (rootProject.ext.gametestSupported) {
     fabricApi {
         configureTests {
             createSourceSet = true
@@ -74,12 +72,31 @@ if (gametestVersions.contains(rootProject.targetMcVersion)) {
         }
     }
 
+    // Include shared gametest sources from common module
+    sourceSets.gametest.java.srcDir project(':common').file('src/gametest/java')
+
     // Add dependencies to gametest source set
     dependencies {
         // SnakeYAML (needed because common module references it)
         gametestImplementation "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
         // Common module for access to compat layer (Id, IdentifierHelper, etc.)
         gametestImplementation project(path: ':common', configuration: 'namedElements')
+
+        // Storage Drawers mod for integration tests
+        // Only load at runtime for MC versions where we have a compatible JAR
+        if (rootProject.targetMcVersion in ['1.21.11']) {
+            def storageDrawersJar = 'StorageDrawers-fabric-1.21.11-20.0.0.jar'
+            gametestCompileOnly files(rootProject.file("third-party/${storageDrawersJar}"))
+            modLocalRuntime files(rootProject.file("third-party/${storageDrawersJar}"))
+        } else if (rootProject.targetMcVersion == '1.21.5') {
+            def storageDrawersJar = 'Storage Drawers-fabric-1.21.5-16.0.2.jar'
+            gametestCompileOnly files(rootProject.file("third-party/${storageDrawersJar}"))
+            modLocalRuntime files(rootProject.file("third-party/${storageDrawersJar}"))
+        } else {
+            // For other gametest versions (1.21.6, 1.21.8, 1.21.10), compile against the JAR
+            // so tests compile, but don't load at runtime (tests will be skipped)
+            gametestCompileOnly files(rootProject.file('third-party/Storage Drawers-fabric-1.21.5-16.0.2.jar'))
+        }
     }
 
     // Ensure gametest classpath extends from common configuration for version-specific classes
@@ -111,6 +128,10 @@ shadowJar {
     configurations = [project.configurations.shadowBundle]
     archiveClassifier = 'dev-shadow'
     exclude 'architectury.common.json'
+    // Relocate SnakeYAML to a private namespace to prevent JPMS split-package
+    // conflicts when another mod (or Sinytra Connector) also loads the library
+    // as a named module exporting org.yaml.snakeyaml.
+    relocate 'org.yaml', 'net.sortcraft.shadow.org.yaml'
 }
 
 remapJar {

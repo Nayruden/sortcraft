@@ -2,7 +2,6 @@ package net.sortcraft.container;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.Container;
 import net.minecraft.world.level.block.WallSignBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
@@ -13,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Per-command context that caches sign and container positions.
@@ -23,8 +23,8 @@ public class SortContext {
 
     // Maps sign text (e.g., "[food]") to the closest sign with that text
     private final Map<String, SignBlockEntity> signCache = new HashMap<>();
-    // Maps block position to container for whereis command
-    private final Map<BlockPos, Container> containerCache = new HashMap<>();
+    // Maps block position to storage for whereis command
+    private final Map<BlockPos, SortCraftStorage> containerCache = new HashMap<>();
     private final ServerLevel world;
     private final BlockPos centerPos;
     private final int signRadius;
@@ -55,7 +55,7 @@ public class SortContext {
         BlockPos min = centerPos.offset(-signRadius, -signRadius, -signRadius);
         BlockPos max = centerPos.offset(signRadius, signRadius, signRadius);
 
-        LOGGER.info("[SortContext] Building sign cache: center={}, radius={}, searchArea=[{} to {}]",
+        LOGGER.trace("[SortContext] Building sign cache: center={}, radius={}, searchArea=[{} to {}]",
                 centerPos, signRadius, min, max);
 
         int wallSignsFound = 0;
@@ -67,12 +67,12 @@ public class SortContext {
             if (!(state.getBlock() instanceof WallSignBlock)) continue;
             wallSignsFound++;
             if (!(be instanceof SignBlockEntity sign)) {
-                LOGGER.info("[SortContext] WallSignBlock at {} has no SignBlockEntity!", pos);
+                LOGGER.warn("[SortContext] WallSignBlock at {} has no SignBlockEntity!", pos);
                 continue;
             }
             signEntitiesFound++;
 
-            LOGGER.info("[SortContext] Found sign at {}: front line 0 = '{}'",
+            LOGGER.trace("[SortContext] Found sign at {}: front line 0 = '{}'",
                     pos, sign.getFrontText().getMessage(0, false).getString().trim());
 
             // Get all text lines from the sign
@@ -84,7 +84,7 @@ public class SortContext {
                 cacheSignText(backLine, sign, pos);
             }
         }
-        LOGGER.info("[SortContext] Sign cache built: {} unique texts, {} wall signs found, {} sign entities",
+        LOGGER.trace("[SortContext] Sign cache built: {} unique texts, {} wall signs found, {} sign entities",
                 signCache.size(), wallSignsFound, signEntitiesFound);
     }
 
@@ -111,28 +111,31 @@ public class SortContext {
     public SignBlockEntity findSign(String text) {
         buildSignCache();
         SignBlockEntity result = signCache.get(text.toLowerCase());
-        LOGGER.info("[SortContext] findSign('{}') -> {}", text,
-                result != null ? "found at " + result.getBlockPos() : "NOT FOUND");
         return result;
     }
 
     /**
      * Builds the container cache for whereis command.
+     * Uses StorageLookup for platform-agnostic storage detection.
      */
     public void buildContainerCache() {
         BlockPos min = centerPos.offset(-signRadius, -signRadius, -signRadius);
         BlockPos max = centerPos.offset(signRadius, signRadius, signRadius);
 
         for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
-            BlockEntity be = world.getBlockEntity(pos);
-            if (be instanceof Container inv) {
-                containerCache.put(pos.immutable(), inv);
-            }
+            // Skip air blocks early — most blocks in the scan volume are air
+            if (world.getBlockState(pos).isAir()) continue;
+            // Skip positions already cached (e.g., second half of a double chest)
+            BlockPos immutablePos = pos.immutable();
+            if (containerCache.containsKey(immutablePos)) continue;
+
+            Optional<SortCraftStorage> storageOpt = StorageLookup.getStorageAt(world, immutablePos);
+            storageOpt.ifPresent(storage -> containerCache.put(immutablePos, storage));
         }
-        LOGGER.debug("[SortContext] Container cache built with {} containers", containerCache.size());
+        LOGGER.debug("[SortContext] Container cache built with {} storages", containerCache.size());
     }
 
-    public Map<BlockPos, Container> getContainerCache() {
+    public Map<BlockPos, SortCraftStorage> getContainerCache() {
         return Collections.unmodifiableMap(containerCache);
     }
 }

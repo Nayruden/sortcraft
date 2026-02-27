@@ -7,7 +7,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.sortcraft.category.CategoryLoader;
@@ -17,6 +16,7 @@ import net.sortcraft.compat.RegistryHelper;
 import net.sortcraft.config.ConfigManager;
 import net.sortcraft.container.ChestRef;
 import net.sortcraft.container.SortContext;
+import net.sortcraft.container.SortCraftStorage;
 import net.sortcraft.sorting.SortingEngine;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -69,10 +69,10 @@ public final class DiagCommand {
                 Map<String, Integer> locationCounts = new LinkedHashMap<>();
 
                 for (ChestRef ref : chests) {
-                    Container inv = ref.getInventory();
+                    SortCraftStorage storage = ref.getStorage();
                     int count = 0;
-                    for (int slot = 0; slot < inv.getContainerSize(); slot++) {
-                        ItemStack stack = inv.getItem(slot);
+                    for (int slot = 0; slot < storage.getSlotCount(); slot++) {
+                        ItemStack stack = storage.getStack(slot);
                         if (stack.getItem() == item) {
                             count += stack.getCount();
                             if (!stack.isEmpty()) usedSlots++;

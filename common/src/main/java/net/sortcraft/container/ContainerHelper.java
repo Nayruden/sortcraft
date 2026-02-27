@@ -9,11 +9,9 @@ import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.component.ItemContainerContents;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.WallSignBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -35,14 +33,46 @@ public final class ContainerHelper {
     public static final int SHULKER_BOX_SIZE = 27;
 
     /**
-     * Gets all block positions for a chest (handles double chests).
+     * Checks for a vanilla Container at the given position.
+     * Handles ChestBlock double-chest merging and generic BlockEntity instanceof Container.
+     *
+     * <p>This is the shared vanilla container detection logic used by all platform-specific
+     * {@code StorageLookupImpl} classes before their platform-specific fallback.
+     *
+     * @param world The server level
+     * @param pos The block position to check
+     * @return An Optional containing a ContainerStorage wrapper, or empty if no vanilla container found
      */
-    public static List<BlockPos> getChestBlocks(BlockPos pos, ServerLevel world) {
+    public static Optional<SortCraftStorage> getVanillaStorageAt(ServerLevel world, BlockPos pos) {
+        BlockState state = world.getBlockState(pos);
+
+        // Special case: ChestBlock has merged double-chest inventory
+        if (state.getBlock() instanceof ChestBlock chestBlock) {
+            Container container = ChestBlock.getContainer(chestBlock, state, world, pos, true);
+            if (container != null) {
+                return Optional.of(new ContainerStorage(container));
+            }
+        }
+
+        // Generic case: any block entity that implements Container
+        BlockEntity be = world.getBlockEntity(pos);
+        if (be instanceof Container container) {
+            return Optional.of(new ContainerStorage(container));
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Gets all block positions for a container (handles double chests).
+     * For double chests, returns both halves. For all other containers, returns just the single position.
+     */
+    public static List<BlockPos> getContainerBlocks(BlockPos pos, ServerLevel world) {
         BlockState state = world.getBlockState(pos);
         List<BlockPos> blocks = new ArrayList<>();
         blocks.add(pos);
 
-        // Only chest blocks have CHEST_TYPE and HORIZONTAL_FACING properties
+        // Only chest blocks have CHEST_TYPE and HORIZONTAL_FACING properties (double chest support)
         if (!(state.getBlock() instanceof ChestBlock)) return blocks;
 
         ChestType chestType = state.getValue(BlockStateProperties.CHEST_TYPE);
@@ -58,14 +88,15 @@ public final class ContainerHelper {
     }
 
     /**
-     * Gets the chest position attached to a sign.
+     * Gets the container position attached to a sign.
+     * Supports any block that has a storage (vanilla Container, Fabric Transfer API, NeoForge IItemHandler).
      *
      * @param signPos the position of the sign
      * @param signState the block state of the sign
      * @param world the server level
-     * @return the position of the attached chest, or null if not a wall sign or no chest attached
+     * @return the position of the attached storage block, or null if not a wall sign or no storage attached
      */
-    public static BlockPos getAttachedChestPos(BlockPos signPos, BlockState signState, ServerLevel world) {
+    public static BlockPos getAttachedContainerPos(BlockPos signPos, BlockState signState, ServerLevel world) {
         // Check if the block state has the HORIZONTAL_FACING property before accessing it
         if (!signState.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
             return null;
@@ -73,21 +104,11 @@ public final class ContainerHelper {
         Direction attachedDirection = signState.getValue(BlockStateProperties.HORIZONTAL_FACING);
         attachedDirection = attachedDirection.getOpposite();
 
-        BlockPos chestPos = signPos.relative(attachedDirection);
-        BlockEntity be = world.getBlockEntity(chestPos);
-        if (be instanceof ChestBlockEntity) {
-            return chestPos;
+        BlockPos containerPos = signPos.relative(attachedDirection);
+        if (StorageLookup.isStorageBlock(world, containerPos)) {
+            return containerPos;
         }
         return null;
-    }
-
-    /**
-     * Gets the container for a chest at the given position.
-     */
-    public static Optional<Container> getChestContainer(ServerLevel world, BlockPos pos) {
-        BlockState state = world.getBlockState(pos);
-        if (!(state.getBlock() instanceof ChestBlock chestBlock)) return Optional.empty();
-        return Optional.ofNullable(ChestBlock.getContainer(chestBlock, state, world, pos, true));
     }
 
     /**
@@ -126,52 +147,50 @@ public final class ContainerHelper {
     private static final int MAX_CHEST_STACK_HEIGHT = 256;
 
     /**
-     * Collects all chests in a vertical stack starting from the given position.
-     * Stops when a chest with a category sign is encountered below, or when
+     * Collects all storage blocks in a vertical stack starting from the given position.
+     * Supports any block with a storage (vanilla Container, Fabric Transfer API, NeoForge IItemHandler).
+     * Stops when a storage block with a category sign is encountered below, or when
      * the maximum stack height is reached.
      */
-    public static List<ChestRef> collectChestStack(ServerLevel world, BlockPos startPos) {
+    public static List<ChestRef> collectContainerStack(ServerLevel world, BlockPos startPos) {
         List<ChestRef> result = new ArrayList<>();
         BlockPos cur = startPos;
         int iterations = 0;
 
         while (iterations++ < MAX_CHEST_STACK_HEIGHT) {
-            BlockState state = world.getBlockState(cur);
-
-            Block block = state.getBlock();
-            if (block instanceof ChestBlock chestBlock) {
-                Container inv = ChestBlock.getContainer(chestBlock, state, world, cur, true);
-                if (inv != null) {
-                    result.add(new ChestRef(cur, inv));
-                    LOGGER.trace("[cheststack] Added chest at {}", cur);
-                }
+            // Try to get the storage at the current position
+            Optional<SortCraftStorage> storageOpt = StorageLookup.getStorageAt(world, cur);
+            if (storageOpt.isPresent()) {
+                result.add(new ChestRef(cur, storageOpt.get()));
+                LOGGER.trace("[containerstack] Added storage at {}", cur);
             }
 
             BlockPos below = cur.below();
-            if (!(world.getBlockEntity(below) instanceof ChestBlockEntity)) {
-                LOGGER.trace("[cheststack] Block below {} is not a chest. Done.", cur);
+            // Check if the block below is any kind of storage
+            if (!StorageLookup.isStorageBlock(world, below)) {
+                LOGGER.trace("[containerstack] Block below {} is not a storage block. Done.", cur);
                 break;
             }
 
-            List<BlockPos> blocksForChest = getChestBlocks(below, world);
+            List<BlockPos> blocksForContainer = getContainerBlocks(below, world);
             boolean foundCategorySign = false;
 
             for (Direction dir : Direction.Plane.HORIZONTAL) {
-                for (BlockPos chestPos : blocksForChest) {
-                    BlockPos signPos = chestPos.relative(dir);
+                for (BlockPos containerPos : blocksForContainer) {
+                    BlockPos signPos = containerPos.relative(dir);
                     BlockState signState = world.getBlockState(signPos);
 
-                    LOGGER.trace("[cheststack] Checking chestPos {} and direction {} - pos {} for a sign.", chestPos, dir, signPos);
+                    LOGGER.trace("[containerstack] Checking containerPos {} and direction {} - pos {} for a sign.", containerPos, dir, signPos);
 
                     if (!(signState.getBlock() instanceof WallSignBlock)) continue;
-                    if (!signPos.relative(signState.getValue(WallSignBlock.FACING).getOpposite()).equals(chestPos)) continue;
+                    if (!signPos.relative(signState.getValue(WallSignBlock.FACING).getOpposite()).equals(containerPos)) continue;
 
                     BlockEntity signBe = world.getBlockEntity(signPos);
                     if (!(signBe instanceof SignBlockEntity sign)) continue;
                     String line = findCategoryTextOnSign(sign);
                     if (line == null) continue;
 
-                    LOGGER.trace("[cheststack] Found category sign at {} - {}. Stopping stack here.", signPos, line);
+                    LOGGER.trace("[containerstack] Found category sign at {} - {}. Stopping stack here.", signPos, line);
                     foundCategorySign = true;
                     break;
                 }
@@ -205,31 +224,5 @@ public final class ContainerHelper {
         return null;
     }
 
-    /**
-     * Converts a Container to an Iterable of ItemStacks.
-     * Returns actual references to stacks in the container (not copies).
-     *
-     * @param container The container to iterate over
-     * @return An iterable that provides access to each slot's ItemStack
-     */
-    public static Iterable<ItemStack> containerToIterable(Container container) {
-        return () -> new Iterator<>() {
-            private int index = 0;
-            private final int size = container.getContainerSize();
-
-            @Override
-            public boolean hasNext() {
-                return index < size;
-            }
-
-            @Override
-            public ItemStack next() {
-                if (!hasNext()) {
-                    throw new NoSuchElementException("No more items in container");
-                }
-                return container.getItem(index++);
-            }
-        };
-    }
 }
 

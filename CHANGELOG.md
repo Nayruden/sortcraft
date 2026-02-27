@@ -6,11 +6,16 @@ All notable changes to SortCraft will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **Modded storage support** — SortCraft can now sort into modded storage blocks (Storage Drawers, Sophisticated Storage, etc.) via a new platform-agnostic `SortCraftStorage` abstraction. Fabric uses the Transfer API; NeoForge uses `IItemHandler`
+
 ### Changed
 
 - **Centralized version configuration** — Supported Minecraft versions are now defined in a single `versions.json` file, used by Gradle, build scripts, and GitHub Actions CI
 - **Improved build scripts** — `buildAllVersions` Gradle task now performs actual builds instead of printing instructions; `build-all-versions.ps1` reads from `versions.json` and runs tests on all versions
 - **CI improvements** — GitHub Actions build matrix is dynamically generated from `versions.json`; `-shadow` JARs are excluded from artifacts; a new `collect` job merges all per-version artifacts into a single download
+- **SnakeYAML relocated** — SnakeYAML is now relocated to `net.sortcraft.shadow.org.yaml` to prevent JPMS split-package conflicts with other mods
 
 ---
 
