@@ -5,6 +5,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.sortcraft.category.CategoryLoader;
+import net.sortcraft.category.ShareConfigManager;
 import net.sortcraft.config.ConfigManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,7 @@ public final class ReloadCommand {
         CategoryLoader.clear();
         boolean categoriesOk = CategoryLoader.loadCategories(server);
         CategoryLoader.flattenCategories();
+        ShareConfigManager.clearMemoryCache();
 
         if (!configOk || !categoriesOk) {
             source.sendFailure(Component.literal("Error reloading configuration. Check server logs for details."));

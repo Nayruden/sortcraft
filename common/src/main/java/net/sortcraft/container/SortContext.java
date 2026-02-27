@@ -9,6 +9,9 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.sortcraft.category.CategoryLoader;
+import net.sortcraft.category.CategorySet;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +32,7 @@ public class SortContext {
     private final BlockPos centerPos;
     private final int signRadius;
     private boolean signsScanned = false;
+    private CategorySet categorySet;
 
     public SortContext(ServerLevel world, BlockPos centerPos, int signRadius) {
         this.world = world;
@@ -42,6 +46,29 @@ public class SortContext {
 
     public BlockPos getCenterPos() {
         return centerPos;
+    }
+
+    /**
+     * Returns the {@link CategorySet} to use for this sort operation.
+     *
+     * <p>If a share-config CategorySet has been explicitly set via {@link #setCategorySet},
+     * that set is returned. Otherwise, falls back to the global CategorySet from
+     * {@link CategoryLoader#getGlobalCategorySet()}.
+     *
+     * @return The CategorySet for category matching, never null during a valid sort
+     */
+    public CategorySet getCategorySet() {
+        return categorySet != null ? categorySet : CategoryLoader.getGlobalCategorySet();
+    }
+
+    /**
+     * Sets an explicit {@link CategorySet} for this sort operation.
+     * Used when a share ID is present on the input sign.
+     *
+     * @param categorySet The share-config CategorySet to use
+     */
+    public void setCategorySet(CategorySet categorySet) {
+        this.categorySet = categorySet;
     }
 
     /**

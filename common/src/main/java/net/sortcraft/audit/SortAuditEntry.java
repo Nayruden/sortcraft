@@ -31,6 +31,7 @@ import java.util.UUID;
  * @param categorySummary     Summary of items per category (for SUMMARY detail)
  * @param unknownItems        Items that had no matching category
  * @param overflowCategories  Categories that ran out of storage space
+ * @param shareId             CategoryCraft share ID used (null if global categories)
  */
 public record SortAuditEntry(
         UUID operationId,
@@ -49,7 +50,8 @@ public record SortAuditEntry(
         List<ItemMovementRecord> movements,
         Map<String, Integer> categorySummary,
         Set<String> unknownItems,
-        Set<String> overflowCategories
+        Set<String> overflowCategories,
+        String shareId
 ) {
     private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_INSTANT;
 
@@ -73,6 +75,9 @@ public record SortAuditEntry(
         json.addProperty("durationMs", durationMs);
         json.addProperty("status", status.name());
         json.addProperty("errorMessage", errorMessage);
+        if (shareId != null) {
+            json.addProperty("shareId", shareId);
+        }
 
         // Detail-level dependent fields
         if (detailLevel == AuditConfig.DetailLevel.FULL && movements != null && !movements.isEmpty()) {

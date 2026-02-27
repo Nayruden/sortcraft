@@ -59,6 +59,8 @@ Right click the `[input]` sign to sort. All destination chests must be within a 
 
 > **Modded Storage:** SortCraft works with modded storage blocks like Storage Drawers and Sophisticated Storage. Any block that exposes a Fabric Transfer API `Storage<ItemVariant>` or NeoForge `IItemHandler` can be used as a destination.
 
+> **Share Configs:** Write a [CategoryCraft](https://categorycraft.com) share ID on the input sign (any line other than `[input]`) to use a shared category configuration instead of the global one. Enable with `share_configs_enabled: true` in server config.
+
 ---
 
 ## 🚀 5-Minute Quick Start

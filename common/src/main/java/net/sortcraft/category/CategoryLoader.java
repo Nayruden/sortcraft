@@ -51,6 +51,7 @@ public final class CategoryLoader {
     private static final Map<String, CategoryNode> categories = new ConcurrentHashMap<>();
     private static final Map<Id, Set<CategoryNode>> itemCategoryMap = new ConcurrentHashMap<>();
     private static volatile RegistryAccess currentRegistries;
+    private static volatile CategorySet globalCategorySet;
 
     /**
      * Returns all loaded categories, keyed by category name.
@@ -106,6 +107,7 @@ public final class CategoryLoader {
         categories.clear();
         itemCategoryMap.clear();
         currentRegistries = null;
+        globalCategorySet = null;
     }
 
     /**
@@ -134,7 +136,7 @@ public final class CategoryLoader {
         }
 
         int count = loadCategoriesFromMap((Map<String, Object>) data, "YAML string");
-        LOGGER.info("Loaded {} categories from YAML string", count);
+        LOGGER.debug("Loaded {} categories from YAML string", count);
         return count;
     }
 
@@ -226,7 +228,7 @@ public final class CategoryLoader {
                     hasErrors = true;
                 }
             }
-            LOGGER.info("Loaded {} categories from {} files in {}", categories.size(), filesLoaded, categoriesDir);
+            LOGGER.debug("Loaded {} categories from {} files in {}", categories.size(), filesLoaded, categoriesDir);
             return !hasErrors;
         } catch (Exception err) {
             LOGGER.error("Error loading categories directory: {}", err.getMessage());
@@ -284,8 +286,19 @@ public final class CategoryLoader {
                     if (filterRaw instanceof Map<?, ?> filterMap) {
                         for (Map.Entry<?, ?> entry : filterMap.entrySet()) {
                             String key = String.valueOf(entry.getKey());
-                            String value = entry.getValue() != null ? String.valueOf(entry.getValue()) : null;
-                            categoryNode.filters.add(FilterRuleFactory.fromYaml(currentRegistries, key, value));
+                            Object rawValue = entry.getValue();
+
+                            if (rawValue instanceof List<?> valueList) {
+                                // OR logic: list values are OR'd together
+                                List<String> values = new ArrayList<>();
+                                for (Object v : valueList) {
+                                    values.add(v != null ? String.valueOf(v) : null);
+                                }
+                                categoryNode.filters.add(FilterRuleFactory.fromYamlList(currentRegistries, key, values));
+                            } else {
+                                String value = rawValue != null ? String.valueOf(rawValue) : null;
+                                categoryNode.filters.add(FilterRuleFactory.fromYaml(currentRegistries, key, value));
+                            }
                         }
                     }
                 }
@@ -350,7 +363,7 @@ public final class CategoryLoader {
      * the reverse mapping from item IDs to categories for efficient lookup.
      *
      * <p>Must be called after {@link #loadCategories(MinecraftServer)} and before
-     * any sorting operations.
+     * any sorting operations. Also builds and caches the global {@link CategorySet}.
      *
      * @throws IllegalStateException if a circular include reference is detected
      */
@@ -361,6 +374,21 @@ public final class CategoryLoader {
             for (Id itemId : category.flattenedItemIds)
                 itemCategoryMap.computeIfAbsent(itemId, k -> new HashSet<CategoryNode>()).add(category);
         }
+
+        // Build and cache the global CategorySet snapshot
+        globalCategorySet = new CategorySet(categories, itemCategoryMap);
+    }
+
+    /**
+     * Returns the global {@link CategorySet} built from locally loaded category files.
+     *
+     * <p>This is the default category set used when no share ID is specified.
+     * Built automatically by {@link #flattenCategories()}.
+     *
+     * @return The global CategorySet, or null if categories haven't been loaded yet
+     */
+    public static CategorySet getGlobalCategorySet() {
+        return globalCategorySet;
     }
 
     /**
@@ -411,10 +439,13 @@ public final class CategoryLoader {
 
     /**
      * Expands a pattern string into item IDs and adds them to the category.
-     * Supports: explicit item IDs, regex patterns (/regex/), and tag references (#tag).
+     * Supports: explicit item IDs, regex patterns (/regex/), tag references (#tag),
+     * and wildcard (*) to match all items.
      */
     private static void expandItemPattern(String pattern, String categoryName, CategoryNode categoryNode) {
-        if (isRegexPattern(pattern)) {
+        if (pattern.equals("*")) {
+            categoryNode.itemIds.addAll(Id.allItemIds());
+        } else if (isRegexPattern(pattern)) {
             expandRegexPattern(pattern, categoryNode);
         } else if (pattern.startsWith("#")) {
             expandTag(pattern, categoryName, categoryNode);
@@ -469,6 +500,108 @@ public final class CategoryLoader {
             LOGGER.warn("Unknown item '{}' in category '{}' - item does not exist in registry", itemName, categoryName);
         }
         categoryNode.itemIds.add(id);
+    }
+
+    // ========== Isolated Loading for Share Configs ==========
+
+    /**
+     * Loads categories from a YAML string into an isolated {@link CategorySet},
+     * without modifying global state.
+     *
+     * <p>Used by {@link ShareConfigManager} to build per-share category sets
+     * from downloaded YAML content.
+     *
+     * @param yamlContent the YAML content to parse
+     * @return a new CategorySet, or null if parsing fails
+     */
+    @SuppressWarnings("unchecked")
+    public static CategorySet loadIsolatedFromYaml(String yamlContent) {
+        Yaml yaml = new Yaml();
+        Object data = yaml.load(yamlContent);
+        if (data == null || !(data instanceof Map)) {
+            LOGGER.warn("Share config YAML does not contain a valid map");
+            return null;
+        }
+
+        Map<String, CategoryNode> localCategories = new HashMap<>();
+        int count = loadCategoriesInto((Map<String, Object>) data, "share config", localCategories);
+        if (count == 0) {
+            LOGGER.warn("Share config YAML contained no valid categories");
+            return null;
+        }
+
+        // Flatten categories locally
+        for (String categoryName : localCategories.keySet()) {
+            flattenCategoryIn(categoryName, new HashSet<>(), localCategories);
+        }
+
+        // Build local item-to-category map
+        Map<Id, Set<CategoryNode>> localItemCategoryMap = new HashMap<>();
+        for (CategoryNode category : localCategories.values()) {
+            if (category.flattenedItemIds != null) {
+                for (Id itemId : category.flattenedItemIds) {
+                    localItemCategoryMap.computeIfAbsent(itemId, k -> new HashSet<>()).add(category);
+                }
+            }
+        }
+
+        LOGGER.debug("Built isolated CategorySet with {} categories from share config", count);
+        return new CategorySet(localCategories, localItemCategoryMap);
+    }
+
+    /**
+     * Loads categories from a parsed YAML map into a target map (does not touch global state).
+     */
+    private static int loadCategoriesInto(Map<String, Object> mapRoot, String sourceName,
+                                           Map<String, CategoryNode> target) {
+        int count = 0;
+        for (Map.Entry<String, Object> entry : mapRoot.entrySet()) {
+            String categoryName = entry.getKey();
+            Object valueRaw = entry.getValue();
+            if (!(valueRaw instanceof Map)) {
+                LOGGER.warn("Category '{}' in {} has a non-map value, skipping", categoryName, sourceName);
+                continue;
+            }
+            if (target.containsKey(categoryName)) {
+                LOGGER.warn("Duplicate category '{}' in {}, overwriting previous definition", categoryName, sourceName);
+            }
+            CategoryNode categoryNode = parseCategory(categoryName, valueRaw);
+            if (categoryNode != null) {
+                target.put(categoryName, categoryNode);
+                count++;
+            }
+        }
+        return count;
+    }
+
+    /**
+     * Flattens a single category within a local categories map (does not touch global state).
+     */
+    private static Set<Id> flattenCategoryIn(String categoryName, Set<String> visitedCategories,
+                                              Map<String, CategoryNode> sourceCategories) {
+        CategoryNode category = sourceCategories.get(categoryName);
+        if (category == null) throw new IllegalArgumentException("Unknown category: " + categoryName);
+
+        Set<Id> items = category.flattenedItemIds;
+        if (items != null) return items;
+
+        if (visitedCategories.contains(categoryName))
+            throw new IllegalStateException("Cycle detected: " + categoryName);
+        visitedCategories.add(categoryName);
+
+        items = new HashSet<>();
+        category.flattenedItemIds = items;
+
+        items.addAll(category.itemIds);
+        for (String childName : category.includes) {
+            if (!sourceCategories.containsKey(childName)) {
+                LOGGER.warn("Category '{}' includes unknown category '{}', skipping", categoryName, childName);
+                continue;
+            }
+            items.addAll(flattenCategoryIn(childName, visitedCategories, sourceCategories));
+        }
+
+        return items;
     }
 }
 

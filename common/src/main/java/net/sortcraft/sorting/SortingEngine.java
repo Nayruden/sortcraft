@@ -12,8 +12,8 @@ import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.sortcraft.audit.AuditConfig;
 import net.sortcraft.audit.SortAuditLog;
-import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.category.CategoryNode;
+import net.sortcraft.category.CategorySet;
 import net.sortcraft.config.ConfigManager;
 import net.sortcraft.command.CommandHandler;
 import net.sortcraft.compat.Id;
@@ -32,7 +32,7 @@ import java.util.*;
  * <p>The sorting process works as follows:
  * <ol>
  *   <li>Items are taken from the source container (the chest with an [input] sign)</li>
- *   <li>Each item is matched against loaded categories using {@link CategoryLoader#getMatchingCategories}</li>
+ *   <li>Each item is matched against the active {@link CategorySet} from the sort context</li>
  *   <li>Items are distributed to destination chests (those with [category] signs) in priority order</li>
  *   <li>Containers (bundles, shulker boxes) are handled recursively - their contents are sorted individually</li>
  * </ol>
@@ -41,7 +41,7 @@ import java.util.*;
  *
  * @see SortingResults for the result structure
  * @see SortContext for the search context
- * @see CategoryLoader for category matching
+ * @see CategorySet for category matching
  */
 public final class SortingEngine {
     private SortingEngine() {}
@@ -118,7 +118,7 @@ public final class SortingEngine {
                             UNIFORM_CONTAINER_THRESHOLD, uniformCheck.uniformItemId());
 
                     // Use the uniform item's categories, but record the actual container in the audit
-                    List<CategoryNode> cats = CategoryLoader.getMatchingCategoriesNoFilter(uniformCheck.uniformItemId());
+                    List<CategoryNode> cats = context.getCategorySet().getMatchingCategoriesNoFilter(uniformCheck.uniformItemId());
                     Id containerItemId = Id.ofItem(stack.getItem());
 
                     // Create uniform contents info for audit
@@ -165,7 +165,7 @@ public final class SortingEngine {
             }
 
             Id itemId = Id.ofItem(stack.getItem());
-            List<CategoryNode> cats = CategoryLoader.getMatchingCategories(stack);
+            List<CategoryNode> cats = context.getCategorySet().getMatchingCategories(stack);
             sortSingleStack(context, world, preview, stack, cats, itemId, results, audit);
         }
         return results;

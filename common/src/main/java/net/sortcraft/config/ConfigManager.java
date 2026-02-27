@@ -24,10 +24,15 @@ public final class ConfigManager {
 
     // Configuration values with defaults
     private static int searchRadius = 64;
+    private static boolean shareConfigsEnabled = true;
     private static AuditConfig auditConfig = new AuditConfig();
 
     public static int getSearchRadius() {
         return searchRadius;
+    }
+
+    public static boolean isShareConfigsEnabled() {
+        return shareConfigsEnabled;
     }
 
     public static AuditConfig getAuditConfig() {
@@ -75,6 +80,10 @@ public final class ConfigManager {
                         # Default: 64
                         searchRadius: 64
 
+                        # Enable CategoryCraft share configs on input signs
+                        # Default: true
+                        shareConfigs: true
+
                         # Audit logging configuration
                         audit:
                           # Enable audit logging of sort operations
@@ -112,6 +121,11 @@ public final class ConfigManager {
                         searchRadius = radius;
                     } else if (searchRadiusValue instanceof Number radius) {
                         searchRadius = radius.intValue();
+                    }
+
+                    Object shareConfigsValue = config.get("shareConfigs");
+                    if (shareConfigsValue instanceof Boolean b) {
+                        shareConfigsEnabled = b;
                     }
 
                     // Load audit configuration

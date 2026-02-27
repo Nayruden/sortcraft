@@ -25,6 +25,7 @@ public class SortAuditLog {
 
     private final List<ItemMovementRecord> movements = new ArrayList<>();
     private int totalItemsProcessed = 0;
+    private String shareId;
 
     private SortAuditLog(ServerPlayer player, ServerLevel world, BlockPos inputChestPos,
                          int searchRadius, boolean preview) {
@@ -146,6 +147,16 @@ public class SortAuditLog {
     }
 
     /**
+     * Sets the share ID used for this sort operation.
+     * If set, the share ID will be included in the audit entry.
+     *
+     * @param shareId The CategoryCraft share ID, or null for global categories
+     */
+    public void setShareId(String shareId) {
+        this.shareId = shareId;
+    }
+
+    /**
      * Completes the audit and creates the final entry.
      *
      * @param results The sorting results
@@ -216,7 +227,8 @@ public class SortAuditLog {
                 List.copyOf(movements),
                 Map.copyOf(categoryCounts),
                 Set.copyOf(unknownItems),
-                Set.copyOf(overflowCategories)
+                Set.copyOf(overflowCategories),
+                shareId
         );
     }
 

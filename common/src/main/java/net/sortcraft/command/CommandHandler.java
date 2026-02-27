@@ -1,12 +1,15 @@
 package net.sortcraft.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.sortcraft.category.CategorySet;
+import net.sortcraft.category.ShareConfigManager;
 import net.sortcraft.compat.PermissionHelper;
 
 /**
@@ -55,6 +58,9 @@ public final class CommandHandler {
                         .then(Commands.literal("reload")
                                 .requires(source -> PermissionHelper.hasOpLevel(source, 2))
                                 .executes(ReloadCommand::execute))
+                        .then(Commands.literal("shareconfig")
+                                .then(Commands.argument("id", StringArgumentType.word())
+                                        .executes(CommandHandler::executeShareConfig)))
         );
     }
 
@@ -66,6 +72,7 @@ public final class CommandHandler {
                 /sort diagnostics     - Generates a diagnostics report as YAML
                 /sort whereis <item>  - Finds chests that contain the specified item
                 /sort category <item> - Shows the sorting category for the specified item
+                /sort shareconfig <id> - Tests a CategoryCraft share config by ID
                 /sort reload          - Reloads category configurations from config files
                 /sort dump            - Generates JSON files with all item tags from the registry
                 /sort help            - Shows this help message
@@ -73,6 +80,29 @@ public final class CommandHandler {
                 All commands support autocomplete. Use TAB for suggestions.
                 """, INPUT_SIGN_TEXT);
         context.getSource().sendSuccess(() -> Component.literal(helpMessage), false);
+        return 1;
+    }
+
+    private static int executeShareConfig(com.mojang.brigadier.context.CommandContext<CommandSourceStack> context) {
+        String shareId = StringArgumentType.getString(context, "id");
+        CommandSourceStack source = context.getSource();
+
+        if (!ShareConfigManager.isValidShareId(shareId)) {
+            source.sendFailure(Component.literal("Invalid share ID format. Expected 8 characters: letters, digits, hyphens, underscores."));
+            return 0;
+        }
+
+        source.sendSuccess(() -> Component.literal("Resolving share config '" + shareId + "'...").withStyle(ChatFormatting.GRAY).copy(), false);
+        CategorySet categorySet = ShareConfigManager.resolve(shareId);
+        if (categorySet == null) {
+            source.sendFailure(Component.literal("Failed to resolve share config '" + shareId + "'. Check server logs for details."));
+            return 0;
+        }
+
+        int categoryCount = categorySet.getCategories().size();
+        int itemCount = categorySet.getItemCategoryMap().size();
+        source.sendSuccess(() -> Component.literal("Share config '" + shareId + "' loaded: " +
+                categoryCount + " categories, " + itemCount + " unique items").withStyle(ChatFormatting.GREEN).copy(), false);
         return 1;
     }
 }

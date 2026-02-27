@@ -11,6 +11,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 import net.sortcraft.audit.SortAuditLog;
 import net.sortcraft.audit.SortAuditLogger;
+import net.sortcraft.category.CategorySet;
+import net.sortcraft.category.ShareConfigManager;
 import net.sortcraft.config.ConfigManager;
 import net.sortcraft.container.ChestRef;
 import net.sortcraft.container.ContainerHelper;
@@ -72,10 +74,32 @@ public final class SortInputCommand {
 
         LOGGER.debug("[sortinput] Input chest stack loaded: {} chest(s). Beginning sort.", inputChests.size());
 
+        // Extract share ID from other lines of the input sign
+        String shareId = extractShareId(inputSign);
+        if (shareId != null) {
+            if (!ConfigManager.isShareConfigsEnabled()) {
+                source.sendFailure(Component.literal("Share configs are disabled in server config.").withStyle(ChatFormatting.YELLOW));
+                return 0;
+            }
+            CategorySet shareCats = ShareConfigManager.resolve(shareId);
+            if (shareCats == null) {
+                final String failId = shareId;
+                source.sendFailure(Component.literal("Failed to load share config: " + failId).withStyle(ChatFormatting.RED));
+                return 0;
+            }
+            context.setCategorySet(shareCats);
+            final String resolvedId = shareId;
+            source.sendSuccess(() -> Component.literal("Using share config: " + resolvedId).withStyle(ChatFormatting.GRAY), false);
+        }
+
         // Start audit logging if enabled (use the top chest position for audit)
         SortAuditLog audit = SortAuditLogger.isEnabled() && (!preview || SortAuditLogger.shouldLogPreviews())
                 ? SortAuditLog.start(player, world, chestPos, searchRadius, preview)
                 : null;
+
+        if (audit != null && shareId != null) {
+            audit.setShareId(shareId);
+        }
 
         SortingResults results = SortingEngine.sortFromContainers(context, world, inputChests, preview, audit);
 
@@ -190,5 +214,29 @@ public final class SortInputCommand {
         }
     }
 
+    /**
+     * Extracts a share ID from the input sign's text lines.
+     * Scans all 4 lines of both front and back text for a valid share ID pattern.
+     * Skips lines that contain the [input] marker.
+     *
+     * @param sign The input sign to extract from
+     * @return The share ID if found, or null
+     */
+    private static String extractShareId(SignBlockEntity sign) {
+        for (int i = 0; i < 4; i++) {
+            String frontLine = sign.getFrontText().getMessage(i, false).getString().trim();
+            String backLine = sign.getBackText().getMessage(i, false).getString().trim();
+
+            if (!frontLine.isEmpty() && !frontLine.equalsIgnoreCase(CommandHandler.getInputSignText())
+                    && ShareConfigManager.isValidShareId(frontLine)) {
+                return frontLine;
+            }
+            if (!backLine.isEmpty() && !backLine.equalsIgnoreCase(CommandHandler.getInputSignText())
+                    && ShareConfigManager.isValidShareId(backLine)) {
+                return backLine;
+            }
+        }
+        return null;
+    }
 }
 
