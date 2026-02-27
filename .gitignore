@@ -46,3 +46,12 @@ replay_*.log
 # logs
 
 logs/
+
+# temporary / generated
+
+.tmp*/
+*.class
+
+# third-party jars (tracked via README only)
+
+third-party/*.jar

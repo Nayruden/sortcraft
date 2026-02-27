@@ -98,3 +98,95 @@ components.java {
     }
 }
 
+// ========== GameTest Configuration ==========
+// Enable for MC versions that support the NeoForge 1.21.5+ registry-based GameTest API
+// Version flags are centralized in root build.gradle (rootProject.ext)
+if (rootProject.ext.gametestSupported) {
+    def enableThirdPartyGametestMods =
+            project.findProperty('enableThirdPartyGametestMods')?.toString()?.toBoolean() ?: false
+
+    sourceSets {
+        gametest {
+            java {
+                srcDir 'src/gametest/java'
+                srcDir project(':common').file('src/gametest/java')
+            }
+            resources {
+                srcDir 'src/gametest/resources'
+            }
+            compileClasspath += main.compileClasspath + main.output
+            runtimeClasspath += main.runtimeClasspath + main.output
+        }
+    }
+
+    configurations {
+        gametestImplementation.extendsFrom implementation
+        gametestCompileClasspath.extendsFrom common
+        gametestRuntimeClasspath.extendsFrom common
+    }
+
+    dependencies {
+        // Common module for access to compat layer (Id, IdentifierHelper, etc.)
+        gametestImplementation project(path: ':common', configuration: 'namedElements')
+        // Note: Storage Drawers integration tests use runtime registry lookups only
+        // (no compile-time dependency needed). Tests gracefully skip if mod not present.
+
+        // Sophisticated Storage NeoForge integration tests (runtime-only, MC 1.21.5 jar currently available)
+        def sophisticatedStorageJar_1_21_5 = rootProject.file('third-party/neoforge-sophisticatedstorage-1.21.5-1.5.28.1490.jar')
+        def sophisticatedCoreJar_1_21_5 = rootProject.file('third-party/sophisticatedcore-1.21.5-1.4.5.1501.jar')
+        // Keep third-party compat mods opt-in for NeoForge GameTest runs so baseline
+        // vanilla behavior tests are not affected by external mixins.
+        if (rootProject.targetMcVersion == '1.21.5' && enableThirdPartyGametestMods) {
+            if (sophisticatedCoreJar_1_21_5.exists()) {
+                modLocalRuntime files(sophisticatedCoreJar_1_21_5)
+                gametestRuntimeOnly files(sophisticatedCoreJar_1_21_5)
+            }
+            if (sophisticatedStorageJar_1_21_5.exists()) {
+                modLocalRuntime files(sophisticatedStorageJar_1_21_5)
+                gametestRuntimeOnly files(sophisticatedStorageJar_1_21_5)
+            }
+        }
+    }
+
+    loom {
+        runs {
+            gameTestServer {
+                // Use the standard server run template (sets a valid Forge main class),
+                // then switch the DLI environment to the NeoForge gametestserver target.
+                server()
+                environment "gametestserver"
+                name "Game Test Server"
+                source sourceSets.gametest
+                property "neoforge.enableGameTest", "true"
+                property "sortcraft.gametest.enableThirdParty", String.valueOf(enableThirdPartyGametestMods)
+                // Re-enable namespace filtering after confirming execution if needed:
+                // property "neoforge.enabledGameTestNamespaces", "sortcraft-gametest"
+                // Avoid collisions with local dev servers using the default 25565 port.
+                programArg "--port"
+                programArg "0"
+                runDir "run/gametest"
+            }
+        }
+
+        mods {
+            "sortcraft_gametest" {
+                sourceSet sourceSets.gametest
+            }
+        }
+    }
+
+    // Process resources for gametest source set (expand neoforge.mods.toml placeholders)
+    processGametestResources {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        inputs.property 'version', project.version
+
+        filesMatching('META-INF/neoforge.mods.toml') {
+            expand(
+                'mod_version': project.version,
+                'minecraft_version': rootProject.minecraft_version,
+                'supported_minecraft_versions': rootProject.neoforge_minecraft_version,
+                'neoforge_version': rootProject.neoforge_version
+            )
+        }
+    }
+}

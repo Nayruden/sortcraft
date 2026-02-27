@@ -175,3 +175,18 @@ tasks.register('buildAllVersions') {
     }
 }
 
+// Task to run GameTests for the current MC version on all supported loaders
+tasks.register('runGameTests') {
+    group = 'verification'
+    description = 'Runs GameTests for the current MC version on all supported loaders'
+
+    if (ext.gametestSupported) {
+        dependsOn ':fabric:runGameTest', ':neoforge:runGameTestServer'
+    }
+
+    doLast {
+        if (!ext.gametestSupported) {
+            println "GameTests not supported for MC ${ext.targetMcVersion} (requires >= 1.21.5)"
+        }
+    }
+}
