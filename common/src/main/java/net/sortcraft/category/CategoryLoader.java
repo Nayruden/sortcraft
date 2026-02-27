@@ -523,8 +523,14 @@ public final class CategoryLoader {
             return null;
         }
 
+        Map<String, Object> root = (Map<String, Object>) data;
+        if ("chest_view".equals(root.get("mode"))) {
+            LOGGER.warn("Share config is a CategoryCraft chest-view export and is not compatible with SortCraft — ignoring");
+            return null;
+        }
+
         Map<String, CategoryNode> localCategories = new HashMap<>();
-        int count = loadCategoriesInto((Map<String, Object>) data, "share config", localCategories);
+        int count = loadCategoriesInto(root, "share config", localCategories);
         if (count == 0) {
             LOGGER.warn("Share config YAML contained no valid categories");
             return null;

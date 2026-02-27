@@ -18,13 +18,13 @@ final class NeoForgeGameTestRegistrationCompat {
                          SortCraftNeoForgeGameTestCatalog.TestMethodSpec spec) {
         TestData<Holder<TestEnvironmentDefinition>> testData = new TestData<>(
                 environment,
-                spec.structureId(),
+                spec.structureId().unwrap(),
                 DEFAULT_MAX_TICKS,
                 DEFAULT_SETUP_TICKS,
                 true,
                 Rotation.NONE
         );
 
-        event.registerTest(spec.testId(), new FunctionGameTestInstance(spec.functionKey(), testData));
+        event.registerTest(spec.testId().unwrap(), new FunctionGameTestInstance(spec.functionKey(), testData));
     }
 }

@@ -95,7 +95,10 @@ if (rootProject.ext.gametestSupported) {
         } else {
             // For other gametest versions (1.21.6, 1.21.8, 1.21.10), compile against the JAR
             // so tests compile, but don't load at runtime (tests will be skipped)
-            gametestCompileOnly files(rootProject.file('third-party/Storage Drawers-fabric-1.21.5-16.0.2.jar'))
+            def fallbackJar = rootProject.file('third-party/Storage Drawers-fabric-1.21.5-16.0.2.jar')
+            if (fallbackJar.exists()) {
+                gametestCompileOnly files(fallbackJar)
+            }
         }
     }
 

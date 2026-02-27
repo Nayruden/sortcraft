@@ -180,13 +180,94 @@ tasks.register('runGameTests') {
     group = 'verification'
     description = 'Runs GameTests for the current MC version on all supported loaders'
 
-    if (ext.gametestSupported) {
+    def supported = rootProject.ext.gametestSupported
+    def mcVer = rootProject.ext.targetMcVersion
+
+    if (supported) {
         dependsOn ':fabric:runGameTest', ':neoforge:runGameTestServer'
     }
 
     doLast {
-        if (!ext.gametestSupported) {
-            println "GameTests not supported for MC ${ext.targetMcVersion} (requires >= 1.21.5)"
+        if (!supported) {
+            println "GameTests not supported for MC ${mcVer} (requires >= 1.21.5)"
+        }
+    }
+}
+
+// Convenience task: run all GameTests across all supported Minecraft versions.
+// Third-party mods are wired at configuration time, so each version spawns a
+// new Gradle invocation with the flag enabled.  Only versions that support
+// GameTests (>= gametestMinVersion from versions.json) are tested.
+tasks.register('runGameTestsAll') {
+    group = 'verification'
+    description = 'Runs all GameTests across all supported MC versions (including third-party mod integration tests)'
+
+    doLast {
+        def versionsCfg = new groovy.json.JsonSlurper().parse(file('versions.json'))
+        def allVersions = versionsCfg.supported as List<String>
+        def minVersion = versionsCfg.gametestMinVersion as String
+
+        // Parse the minimum gametest version for comparison
+        def minParts = minVersion.split('\\.')
+        def minCode = minParts[0].toInteger() * 10000 + minParts[1].toInteger() * 100 +
+                (minParts.length > 2 ? minParts[2].toInteger() : 0)
+
+        // Filter to versions that support GameTests
+        def gametestVersions = allVersions.findAll { ver ->
+            def parts = ver.split('\\.')
+            def code = parts[0].toInteger() * 10000 + parts[1].toInteger() * 100 +
+                    (parts.length > 2 ? parts[2].toInteger() : 0)
+            code >= minCode
+        }
+
+        if (gametestVersions.isEmpty()) {
+            println "No supported versions have GameTest support (requires >= ${minVersion})"
+            return
+        }
+
+        // If a specific version was requested, only test that one
+        if (project.hasProperty('mc_version')) {
+            def requested = project.property('mc_version')
+            if (!gametestVersions.contains(requested)) {
+                println "GameTests not supported for MC ${requested} (requires >= ${minVersion})"
+                return
+            }
+            gametestVersions = [requested]
+        }
+
+        def gradlew = org.gradle.internal.os.OperatingSystem.current().isWindows()
+                ? "${rootDir}/gradlew.bat" : "${rootDir}/gradlew"
+
+        def failed = []
+        def passed = []
+        gametestVersions.each { ver ->
+            println ""
+            println "=========================================="
+            println "Running GameTests for Minecraft ${ver}"
+            println "=========================================="
+            def result = project.exec {
+                executable = gradlew
+                args = ['runGameTests', '-PenableThirdPartyGametestMods=true', "-Pmc_version=${ver}"]
+                ignoreExitValue = true
+            }
+            if (result.exitValue != 0) {
+                failed << ver
+                println "ERROR: GameTests failed for Minecraft ${ver}"
+            } else {
+                passed << ver
+                println "GameTests passed for Minecraft ${ver}"
+            }
+        }
+
+        println ""
+        println "=========================================="
+        println "GameTest Results: ${passed.size()} passed, ${failed.size()} failed out of ${gametestVersions.size()} versions"
+        if (!passed.isEmpty()) println "  Passed: ${passed.join(', ')}"
+        if (!failed.isEmpty()) println "  Failed: ${failed.join(', ')}"
+        println "=========================================="
+
+        if (!failed.isEmpty()) {
+            throw new GradleException("GameTests failed for versions: ${failed.join(', ')}")
         }
     }
 }

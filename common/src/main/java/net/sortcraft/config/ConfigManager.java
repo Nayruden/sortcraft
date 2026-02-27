@@ -81,6 +81,8 @@ public final class ConfigManager {
                         searchRadius: 64
 
                         # Enable CategoryCraft share configs on input signs
+                        # See https://categories.craftlabs.nexus/
+                        # Share code is everything after "/s/" when you export and generate the share link.
                         # Default: true
                         shareConfigs: true
 

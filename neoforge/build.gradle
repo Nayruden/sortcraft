@@ -155,6 +155,7 @@ if (rootProject.ext.gametestSupported) {
                 // then switch the DLI environment to the NeoForge gametestserver target.
                 server()
                 environment "gametestserver"
+
                 name "Game Test Server"
                 source sourceSets.gametest
                 property "neoforge.enableGameTest", "true"
@@ -172,6 +173,15 @@ if (rootProject.ext.gametestSupported) {
             "sortcraft_gametest" {
                 sourceSet sourceSets.gametest
             }
+        }
+    }
+
+    // FML 10.x (1.21.10+) replaced the unified BootstrapLauncher with dedicated
+    // main classes per run type.  The server() template lazily sets fabric.dli.main
+    // to Server; override it at the Gradle task level so Java sees GameTestServer last.
+    if (rootProject.ext.isVersion1_21_10OrLater) {
+        tasks.named("runGameTestServer") {
+            jvmArgs "-Dfabric.dli.main=net.neoforged.fml.startup.GameTestServer"
         }
     }
 
