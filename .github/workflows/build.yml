@@ -41,7 +41,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build and test
-        run: ./gradlew build -Pmc_version=${{ matrix.mc_version }}
+        run: ./gradlew build -Pmc_version=${{ matrix.mc_version }} --stacktrace
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
