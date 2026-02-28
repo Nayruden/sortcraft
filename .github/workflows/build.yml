@@ -11,7 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: set-matrix
-        run: echo "matrix=$(jq -c '{mc_version: .supported}' versions.json)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "matrix=$(jq -c '{mc_version: .supported}' versions.json)" >> "$GITHUB_OUTPUT"
 
   build:
     name: MC ${{ matrix.mc_version }}
