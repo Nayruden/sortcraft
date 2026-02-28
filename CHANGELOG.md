@@ -4,30 +4,23 @@ All notable changes to SortCraft will be documented in this file.
 
 ---
 
-## [Unreleased]
+## [1.3.0] - 2026-02-27
 
 ### Added
 
 - **Modded storage support** — SortCraft can now sort into modded storage blocks (Storage Drawers, Sophisticated Storage, etc.) via a new platform-agnostic `SortCraftStorage` abstraction. Fabric uses the Transfer API; NeoForge uses `IItemHandler`
-- **Share config support** — Input signs can reference a CategoryCraft share ID to use a shared category configuration instead of the global one. Enabled via `share_configs_enabled` in server config
+- **Share config support** — Input signs can reference a CategoryCraft (https://categories.craftlabs.nexus/) share ID to use a shared category configuration instead of the global one. Enabled via `share_configs_enabled` in server config
 - **`/sort shareconfig <id>` command** — Test and inspect a CategoryCraft share config by ID, showing category and item counts
-- **OR logic in filter rules** — Filter rules now support `|` (OR) operator to match items against multiple conditions
-- **Enchantment filter fix** — Enchantment-based filter rules now correctly match enchanted items
+- **OR logic in filter rules** — Filter rules now support list values to match items against multiple conditions (e.g., `enchantment: [minecraft:sharpness, minecraft:unbreaking]`)
 
 ### Changed
 
 - **Shared gametest utilities** — Common gametest helpers (TestHelper, TestScenarios, TestCategories, etc.) moved to `common/src/gametest/java` so they are shared across Fabric and NeoForge loaders
 
-### Tests
+### Fixed
 
-- **New gametest classes** — ContainerTypeGameTest (bundle/shulker box sorting), FilterFeatureGameTest (OR logic, enchantment filters), ShareConfigSortGameTest (share config integration), StorageDrawersGameTest (modded storage)
-- **New unit tests** — CategorySetTest, SortContextCategorySetTest, ShareIdValidationTest, AuditShareIdTest, IsolatedCategoryLoadingTest, GameTestParityTest
-- **NeoForge GameTest infrastructure** — Full GameTest support for NeoForge 1.21.5+ with registry-based test discovery, including all test classes ported from Fabric and NeoForge-specific Sophisticated Storage tests
-
-- **Centralized version configuration** — Supported Minecraft versions are now defined in a single `versions.json` file, used by Gradle, build scripts, and GitHub Actions CI
-- **Improved build scripts** — `buildAllVersions` Gradle task now performs actual builds instead of printing instructions; `build-all-versions.ps1` reads from `versions.json` and runs tests on all versions
-- **CI improvements** — GitHub Actions build matrix is dynamically generated from `versions.json`; `-shadow` JARs are excluded from artifacts; a new `collect` job merges all per-version artifacts into a single download
 - **SnakeYAML relocated** — SnakeYAML is now relocated to `net.sortcraft.shadow.org.yaml` to prevent JPMS split-package conflicts with other mods
+- **Enchantment filter** — Enchantment filters no longer treat items with empty enchantment components as enchanted (items could have a non-null but empty `ENCHANTMENTS` or `STORED_ENCHANTMENTS` component, causing false matches)
 
 ---
 
