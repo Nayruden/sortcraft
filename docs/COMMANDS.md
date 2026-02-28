@@ -71,6 +71,22 @@ Generates JSON files containing all item tags from the registry. Useful for debu
 
 ---
 
+## `/sort shareconfig <id>`
+
+Tests a [CategoryCraft](https://categorycraft.com) share config by ID. Downloads and parses the shared category configuration, then reports how many categories and unique items it contains.
+
+Use this to verify a share ID works before putting it on an `[input]` sign.
+
+**Example:**
+```
+/sort shareconfig ksJgx-mb
+```
+Returns: `Share config 'ksJgx-mb' loaded: 14 categories, 312 unique items`
+
+> **Note:** Share configs must be enabled in `config.yaml` (`shareConfigs: true`, which is the default). See [Share Configs](CONFIGURATION.md#share-configs) for setup details.
+
+---
+
 ## Command Summary
 
 | Command | Description |
@@ -83,4 +99,5 @@ Generates JSON files containing all item tags from the registry. Useful for debu
 | `/sort category <item>` | Show categories for an item |
 | `/sort reload` | Reload configuration |
 | `/sort dump` | Export item tags to JSON |
+| `/sort shareconfig <id>` | Test a CategoryCraft share config |
 

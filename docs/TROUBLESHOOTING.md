@@ -153,6 +153,7 @@ items:
 | `/sort whereis <item>` | Find where an item is currently stored |
 | `/sort diagnostics` | Generate full storage report |
 | `/sort dump` | Export all item tags to JSON |
+| `/sort shareconfig <id>` | Test a CategoryCraft share config |
 | `/sort reload` | Reload config and see errors |
 
 ---

@@ -217,6 +217,23 @@ This is useful when you have large amounts of items to sort—just dump everythi
 
 ---
 
+## Container Sorting (Bundles & Shulker Boxes)
+
+When the sorting engine encounters a **bundle** or **shulker box** in the input chest, it automatically sorts the items *inside* it — not the container itself. Each item inside the bundle or shulker box is matched against your categories and moved to the appropriate destination chest individually.
+
+Items that are successfully sorted are removed from the container. Any items that can't be sorted (no matching category, destination full) remain inside it. If the container is fully emptied, it will get sorted too; otherwise, it's left in the input chest.
+
+---
+
+## Modded Storage Support
+
+SortCraft works with modded storage blocks as both **input** and **destination** chests. Any block that exposes a storage API can be used — label it with an `[input]` sign to sort from it, or a category sign to sort into it:
+
+- **Fabric:** Blocks exposing a `Storage<ItemVariant>` via the Transfer API (e.g., Storage Drawers)
+- **NeoForge:** Blocks exposing an `IItemHandler` capability (e.g., Sophisticated Storage)
+
+---
+
 ## Three Ways to Match Items
 
 | Method | Syntax | Best For |
