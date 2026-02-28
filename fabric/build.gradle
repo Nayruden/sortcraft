@@ -83,15 +83,21 @@ if (rootProject.ext.gametestSupported) {
         gametestImplementation project(path: ':common', configuration: 'namedElements')
 
         // Storage Drawers mod for integration tests
-        // Only load at runtime for MC versions where we have a compatible JAR
+        // Only load at runtime for MC versions where we have a compatible JAR.
+        // JARs live in third-party/ which is .gitignored, so guard with .exists()
+        // to avoid build failures in CI or fresh checkouts.
         if (rootProject.targetMcVersion in ['1.21.11']) {
-            def storageDrawersJar = 'StorageDrawers-fabric-1.21.11-20.0.0.jar'
-            gametestCompileOnly files(rootProject.file("third-party/${storageDrawersJar}"))
-            modLocalRuntime files(rootProject.file("third-party/${storageDrawersJar}"))
+            def storageDrawersFile = rootProject.file('third-party/StorageDrawers-fabric-1.21.11-20.0.0.jar')
+            if (storageDrawersFile.exists()) {
+                gametestCompileOnly files(storageDrawersFile)
+                modLocalRuntime files(storageDrawersFile)
+            }
         } else if (rootProject.targetMcVersion == '1.21.5') {
-            def storageDrawersJar = 'Storage Drawers-fabric-1.21.5-16.0.2.jar'
-            gametestCompileOnly files(rootProject.file("third-party/${storageDrawersJar}"))
-            modLocalRuntime files(rootProject.file("third-party/${storageDrawersJar}"))
+            def storageDrawersFile = rootProject.file('third-party/Storage Drawers-fabric-1.21.5-16.0.2.jar')
+            if (storageDrawersFile.exists()) {
+                gametestCompileOnly files(storageDrawersFile)
+                modLocalRuntime files(storageDrawersFile)
+            }
         } else {
             // For other gametest versions (1.21.6, 1.21.8, 1.21.10), compile against the JAR
             // so tests compile, but don't load at runtime (tests will be skipped)
