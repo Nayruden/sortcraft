@@ -1,30 +1,13 @@
-architectury {
-    common(rootProject.enabled_platforms.split(','))
-}
-
-// Add version-specific source sets
-// For 1.21.11+, use java-1.21.11; for 1.21.4-1.21.10, use java-1.21.4; for 1.21.1, use java-1.21.1
-// Note: MC 1.21.2 and 1.21.3 are not supported (incompatible API changes)
-// Version flags are centralized in root build.gradle (rootProject.ext)
-sourceSets {
-    main {
-        java {
-            if (rootProject.ext.isVersion1_21_11OrLater) {
-                srcDir 'src/main/java-1.21.11'
-            } else if (rootProject.ext.isVersion1_21_4OrLater) {
-                srcDir 'src/main/java-1.21.4'
-            } else {
-                srcDir 'src/main/java-1.21.1'
-            }
-        }
-    }
+// MC 26+ is unobfuscated — Fabric Loom provides Minecraft on the classpath
+// and processes mixins without remapping.
+loom {
+    // No remapping needed for unobfuscated 26.x
 }
 
 dependencies {
-    // Architectury API
-    modImplementation "dev.architectury:architectury:${rootProject.architectury_version}"
-
     // SnakeYAML for config parsing
     implementation "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
+    // Mixin annotations for compile-time only (provided at runtime by the mod loader)
+    compileOnly "net.fabricmc:sponge-mixin:0.15.5+mixin.0.8.7"
 }
 

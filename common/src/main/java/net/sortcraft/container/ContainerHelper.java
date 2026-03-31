@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.BundleContents;
+import net.sortcraft.compat.BundleHelper;
 import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.WallSignBlock;
@@ -125,9 +126,7 @@ public final class ContainerHelper {
     public static Iterable<ItemStack> getStacksIfContainer(ItemStack stack) {
         BundleContents bundle = stack.getOrDefault(DataComponents.BUNDLE_CONTENTS, null);
         if (bundle != null) {
-            List<ItemStack> bundleItems = new ArrayList<>();
-            bundle.items().forEach(bundleItems::add);
-            return bundleItems;
+            return BundleHelper.getItems(bundle);
         }
 
         ItemContainerContents container = stack.getOrDefault(DataComponents.CONTAINER, null);

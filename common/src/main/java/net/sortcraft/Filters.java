@@ -7,7 +7,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
-import net.sortcraft.compat.Id;
+import net.minecraft.resources.Identifier;
 import net.sortcraft.compat.RegistryHelper;
 
 import java.util.*;
@@ -189,7 +189,7 @@ class EnchantmentFilterRule implements FilterRule {
     }
 
     if (matchType == MatchType.SINGLE) {
-      Id id = Id.tryParse(configValue);
+      Identifier id = Identifier.tryParse(configValue);
       if (id == null) {
         throw new IllegalArgumentException("Invalid enchantment id: " + configValue);
       }

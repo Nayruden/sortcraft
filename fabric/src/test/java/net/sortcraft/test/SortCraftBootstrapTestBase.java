@@ -4,7 +4,7 @@ import net.minecraft.SharedConstants;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.sortcraft.compat.Id;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.Bootstrap;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -35,10 +35,6 @@ public abstract class SortCraftBootstrapTestBase {
      */
     @BeforeAll
     static void initMinecraft() {
-        // Disable mixin application to avoid Architectury compatibility issues
-        System.setProperty("mixin.env.disableRefMap", "true");
-        System.setProperty("fabric.skipMixinApplication", "true");
-
         SharedConstants.tryDetectVersion();
         Bootstrap.bootStrap();
     }
@@ -167,10 +163,10 @@ public abstract class SortCraftBootstrapTestBase {
     }
 
     /**
-     * Gets the Id for an item (version-agnostic wrapper for ResourceLocation/Identifier).
+     * Gets the Identifier for an item.
      */
-    protected Id getItemId(Item item) {
-        return Id.of(BuiltInRegistries.ITEM.getKey(item));
+    protected Identifier getItemId(Item item) {
+        return BuiltInRegistries.ITEM.getKey(item);
     }
 
     // ========== Assertion Helpers ==========

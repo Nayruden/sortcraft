@@ -4,15 +4,13 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.enchantment.Enchantment;
 
 /**
- * Registry helper for Minecraft 1.21.11+
- * In 1.21.11+, BuiltInRegistries.ITEM.get() returns Optional&lt;Holder.Reference&lt;Item&gt;&gt;
- * In 1.21.11+, registries.lookupOrThrow() returns HolderLookup.RegistryLookup&lt;T&gt;
- * In 1.21.11+, ResourceLocation was renamed to Identifier
+ * Registry helper providing convenient lookup methods for items and enchantments.
  */
 public final class RegistryHelper {
     private RegistryHelper() {}
@@ -20,8 +18,8 @@ public final class RegistryHelper {
     /**
      * Get an item from the registry, throwing if not found.
      */
-    public static Item getItemOrThrow(Id id) {
-        return BuiltInRegistries.ITEM.get(id.unwrap())
+    public static Item getItemOrThrow(Identifier id) {
+        return BuiltInRegistries.ITEM.get(id)
             .orElseThrow(() -> new IllegalArgumentException("Unknown item: " + id))
             .value();
     }
@@ -29,8 +27,8 @@ public final class RegistryHelper {
     /**
      * Get an item from the registry, returning null if not found.
      */
-    public static Item getItemOrNull(Id id) {
-        return BuiltInRegistries.ITEM.get(id.unwrap())
+    public static Item getItemOrNull(Identifier id) {
+        return BuiltInRegistries.ITEM.get(id)
             .map(ref -> ref.value())
             .orElse(null);
     }
@@ -38,27 +36,27 @@ public final class RegistryHelper {
     /**
      * Get an item by key, returning the default item if not found.
      */
-    public static Item getItemByKey(Id id) {
-        return BuiltInRegistries.ITEM.getValue(id.unwrap());
+    public static Item getItemByKey(Identifier id) {
+        return BuiltInRegistries.ITEM.getValue(id);
     }
 
     /**
-     * Get an enchantment by its Id from the registry access.
+     * Get an enchantment by its Identifier from the registry access.
      * Returns null if not found.
      */
-    public static Enchantment getEnchantmentOrNull(RegistryAccess registries, Id id) {
+    public static Enchantment getEnchantmentOrNull(RegistryAccess registries, Identifier id) {
         HolderLookup.RegistryLookup<Enchantment> enchantmentRegistry = registries.lookupOrThrow(Registries.ENCHANTMENT);
-        ResourceKey<Enchantment> key = ResourceKey.create(Registries.ENCHANTMENT, id.unwrap());
+        ResourceKey<Enchantment> key = ResourceKey.create(Registries.ENCHANTMENT, id);
         return enchantmentRegistry.get(key)
             .map(holder -> holder.value())
             .orElse(null);
     }
 
     /**
-     * Get an enchantment by its Id from the registry access.
+     * Get an enchantment by its Identifier from the registry access.
      * Throws if not found.
      */
-    public static Enchantment getEnchantmentOrThrow(RegistryAccess registries, Id id) {
+    public static Enchantment getEnchantmentOrThrow(RegistryAccess registries, Identifier id) {
         Enchantment enchantment = getEnchantmentOrNull(registries, id);
         if (enchantment == null) {
             throw new IllegalArgumentException("Unknown enchantment: " + id);

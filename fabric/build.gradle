@@ -2,11 +2,6 @@ plugins {
     id 'com.gradleup.shadow'
 }
 
-architectury {
-    platformSetupLoomIde()
-    fabric()
-}
-
 loom {
     accessWidenerPath = project(':common').loom.accessWidenerPath
 }
@@ -18,7 +13,6 @@ configurations {
     }
     compileClasspath.extendsFrom common
     runtimeClasspath.extendsFrom common
-    developmentFabric.extendsFrom common
     // Test classpath needs access to common module
     testCompileClasspath.extendsFrom common
     testRuntimeClasspath.extendsFrom common
@@ -31,14 +25,13 @@ configurations {
 }
 
 dependencies {
-    modImplementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
+    // MC 26+ uses non-remap Loom — use plain implementation
+    implementation "net.fabricmc:fabric-loader:${rootProject.fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${rootProject.fabric_api_version}"
 
-    // Architectury API for Fabric
-    modImplementation "dev.architectury:architectury-fabric:${rootProject.architectury_version}"
-
-    common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
-    shadowBundle(project(path: ':common', configuration: 'transformProductionFabric'))
+    // Common module (non-remap, default project configuration)
+    common(project(path: ':common')) { transitive = false }
+    shadowBundle project(path: ':common')
 
     // Shadow SnakeYAML into the mod jar
     shadowBundle "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
@@ -57,62 +50,48 @@ test {
         showStandardStreams = false
         exceptionFormat "short"
     }
+    // MC 26.1 does not fully bind registry components during Bootstrap.bootStrap(),
+    // causing unit tests that create ItemStack objects to fail with
+    // "Components not bound yet". Game tests provide full coverage instead.
+    enabled = false
 }
 
-// Configure Fabric game tests for supported versions (MC >= 1.21.5)
-// Version flags are centralized in root build.gradle (rootProject.ext)
-if (rootProject.ext.gametestSupported) {
-    fabricApi {
-        configureTests {
-            createSourceSet = true
-            modId = "sortcraft-gametest"
-            enableGameTests = true
-            enableClientGameTests = false  // Start with server-side only
-            eula = true  // By setting this to true, you agree to the Minecraft EULA
-        }
+// Configure Fabric game tests
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = "sortcraft-gametest"
+        enableGameTests = true
+        enableClientGameTests = false  // Start with server-side only
+        eula = true  // By setting this to true, you agree to the Minecraft EULA
     }
+}
 
-    // Include shared gametest sources from common module
-    sourceSets.gametest.java.srcDir project(':common').file('src/gametest/java')
+// Include shared gametest sources from common module
+sourceSets.gametest.java.srcDir project(':common').file('src/gametest/java')
 
-    // Add dependencies to gametest source set
-    dependencies {
-        // SnakeYAML (needed because common module references it)
-        gametestImplementation "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
-        // Common module for access to compat layer (Id, IdentifierHelper, etc.)
-        gametestImplementation project(path: ':common', configuration: 'namedElements')
+// Add dependencies to gametest source set
+dependencies {
+    // SnakeYAML (needed because common module references it)
+    gametestImplementation "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
+    // Common module
+    gametestImplementation project(path: ':common')
 
-        // Storage Drawers mod for integration tests
-        // Only load at runtime for MC versions where we have a compatible JAR.
-        // JARs live in third-party/ which is .gitignored, so guard with .exists()
-        // to avoid build failures in CI or fresh checkouts.
-        if (rootProject.targetMcVersion in ['1.21.11']) {
-            def storageDrawersFile = rootProject.file('third-party/StorageDrawers-fabric-1.21.11-20.0.0.jar')
-            if (storageDrawersFile.exists()) {
-                gametestCompileOnly files(storageDrawersFile)
-                modLocalRuntime files(storageDrawersFile)
-            }
-        } else if (rootProject.targetMcVersion == '1.21.5') {
-            def storageDrawersFile = rootProject.file('third-party/Storage Drawers-fabric-1.21.5-16.0.2.jar')
-            if (storageDrawersFile.exists()) {
-                gametestCompileOnly files(storageDrawersFile)
-                modLocalRuntime files(storageDrawersFile)
-            }
-        } else {
-            // For other gametest versions (1.21.6, 1.21.8, 1.21.10), compile against the JAR
-            // so tests compile, but don't load at runtime (tests will be skipped)
-            def fallbackJar = rootProject.file('third-party/Storage Drawers-fabric-1.21.5-16.0.2.jar')
-            if (fallbackJar.exists()) {
-                gametestCompileOnly files(fallbackJar)
-            }
-        }
+    // Storage Drawers mod for integration tests
+    // JARs live in third-party/ which is .gitignored, so guard with .exists()
+    // to avoid build failures in CI or fresh checkouts.
+    // Compile against the JAR so tests compile, but don't load at runtime (tests will be skipped
+    // unless a 26.1-compatible JAR is available)
+    def fallbackJar = rootProject.file('third-party/Storage Drawers-fabric-1.21.5-16.0.2.jar')
+    if (fallbackJar.exists()) {
+        gametestCompileOnly files(fallbackJar)
     }
+}
 
-    // Ensure gametest classpath extends from common configuration for version-specific classes
-    configurations {
-        gametestCompileClasspath.extendsFrom common
-        gametestRuntimeClasspath.extendsFrom common
-    }
+// Ensure gametest classpath extends from common configuration
+configurations {
+    gametestCompileClasspath.extendsFrom common
+    gametestRuntimeClasspath.extendsFrom common
 }
 
 processResources {
@@ -127,26 +106,26 @@ processResources {
             'mod_description': rootProject.mod_description,
             'minecraft_version': rootProject.minecraft_version,
             'supported_minecraft_versions': rootProject.fabric_minecraft_version,
-            'fabric_loader_version': rootProject.fabric_loader_version,
-            'architectury_version': rootProject.architectury_version
+            'fabric_loader_version': rootProject.fabric_loader_version
         )
     }
 }
 
 shadowJar {
     configurations = [project.configurations.shadowBundle]
-    archiveClassifier = 'dev-shadow'
-    exclude 'architectury.common.json'
+    // MC 26+ is unobfuscated — shadow jar IS the final artifact (no remap needed)
+    archiveClassifier = ''
     // Relocate SnakeYAML to a private namespace to prevent JPMS split-package
     // conflicts when another mod (or Sinytra Connector) also loads the library
     // as a named module exporting org.yaml.snakeyaml.
     relocate 'org.yaml', 'net.sortcraft.shadow.org.yaml'
 }
 
-remapJar {
-    input.set shadowJar.archiveFile
-    dependsOn shadowJar
+// Shadow jar is the final artifact — wire it into assemble
+jar {
+    archiveClassifier = 'slim'
 }
+tasks.assemble.dependsOn tasks.shadowJar
 
 components.java {
     withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {

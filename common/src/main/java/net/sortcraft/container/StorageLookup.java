@@ -1,10 +1,10 @@
 package net.sortcraft.container;
 
-import dev.architectury.injectables.annotations.ExpectPlatform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.Optional;
+import java.util.ServiceLoader;
 
 /**
  * Platform-specific storage lookup.
@@ -15,13 +15,18 @@ import java.util.Optional;
  *   <li>Platform-specific storage APIs (Fabric Transfer API, NeoForge IItemHandler)</li>
  * </ol>
  *
- * <p>Implementations follow Architectury's @ExpectPlatform pattern:
+ * <p>Implementations are discovered via {@link ServiceLoader}:
  * <ul>
  *   <li>Fabric: {@code net.sortcraft.container.fabric.StorageLookupImpl}</li>
  *   <li>NeoForge: {@code net.sortcraft.container.neoforge.StorageLookupImpl}</li>
  * </ul>
  */
 public final class StorageLookup {
+
+    private static final StorageLookupService INSTANCE = ServiceLoader.load(StorageLookupService.class)
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("No StorageLookupService implementation found"));
+
     private StorageLookup() {}
 
     /**
@@ -34,9 +39,8 @@ public final class StorageLookup {
      * @param pos The block position to check
      * @return An Optional containing the storage, or empty if no storage found
      */
-    @ExpectPlatform
     public static Optional<SortCraftStorage> getStorageAt(ServerLevel world, BlockPos pos) {
-        throw new AssertionError("@ExpectPlatform not injected");
+        return INSTANCE.getStorageAt(world, pos);
     }
 
     /**
@@ -49,9 +53,8 @@ public final class StorageLookup {
      * @param pos The block position to check
      * @return true if the block has storage capabilities
      */
-    @ExpectPlatform
     public static boolean isStorageBlock(ServerLevel world, BlockPos pos) {
-        throw new AssertionError("@ExpectPlatform not injected");
+        return INSTANCE.isStorageBlock(world, pos);
     }
 }
 

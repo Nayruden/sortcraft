@@ -7,6 +7,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.sortcraft.container.ContainerHelper;
 import net.sortcraft.container.SortCraftStorage;
+import net.sortcraft.container.StorageLookupService;
 
 import java.util.Optional;
 
@@ -19,9 +20,10 @@ import java.util.Optional;
  *   <li>Fabric Transfer API ({@code ItemStorage.SIDED} — supports Storage Drawers, etc.)</li>
  * </ol>
  */
-public class StorageLookupImpl {
+public class StorageLookupImpl implements StorageLookupService {
 
-    public static Optional<SortCraftStorage> getStorageAt(ServerLevel world, BlockPos pos) {
+    @Override
+    public Optional<SortCraftStorage> getStorageAt(ServerLevel world, BlockPos pos) {
         // Check vanilla Container first (ChestBlock double-chest, then generic instanceof)
         Optional<SortCraftStorage> vanilla = ContainerHelper.getVanillaStorageAt(world, pos);
         if (vanilla.isPresent()) return vanilla;
@@ -35,7 +37,8 @@ public class StorageLookupImpl {
         return Optional.empty();
     }
 
-    public static boolean isStorageBlock(ServerLevel world, BlockPos pos) {
+    @Override
+    public boolean isStorageBlock(ServerLevel world, BlockPos pos) {
         return getStorageAt(world, pos).isPresent();
     }
 }

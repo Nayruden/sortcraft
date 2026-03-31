@@ -6,7 +6,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceKey;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import net.sortcraft.compat.Id;
+import net.minecraft.resources.Identifier;
 import net.sortcraft.gametest.AuditGameTest;
 import net.sortcraft.gametest.CategoryMatchingGameTest;
 import net.sortcraft.gametest.ChestLayoutGameTest;
@@ -41,17 +41,17 @@ import java.util.function.Consumer;
 final class SortCraftNeoForgeGameTestCatalog {
     private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft-gametest");
     static final String NAMESPACE = "sortcraft-gametest";
-    static final Id DEFAULT_STRUCTURE = Id.parse("sortcraft-gametest:empty_32x32");
+    static final Identifier DEFAULT_STRUCTURE = Identifier.parse("sortcraft-gametest:empty_32x32");
 
     private static final List<Class<?>> TEST_CLASSES = buildTestClasses();
 
-    private static final Map<String, Id> STRUCTURE_OVERRIDES = Map.ofEntries(
-            Map.entry("PerformanceGameTest.sortWithLargeSearchRadius", Id.parse("sortcraft-gametest:empty_32x32")),
-            Map.entry("PerformanceGameTest.categoryOutsideRadiusNotFound", Id.parse("sortcraft-gametest:empty_32x32")),
-            Map.entry("PerformanceGameTest.chestAtExactRadiusIncluded", Id.parse("sortcraft-gametest:empty_32x32")),
-            Map.entry("PerformanceGameTest.chestBeyondRadiusExcluded", Id.parse("sortcraft-gametest:empty_32x32")),
-            Map.entry("PerformanceGameTest.diagonalDistanceCalculation", Id.parse("sortcraft-gametest:empty_32x32")),
-            Map.entry("PerformanceGameTest.verticalDistanceIncludedInRadius", Id.parse("sortcraft-gametest:empty_32x32"))
+    private static final Map<String, Identifier> STRUCTURE_OVERRIDES = Map.ofEntries(
+            Map.entry("PerformanceGameTest.sortWithLargeSearchRadius", Identifier.parse("sortcraft-gametest:empty_32x32")),
+            Map.entry("PerformanceGameTest.categoryOutsideRadiusNotFound", Identifier.parse("sortcraft-gametest:empty_32x32")),
+            Map.entry("PerformanceGameTest.chestAtExactRadiusIncluded", Identifier.parse("sortcraft-gametest:empty_32x32")),
+            Map.entry("PerformanceGameTest.chestBeyondRadiusExcluded", Identifier.parse("sortcraft-gametest:empty_32x32")),
+            Map.entry("PerformanceGameTest.diagonalDistanceCalculation", Identifier.parse("sortcraft-gametest:empty_32x32")),
+            Map.entry("PerformanceGameTest.verticalDistanceIncludedInRadius", Identifier.parse("sortcraft-gametest:empty_32x32"))
     );
 
     private static final List<TestMethodSpec> TESTS = discoverTests();
@@ -94,7 +94,7 @@ final class SortCraftNeoForgeGameTestCatalog {
         }
 
         for (TestMethodSpec spec : TESTS) {
-            TEST_FUNCTIONS.register(spec.functionId().path(), () -> spec::invoke);
+            TEST_FUNCTIONS.register(spec.functionId().getPath(), () -> spec::invoke);
         }
 
         TEST_FUNCTIONS.register(modBus);
@@ -117,14 +117,14 @@ final class SortCraftNeoForgeGameTestCatalog {
 
                 method.setAccessible(true);
                 String key = testClass.getSimpleName() + "." + method.getName();
-                Id structure = STRUCTURE_OVERRIDES.getOrDefault(key, DEFAULT_STRUCTURE);
+                Identifier structure = STRUCTURE_OVERRIDES.getOrDefault(key, DEFAULT_STRUCTURE);
 
                 String classSlug = toSnake(testClass.getSimpleName().replaceFirst("GameTest$", ""));
                 String methodSlug = toSnake(method.getName());
-                Id testId = id("generated/" + classSlug + "/" + methodSlug);
-                Id functionId = id("generated_fn/" + classSlug + "/" + methodSlug);
+                Identifier testId = id("generated/" + classSlug + "/" + methodSlug);
+                Identifier functionId = id("generated_fn/" + classSlug + "/" + methodSlug);
                 ResourceKey<Consumer<GameTestHelper>> functionKey =
-                        ResourceKey.create(Registries.TEST_FUNCTION, functionId.unwrap());
+                        ResourceKey.create(Registries.TEST_FUNCTION, functionId);
 
                 TestMethodSpec spec = new TestMethodSpec(testClass, method, testId, functionId, functionKey, structure);
                 TestMethodSpec prior = byTestId.put(testId.toString(), spec);
@@ -149,8 +149,8 @@ final class SortCraftNeoForgeGameTestCatalog {
                 && method.getParameterTypes()[0] == GameTestHelper.class;
     }
 
-    private static Id id(String path) {
-        return Id.parse(NAMESPACE + ":" + path);
+    private static Identifier id(String path) {
+        return Identifier.parse(NAMESPACE + ":" + path);
     }
 
     private static String toSnake(String value) {
@@ -165,17 +165,17 @@ final class SortCraftNeoForgeGameTestCatalog {
     static final class TestMethodSpec {
         private final Class<?> testClass;
         private final Method method;
-        private final Id testId;
-        private final Id functionId;
+        private final Identifier testId;
+        private final Identifier functionId;
         private final ResourceKey<Consumer<GameTestHelper>> functionKey;
-        private final Id structureId;
+        private final Identifier structureId;
 
         TestMethodSpec(Class<?> testClass,
                        Method method,
-                       Id testId,
-                       Id functionId,
+                       Identifier testId,
+                       Identifier functionId,
                        ResourceKey<Consumer<GameTestHelper>> functionKey,
-                       Id structureId) {
+                       Identifier structureId) {
             this.testClass = testClass;
             this.method = method;
             this.testId = testId;
@@ -192,11 +192,11 @@ final class SortCraftNeoForgeGameTestCatalog {
             return method;
         }
 
-        Id testId() {
+        Identifier testId() {
             return testId;
         }
 
-        Id functionId() {
+        Identifier functionId() {
             return functionId;
         }
 
@@ -204,7 +204,7 @@ final class SortCraftNeoForgeGameTestCatalog {
             return functionKey;
         }
 
-        Id structureId() {
+        Identifier structureId() {
             return structureId;
         }
 

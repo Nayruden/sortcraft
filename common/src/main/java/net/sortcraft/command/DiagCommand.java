@@ -9,9 +9,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.Identifier;
 import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.category.CategoryNode;
-import net.sortcraft.compat.Id;
 import net.sortcraft.compat.RegistryHelper;
 import net.sortcraft.config.ConfigManager;
 import net.sortcraft.container.ChestRef;
@@ -50,7 +50,7 @@ public final class DiagCommand {
         for (Map.Entry<String, CategoryNode> entry : CategoryLoader.getCategories().entrySet()) {
             String categoryName = entry.getKey();
             CategoryNode categoryNode = entry.getValue();
-            Set<Id> items = categoryNode.flattenedItemIds;
+            Set<Identifier> items = categoryNode.flattenedItemIds;
 
             if (items == null || items.isEmpty()) continue;
 
@@ -61,7 +61,7 @@ public final class DiagCommand {
             int totalSlots = chests.size() * CHEST_SLOT_COUNT;
             int usedSlots = 0;
 
-            for (Id id : items) {
+            for (Identifier id : items) {
                 Item item = RegistryHelper.getItemByKey(id);
                 if (item == null) continue;
 

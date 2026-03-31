@@ -2,28 +2,9 @@ plugins {
     id 'com.gradleup.shadow'
 }
 
-architectury {
-    platformSetupLoomIde()
-    neoForge()
-}
-
-// Version-specific source sets for NeoForge API differences
-// NeoForge 21.9+ (MC 1.21.10+) replaced Capabilities.ItemHandler.BLOCK with Capabilities.Item.BLOCK
-// Version flags are centralized in root build.gradle (rootProject.ext)
-sourceSets {
-    main {
-        java {
-            if (rootProject.ext.isVersion1_21_10OrLater) {
-                srcDir 'src/main/java-1.21.10'
-            } else {
-                srcDir 'src/main/java-pre1.21.10'
-            }
-        }
-    }
-}
-
-loom {
-    accessWidenerPath = project(':common').loom.accessWidenerPath
+// Configure NeoForge via ModDevGradle
+neoForge {
+    version = rootProject.neoforge_version
 }
 
 configurations {
@@ -33,7 +14,6 @@ configurations {
     }
     compileClasspath.extendsFrom common
     runtimeClasspath.extendsFrom common
-    developmentNeoForge.extendsFrom common
 
     // For shadowing SnakeYAML
     shadowBundle {
@@ -43,20 +23,14 @@ configurations {
 }
 
 dependencies {
-    neoForge "net.neoforged:neoforge:${rootProject.neoforge_version}"
-
-    // Architectury API for NeoForge
-    modImplementation "dev.architectury:architectury-neoforge:${rootProject.architectury_version}"
-
-    common(project(path: ':common', configuration: 'namedElements')) { transitive = false }
-    shadowBundle(project(path: ':common', configuration: 'transformProductionNeoForge'))
+    common(project(path: ':common')) { transitive = false }
+    shadowBundle project(path: ':common')
 
     // Shadow SnakeYAML into the mod jar
     shadowBundle "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
-    // NeoForge dev runs (including GameTests) execute from source outputs, not the shaded jar.
-    // Put SnakeYAML on the userdev classpath exactly once; duplicate entries can break the
-    // Architectury transformer duplicate-class pruning step.
-    developmentNeoForge "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
+    // NeoForge dev runs execute from source outputs, not the shaded jar.
+    // Put SnakeYAML on the runtime classpath for dev runs.
+    runtimeOnly "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"
 }
 
 processResources {
@@ -71,26 +45,26 @@ processResources {
             'mod_description': rootProject.mod_description,
             'minecraft_version': rootProject.minecraft_version,
             'supported_minecraft_versions': rootProject.neoforge_minecraft_version,
-            'neoforge_version': rootProject.neoforge_version,
-            'architectury_version': rootProject.architectury_version
+            'neoforge_version': rootProject.neoforge_version
         )
     }
 }
 
 shadowJar {
     configurations = [project.configurations.shadowBundle]
-    archiveClassifier = 'dev-shadow'
-    exclude 'architectury.common.json'
+    // Shadow JAR is the final artifact — no remapping needed for unobfuscated 26+
+    archiveClassifier = ''
     // Relocate SnakeYAML to a private namespace to prevent JPMS split-package
     // conflicts when another mod (or Sinytra Connector) also loads the library
     // as a named module exporting org.yaml.snakeyaml.
     relocate 'org.yaml', 'net.sortcraft.shadow.org.yaml'
 }
 
-remapJar {
-    input.set shadowJar.archiveFile
-    dependsOn shadowJar
+// The non-shadowed jar gets a classifier to avoid conflict
+jar {
+    archiveClassifier = 'slim'
 }
+tasks.assemble.dependsOn tasks.shadowJar
 
 components.java {
     withVariantsFromConfiguration(project.configurations.shadowRuntimeElements) {
@@ -99,104 +73,80 @@ components.java {
 }
 
 // ========== GameTest Configuration ==========
-// Enable for MC versions that support the NeoForge 1.21.5+ registry-based GameTest API
-// Version flags are centralized in root build.gradle (rootProject.ext)
-if (rootProject.ext.gametestSupported) {
-    def enableThirdPartyGametestMods =
-            project.findProperty('enableThirdPartyGametestMods')?.toString()?.toBoolean() ?: false
+def enableThirdPartyGametestMods =
+        project.findProperty('enableThirdPartyGametestMods')?.toString()?.toBoolean() ?: false
 
-    sourceSets {
-        gametest {
-            java {
-                srcDir 'src/gametest/java'
-                srcDir project(':common').file('src/gametest/java')
-            }
-            resources {
-                srcDir 'src/gametest/resources'
-            }
-            compileClasspath += main.compileClasspath + main.output
-            runtimeClasspath += main.runtimeClasspath + main.output
+sourceSets {
+    gametest {
+        java {
+            srcDir 'src/gametest/java'
+            srcDir project(':common').file('src/gametest/java')
+        }
+        resources {
+            srcDir 'src/gametest/resources'
+        }
+        compileClasspath += main.compileClasspath + main.output
+        runtimeClasspath += main.runtimeClasspath + main.output
+    }
+}
+
+configurations {
+    gametestImplementation.extendsFrom implementation
+    gametestCompileClasspath.extendsFrom common
+    gametestRuntimeClasspath.extendsFrom common
+}
+
+dependencies {
+    // Common module
+    gametestImplementation project(path: ':common')
+
+    // Sophisticated Storage + Core for integration tests (NeoForge 26.1)
+    // JARs live in third-party/ which is .gitignored, so guard with .exists()
+    def ssCoreJar = rootProject.file('third-party/sophisticatedcore-26.1-1.4.11.1563.jar')
+    def ssJar = rootProject.file('third-party/neoforge-sophisticatedstorage-26.1-1.5.36.1543.jar')
+    if (ssCoreJar.exists() && ssJar.exists()) {
+        gametestRuntimeOnly files(ssCoreJar, ssJar)
+    }
+}
+
+// Configure GameTest run via ModDevGradle
+neoForge {
+    runs {
+        gameTestServer {
+            type = "gameTestServer"
+
+            systemProperty "neoforge.enableGameTest", "true"
+            systemProperty "sortcraft.gametest.enableThirdParty", String.valueOf(enableThirdPartyGametestMods)
+            // Avoid collisions with local dev servers using the default 25565 port.
+            programArguments.addAll "--port", "0"
+            gameDirectory = project.file("run/gametest")
+
+            sourceSet = sourceSets.gametest
         }
     }
 
-    configurations {
-        gametestImplementation.extendsFrom implementation
-        gametestCompileClasspath.extendsFrom common
-        gametestRuntimeClasspath.extendsFrom common
-    }
-
-    dependencies {
-        // Common module for access to compat layer (Id, IdentifierHelper, etc.)
-        gametestImplementation project(path: ':common', configuration: 'namedElements')
-        // Note: Storage Drawers integration tests use runtime registry lookups only
-        // (no compile-time dependency needed). Tests gracefully skip if mod not present.
-
-        // Sophisticated Storage NeoForge integration tests (runtime-only, MC 1.21.5 jar currently available)
-        def sophisticatedStorageJar_1_21_5 = rootProject.file('third-party/neoforge-sophisticatedstorage-1.21.5-1.5.28.1490.jar')
-        def sophisticatedCoreJar_1_21_5 = rootProject.file('third-party/sophisticatedcore-1.21.5-1.4.5.1501.jar')
-        // Keep third-party compat mods opt-in for NeoForge GameTest runs so baseline
-        // vanilla behavior tests are not affected by external mixins.
-        if (rootProject.targetMcVersion == '1.21.5' && enableThirdPartyGametestMods) {
-            if (sophisticatedCoreJar_1_21_5.exists()) {
-                modLocalRuntime files(sophisticatedCoreJar_1_21_5)
-                gametestRuntimeOnly files(sophisticatedCoreJar_1_21_5)
-            }
-            if (sophisticatedStorageJar_1_21_5.exists()) {
-                modLocalRuntime files(sophisticatedStorageJar_1_21_5)
-                gametestRuntimeOnly files(sophisticatedStorageJar_1_21_5)
-            }
+    mods {
+        sortcraft {
+            sourceSet sourceSets.main
+            sourceSet project(':common').sourceSets.main
+        }
+        sortcraft_gametest {
+            sourceSet sourceSets.gametest
         }
     }
+}
 
-    loom {
-        runs {
-            gameTestServer {
-                // Use the standard server run template (sets a valid Forge main class),
-                // then switch the DLI environment to the NeoForge gametestserver target.
-                server()
-                environment "gametestserver"
+// Process resources for gametest source set (expand neoforge.mods.toml placeholders)
+processGametestResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    inputs.property 'version', project.version
 
-                name "Game Test Server"
-                source sourceSets.gametest
-                property "neoforge.enableGameTest", "true"
-                property "sortcraft.gametest.enableThirdParty", String.valueOf(enableThirdPartyGametestMods)
-                // Re-enable namespace filtering after confirming execution if needed:
-                // property "neoforge.enabledGameTestNamespaces", "sortcraft-gametest"
-                // Avoid collisions with local dev servers using the default 25565 port.
-                programArg "--port"
-                programArg "0"
-                runDir "run/gametest"
-            }
-        }
-
-        mods {
-            "sortcraft_gametest" {
-                sourceSet sourceSets.gametest
-            }
-        }
-    }
-
-    // FML 10.x (1.21.10+) replaced the unified BootstrapLauncher with dedicated
-    // main classes per run type.  The server() template lazily sets fabric.dli.main
-    // to Server; override it at the Gradle task level so Java sees GameTestServer last.
-    if (rootProject.ext.isVersion1_21_10OrLater) {
-        tasks.named("runGameTestServer") {
-            jvmArgs "-Dfabric.dli.main=net.neoforged.fml.startup.GameTestServer"
-        }
-    }
-
-    // Process resources for gametest source set (expand neoforge.mods.toml placeholders)
-    processGametestResources {
-        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-        inputs.property 'version', project.version
-
-        filesMatching('META-INF/neoforge.mods.toml') {
-            expand(
-                'mod_version': project.version,
-                'minecraft_version': rootProject.minecraft_version,
-                'supported_minecraft_versions': rootProject.neoforge_minecraft_version,
-                'neoforge_version': rootProject.neoforge_version
-            )
-        }
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand(
+            'mod_version': project.version,
+            'minecraft_version': rootProject.minecraft_version,
+            'supported_minecraft_versions': rootProject.neoforge_minecraft_version,
+            'neoforge_version': rootProject.neoforge_version
+        )
     }
 }

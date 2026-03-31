@@ -1,7 +1,8 @@
 package net.sortcraft.category;
 
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
-import net.sortcraft.compat.Id;
 
 import java.util.*;
 
@@ -17,21 +18,21 @@ import java.util.*;
  */
 public class CategorySet {
     private final Map<String, CategoryNode> categories;
-    private final Map<Id, Set<CategoryNode>> itemCategoryMap;
+    private final Map<Identifier, Set<CategoryNode>> itemCategoryMap;
 
     /**
      * Creates a new CategorySet wrapping the provided maps.
      * The maps are defensively copied to ensure immutability.
      *
      * @param categories     Map of category name to CategoryNode
-     * @param itemCategoryMap Map of item Id to set of matching CategoryNodes
+     * @param itemCategoryMap Map of item Identifier to set of matching CategoryNodes
      */
-    public CategorySet(Map<String, CategoryNode> categories, Map<Id, Set<CategoryNode>> itemCategoryMap) {
+    public CategorySet(Map<String, CategoryNode> categories, Map<Identifier, Set<CategoryNode>> itemCategoryMap) {
         this.categories = Collections.unmodifiableMap(new HashMap<>(categories));
 
         // Deep defensive copy: wrap each inner set to ensure full immutability
-        Map<Id, Set<CategoryNode>> deepCopy = new HashMap<>();
-        for (Map.Entry<Id, Set<CategoryNode>> entry : itemCategoryMap.entrySet()) {
+        Map<Identifier, Set<CategoryNode>> deepCopy = new HashMap<>();
+        for (Map.Entry<Identifier, Set<CategoryNode>> entry : itemCategoryMap.entrySet()) {
             deepCopy.put(entry.getKey(), Collections.unmodifiableSet(new HashSet<>(entry.getValue())));
         }
         this.itemCategoryMap = Collections.unmodifiableMap(deepCopy);
@@ -49,9 +50,9 @@ public class CategorySet {
     /**
      * Returns the item-to-category mapping.
      *
-     * @return Unmodifiable view of the map from item Id to set of matching CategoryNodes
+     * @return Unmodifiable view of the map from item Identifier to set of matching CategoryNodes
      */
-    public Map<Id, Set<CategoryNode>> getItemCategoryMap() {
+    public Map<Identifier, Set<CategoryNode>> getItemCategoryMap() {
         return itemCategoryMap;
     }
 
@@ -59,11 +60,11 @@ public class CategorySet {
      * Gets categories that match an item ID, without checking filters.
      * Returns categories sorted by priority (lower priority first).
      *
-     * @param itemId The item's Id
+     * @param itemId The item's Identifier
      * @return List of matching categories sorted by priority, or empty list if none match
      * @see #getMatchingCategories(ItemStack) for filter-aware matching
      */
-    public List<CategoryNode> getMatchingCategoriesNoFilter(Id itemId) {
+    public List<CategoryNode> getMatchingCategoriesNoFilter(Identifier itemId) {
         Set<CategoryNode> categoriesRaw = itemCategoryMap.get(itemId);
         if (categoriesRaw == null) return new ArrayList<>();
         List<CategoryNode> result = new ArrayList<>(categoriesRaw);
@@ -80,7 +81,7 @@ public class CategorySet {
      * @return List of matching categories sorted by priority, or empty list if none match
      */
     public List<CategoryNode> getMatchingCategories(ItemStack stack) {
-        Id itemId = Id.ofItem(stack.getItem());
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         List<CategoryNode> filteredCategories = new ArrayList<>();
         List<CategoryNode> matchedCategories = getMatchingCategoriesNoFilter(itemId);
 

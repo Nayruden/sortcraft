@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.sortcraft.compat.IdentifierHelper;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -93,7 +93,7 @@ public final class StorageDrawersHelper {
     static final String OAK_COMP_DRAWERS_3 = "storagedrawers:compacting_drawers_3";
 
     static boolean isBlockAvailable(String blockId) {
-        var id = IdentifierHelper.parse(blockId);
+        var id = Identifier.parse(blockId);
         if (!BuiltInRegistries.BLOCK.containsKey(id)) {
             return false;
         }
@@ -127,7 +127,7 @@ public final class StorageDrawersHelper {
      */
     static void placeDrawer(GameTestHelper helper, BlockPos pos,
                             String drawerId, Direction facing) {
-        var id = IdentifierHelper.parse(drawerId);
+        var id = Identifier.parse(drawerId);
         Block block = BuiltInRegistries.BLOCK.getValue(id);
         if (block == Blocks.AIR) {
             throw new IllegalStateException("Storage Drawers block not available for test: " + drawerId);

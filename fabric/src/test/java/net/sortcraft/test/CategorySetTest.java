@@ -5,7 +5,8 @@ import net.minecraft.world.item.Items;
 import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.category.CategoryNode;
 import net.sortcraft.category.CategorySet;
-import net.sortcraft.compat.Id;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -19,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CategorySetTest extends SortCraftBootstrapTestBase {
 
     /** Helper to create a simple CategoryNode with flattenedItemIds set. */
-    private CategoryNode createCategory(String name, int priority, Id... itemIds) {
+    private CategoryNode createCategory(String name, int priority, Identifier... itemIds) {
         CategoryNode node = new CategoryNode(name);
         node.priority = priority;
         node.flattenedItemIds = new HashSet<>(Arrays.asList(itemIds));
@@ -27,11 +28,11 @@ public class CategorySetTest extends SortCraftBootstrapTestBase {
     }
 
     /** Build item-to-category map from categories. */
-    private Map<Id, Set<CategoryNode>> buildItemMap(CategoryNode... categories) {
-        Map<Id, Set<CategoryNode>> map = new HashMap<>();
+    private Map<Identifier, Set<CategoryNode>> buildItemMap(CategoryNode... categories) {
+        Map<Identifier, Set<CategoryNode>> map = new HashMap<>();
         for (CategoryNode cat : categories) {
             if (cat.flattenedItemIds != null) {
-                for (Id id : cat.flattenedItemIds) {
+                for (Identifier id : cat.flattenedItemIds) {
                     map.computeIfAbsent(id, k -> new HashSet<>()).add(cat);
                 }
             }
@@ -41,7 +42,7 @@ public class CategorySetTest extends SortCraftBootstrapTestBase {
 
     @Test
     void matchingCategoriesReturnsSortedByPriority() {
-        Id swordId = Id.ofItem(Items.DIAMOND_SWORD);
+        Identifier swordId = BuiltInRegistries.ITEM.getKey(Items.DIAMOND_SWORD);
         CategoryNode highPriority = createCategory("high_priority", 1, swordId);
         CategoryNode lowPriority = createCategory("low_priority", 20, swordId);
 
@@ -70,7 +71,7 @@ public class CategorySetTest extends SortCraftBootstrapTestBase {
         CategorySet globalSet = CategoryLoader.getGlobalCategorySet();
         assertNotNull(globalSet);
 
-        Id swordId = Id.ofItem(Items.DIAMOND_SWORD);
+        Identifier swordId = BuiltInRegistries.ITEM.getKey(Items.DIAMOND_SWORD);
 
         // NoFilter should return the category even though the stack has no custom name
         List<CategoryNode> noFilterMatches = globalSet.getMatchingCategoriesNoFilter(swordId);
@@ -86,7 +87,7 @@ public class CategorySetTest extends SortCraftBootstrapTestBase {
     void noMatchReturnsEmptyList() {
         CategorySet emptySet = new CategorySet(Map.of(), Map.of());
 
-        List<CategoryNode> noFilterResult = emptySet.getMatchingCategoriesNoFilter(Id.ofItem(Items.DIAMOND_SWORD));
+        List<CategoryNode> noFilterResult = emptySet.getMatchingCategoriesNoFilter(BuiltInRegistries.ITEM.getKey(Items.DIAMOND_SWORD));
         assertNotNull(noFilterResult);
         assertTrue(noFilterResult.isEmpty());
 
@@ -97,7 +98,7 @@ public class CategorySetTest extends SortCraftBootstrapTestBase {
 
     @Test
     void categorySetIsImmutable() {
-        Id swordId = Id.ofItem(Items.DIAMOND_SWORD);
+        Identifier swordId = BuiltInRegistries.ITEM.getKey(Items.DIAMOND_SWORD);
         CategoryNode cat = createCategory("swords", 10, swordId);
 
         CategorySet set = new CategorySet(
@@ -108,28 +109,28 @@ public class CategorySetTest extends SortCraftBootstrapTestBase {
         assertThrows(UnsupportedOperationException.class, () ->
                 set.getCategories().put("new_cat", new CategoryNode("new_cat")));
         assertThrows(UnsupportedOperationException.class, () ->
-                set.getItemCategoryMap().put(Id.ofItem(Items.IRON_SWORD), new HashSet<>()));
+                set.getItemCategoryMap().put(BuiltInRegistries.ITEM.getKey(Items.IRON_SWORD), new HashSet<>()));
     }
 
     @Test
     void defensiveCopyPreventsExternalMutation() {
-        Id swordId = Id.ofItem(Items.DIAMOND_SWORD);
+        Identifier swordId = BuiltInRegistries.ITEM.getKey(Items.DIAMOND_SWORD);
         CategoryNode cat = createCategory("swords", 10, swordId);
 
         Map<String, CategoryNode> catMap = new HashMap<>();
         catMap.put("swords", cat);
-        Map<Id, Set<CategoryNode>> itemMap = new HashMap<>();
+        Map<Identifier, Set<CategoryNode>> itemMap = new HashMap<>();
         itemMap.put(swordId, new HashSet<>(Set.of(cat)));
 
         CategorySet set = new CategorySet(catMap, itemMap);
 
         // Mutate the original maps
         catMap.put("injected", new CategoryNode("injected"));
-        itemMap.put(Id.ofItem(Items.IRON_SWORD), new HashSet<>());
+        itemMap.put(BuiltInRegistries.ITEM.getKey(Items.IRON_SWORD), new HashSet<>());
 
         // CategorySet should not be affected
         assertFalse(set.getCategories().containsKey("injected"));
-        assertFalse(set.getItemCategoryMap().containsKey(Id.ofItem(Items.IRON_SWORD)));
+        assertFalse(set.getItemCategoryMap().containsKey(BuiltInRegistries.ITEM.getKey(Items.IRON_SWORD)));
         assertEquals(1, set.getCategories().size());
         assertEquals(1, set.getItemCategoryMap().size());
     }

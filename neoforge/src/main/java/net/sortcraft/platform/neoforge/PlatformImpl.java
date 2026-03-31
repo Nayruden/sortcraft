@@ -1,27 +1,28 @@
 package net.sortcraft.platform.neoforge;
 
 import net.neoforged.fml.loading.FMLPaths;
+import net.sortcraft.platform.PlatformService;
 
 import java.nio.file.Path;
 
 /**
  * NeoForge implementation of platform-specific methods.
- * This class is found by Architectury's @ExpectPlatform annotation.
- * 
- * The class must be in the {original.package}.{platform} subpackage
- * for compatibility with Architectury 13.x (MC 1.21.1).
+ * Discovered via {@link java.util.ServiceLoader}.
  */
-public class PlatformImpl {
+public class PlatformImpl implements PlatformService {
 
-    public static Path getConfigDir() {
+    @Override
+    public Path getConfigDir() {
         return FMLPaths.CONFIGDIR.get();
     }
 
-    public static boolean isFabric() {
+    @Override
+    public boolean isFabric() {
         return false;
     }
 
-    public static boolean isNeoForge() {
+    @Override
+    public boolean isNeoForge() {
         return true;
     }
 }

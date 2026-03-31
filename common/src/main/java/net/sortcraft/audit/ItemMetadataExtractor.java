@@ -7,8 +7,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
-import net.sortcraft.compat.IdentifierHelper;
-import net.sortcraft.compat.PotionHelper;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,7 +74,7 @@ public final class ItemMetadataExtractor {
         for (Holder<Enchantment> holder : component.keySet()) {
             int level = component.getLevel(holder);
             String enchantmentId = holder.unwrapKey()
-                    .map(IdentifierHelper::keyToString)
+                    .map(key -> key.identifier().toString())
                     .orElse("unknown");
             result.add(new EnchantmentInfo(enchantmentId, level));
         }
@@ -116,7 +115,7 @@ public final class ItemMetadataExtractor {
         // First try to get registered potion type (for normal potions)
         String registeredType = contents.potion()
                 .flatMap(Holder::unwrapKey)
-                .map(IdentifierHelper::keyToString)
+                .map(key -> key.identifier().toString())
                 .orElse(null);
 
         if (registeredType != null) {
@@ -124,8 +123,10 @@ public final class ItemMetadataExtractor {
         }
 
         // Fall back to custom potion name (for custom potions created via commands/mods)
-        // Uses version-specific helper since customName() was added in 1.21.4+
-        return PotionHelper.getCustomName(contents);
+        if (contents == null) {
+            return null;
+        }
+        return contents.customName().orElse(null);
     }
 }
 

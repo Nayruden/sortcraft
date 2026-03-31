@@ -10,6 +10,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.BundleContents;
+import net.sortcraft.compat.BundleHelper;
 import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.WallSignBlock;
@@ -28,7 +29,7 @@ import net.sortcraft.container.ContainerStorage;
 import net.sortcraft.container.SortContext;
 import net.sortcraft.container.SortCraftStorage;
 import net.sortcraft.container.StorageLookup;
-import net.sortcraft.compat.IdentifierHelper;
+import net.minecraft.resources.Identifier;
 import net.sortcraft.sorting.SortingEngine;
 import net.sortcraft.sorting.SortingResults;
 
@@ -509,7 +510,7 @@ public final class TestHelper {
                 items.add(item.copy());
             }
         }
-        bundle.set(DataComponents.BUNDLE_CONTENTS, new BundleContents(items));
+        bundle.set(DataComponents.BUNDLE_CONTENTS, BundleHelper.create(items));
         return bundle;
     }
 
@@ -532,9 +533,7 @@ public final class TestHelper {
     public static List<ItemStack> getBundleContents(ItemStack bundle) {
         BundleContents contents = bundle.get(DataComponents.BUNDLE_CONTENTS);
         if (contents == null) return new ArrayList<>();
-        List<ItemStack> result = new ArrayList<>();
-        contents.items().forEach(item -> result.add(item.copy()));
-        return result;
+        return BundleHelper.getItems(contents);
     }
 
     /**
@@ -544,7 +543,7 @@ public final class TestHelper {
         ItemContainerContents contents = shulker.get(DataComponents.CONTAINER);
         if (contents == null) return new ArrayList<>();
         List<ItemStack> result = new ArrayList<>();
-        contents.stream().forEach(item -> result.add(item.copy()));
+        contents.nonEmptyItemCopyStream().forEach(result::add);
         return result;
     }
 
@@ -580,8 +579,7 @@ public final class TestHelper {
      */
     public static ItemStack enchant(GameTestHelper helper, ItemStack stack, String enchantmentId, int level) {
         ServerLevel serverLevel = helper.getLevel();
-        // Use IdentifierHelper.parse() to get the version-correct Identifier/ResourceLocation
-        var id = IdentifierHelper.parse(enchantmentId);
+        var id = Identifier.parse(enchantmentId);
         net.minecraft.resources.ResourceKey<net.minecraft.world.item.enchantment.Enchantment> key =
                 net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.ENCHANTMENT, id);
 
@@ -618,8 +616,7 @@ public final class TestHelper {
      */
     public static ItemStack createPotion(GameTestHelper helper, String potionId) {
         ServerLevel serverLevel = helper.getLevel();
-        // Use IdentifierHelper.parse() to get the version-correct Identifier/ResourceLocation
-        var id = IdentifierHelper.parse(potionId);
+        var id = Identifier.parse(potionId);
         net.minecraft.resources.ResourceKey<net.minecraft.world.item.alchemy.Potion> key =
                 net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.POTION, id);
 
@@ -641,8 +638,7 @@ public final class TestHelper {
      */
     public static ItemStack createSplashPotion(GameTestHelper helper, String potionId) {
         ServerLevel serverLevel = helper.getLevel();
-        // Use IdentifierHelper.parse() to get the version-correct Identifier/ResourceLocation
-        var id = IdentifierHelper.parse(potionId);
+        var id = Identifier.parse(potionId);
         net.minecraft.resources.ResourceKey<net.minecraft.world.item.alchemy.Potion> key =
                 net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.POTION, id);
 
@@ -794,11 +790,10 @@ public final class TestHelper {
         }
 
         // Create audit log with test player info
-        // Use IdentifierHelper.keyToString() for version-compatible dimension key access
         SortAuditLog audit = SortAuditLog.startForTest(
                 "TestPlayer",
                 UUID.fromString("00000000-0000-0000-0000-000000000001"),
-                IdentifierHelper.keyToString(level.dimension()),
+                level.dimension().identifier().toString(),
                 absInputPos,
                 radius,
                 false

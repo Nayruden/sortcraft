@@ -4,7 +4,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.gametest.framework.GameTestEnvironments;
 import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
-import net.sortcraft.compat.Id;
+import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,8 +22,8 @@ public final class SortCraftNeoForgeGameTestRegistrar {
             return;
         }
 
-        Holder<TestEnvironmentDefinition> environment =
-                event.registerEnvironment(Id.parse("sortcraft-gametest:sortcraft").unwrap());
+        Holder<TestEnvironmentDefinition<?>> environment =
+                event.registerEnvironment(Identifier.parse("sortcraft-gametest:sortcraft"));
 
         int registered = 0;
         for (SortCraftNeoForgeGameTestCatalog.TestMethodSpec spec : SortCraftNeoForgeGameTestCatalog.tests()) {

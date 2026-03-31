@@ -115,13 +115,13 @@ Put diamonds, iron, gold, or copper in the input chest, then **right-click the `
 
 ## 🔧 Development & Building
 
-SortCraft supports Minecraft **1.21.1, 1.21.4–1.21.6, 1.21.8, 1.21.10–1.21.11** on both Fabric and NeoForge.
+SortCraft supports Minecraft **1.21.1, 1.21.4–1.21.6, 1.21.8, 1.21.10–1.21.11** and **26.1** (on 26.x branch) on both Fabric and NeoForge.
 
 ```powershell
-.\build-all-versions.ps1
+.\gradlew buildAndCollect
 ```
 
-Built JARs are placed in `build/libs/all-versions/`.
+Built JARs are placed in `build/libs/`.
 
 See [Dependency Metadata URLs](#dependency-version-metadata-urls) for version updates.
 
@@ -134,9 +134,7 @@ See [Dependency Metadata URLs](#dependency-version-metadata-urls) for version up
 |------------------------|------------------------------------------------------------------------------------|
 | **Fabric API**         | `https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/maven-metadata.xml` |
 | **Fabric Loader**      | `https://meta.fabricmc.net/v2/versions/loader`                                     |
-| **Fabric Yarn**        | `https://meta.fabricmc.net/v2/versions/yarn/{mc_version}`                          |
 | **NeoForge**           | `https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge`   |
-| **Architectury API**   | `https://maven.architectury.dev/dev/architectury/architectury/maven-metadata.xml`  |
 | **Minecraft Versions** | `https://piston-meta.mojang.com/mc/game/version_manifest_v2.json`                  |
 
 </details>

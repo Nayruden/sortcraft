@@ -7,9 +7,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.resources.Identifier;
 import net.sortcraft.FilterRuleFactory;
 import net.sortcraft.config.ConfigManager;
-import net.sortcraft.compat.Id;
 import net.sortcraft.compat.RegistryHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +48,7 @@ public final class CategoryLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
 
     private static final Map<String, CategoryNode> categories = new ConcurrentHashMap<>();
-    private static final Map<Id, Set<CategoryNode>> itemCategoryMap = new ConcurrentHashMap<>();
+    private static final Map<Identifier, Set<CategoryNode>> itemCategoryMap = new ConcurrentHashMap<>();
     private static volatile RegistryAccess currentRegistries;
     private static volatile CategorySet globalCategorySet;
 
@@ -65,9 +65,9 @@ public final class CategoryLoader {
      * Returns the item-to-category mapping built by {@link #flattenCategories()}.
      * Maps each item ID to the set of categories that include it.
      *
-     * @return Unmodifiable view of the map from item Id to set of matching CategoryNodes
+     * @return Unmodifiable view of the map from item Identifier to set of matching CategoryNodes
      */
-    public static Map<Id, Set<CategoryNode>> getItemCategoryMap() {
+    public static Map<Identifier, Set<CategoryNode>> getItemCategoryMap() {
         return Collections.unmodifiableMap(itemCategoryMap);
     }
 
@@ -323,15 +323,15 @@ public final class CategoryLoader {
         }
     }
 
-    private static Set<Id> flattenCategory(String categoryName) {
+    private static Set<Identifier> flattenCategory(String categoryName) {
         return flattenCategory(categoryName, new HashSet<>());
     }
 
-    private static Set<Id> flattenCategory(String categoryName, Set<String> visitedCategories) {
+    private static Set<Identifier> flattenCategory(String categoryName, Set<String> visitedCategories) {
         CategoryNode category = categories.get(categoryName);
         if (category == null) throw new IllegalArgumentException("Unknown category: " + categoryName);
 
-        Set<Id> items = category.flattenedItemIds;
+        Set<Identifier> items = category.flattenedItemIds;
         if (items != null) return items;
 
         if (visitedCategories.contains(categoryName)) throw new IllegalStateException("Cycle detected: " + categoryName);
@@ -368,7 +368,7 @@ public final class CategoryLoader {
         for (String categoryName : categories.keySet()) flattenCategory(categoryName);
 
         for (CategoryNode category : categories.values()) {
-            for (Id itemId : category.flattenedItemIds)
+            for (Identifier itemId : category.flattenedItemIds)
                 itemCategoryMap.computeIfAbsent(itemId, k -> new HashSet<CategoryNode>()).add(category);
         }
 
@@ -395,11 +395,11 @@ public final class CategoryLoader {
      * This method is useful for diagnostics or when you need to see all
      * potential categories before filter evaluation.
      *
-     * @param itemId The item's Id (e.g., "minecraft:diamond_sword")
+     * @param itemId The item's Identifier (e.g., "minecraft:diamond_sword")
      * @return List of matching categories sorted by priority, or empty list if none match
      * @see #getMatchingCategories(ItemStack) for filter-aware matching
      */
-    public static List<CategoryNode> getMatchingCategoriesNoFilter(Id itemId) {
+    public static List<CategoryNode> getMatchingCategoriesNoFilter(Identifier itemId) {
         Set<CategoryNode> categoriesRaw = itemCategoryMap.get(itemId);
         if (categoriesRaw == null) return new ArrayList<>();
         List<CategoryNode> result = new ArrayList<>(categoriesRaw);
@@ -421,7 +421,7 @@ public final class CategoryLoader {
      * @return List of matching categories sorted by priority, or empty list if none match
      */
     public static List<CategoryNode> getMatchingCategories(ItemStack stack) {
-        Id itemId = Id.ofItem(stack.getItem());
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
         List<CategoryNode> filteredCategories = new ArrayList<>();
         List<CategoryNode> matchedCategories = getMatchingCategoriesNoFilter(itemId);
 
@@ -441,7 +441,7 @@ public final class CategoryLoader {
      */
     private static void expandItemPattern(String pattern, String categoryName, CategoryNode categoryNode) {
         if (pattern.equals("*")) {
-            categoryNode.itemIds.addAll(Id.allItemIds());
+            categoryNode.itemIds.addAll(BuiltInRegistries.ITEM.keySet());
         } else if (isRegexPattern(pattern)) {
             expandRegexPattern(pattern, categoryNode);
         } else if (pattern.startsWith("#")) {
@@ -458,21 +458,21 @@ public final class CategoryLoader {
     private static void expandRegexPattern(String patternStr, CategoryNode categoryNode) {
         String regex = patternStr.substring(1, patternStr.length() - 1);
         Pattern pattern = Pattern.compile(regex);
-        Id.allItemIds().stream()
+        BuiltInRegistries.ITEM.keySet().stream()
                 .filter(itemId -> pattern.matcher(itemId.toString()).find())
                 .forEach(categoryNode.itemIds::add);
     }
 
     private static void expandTag(String tagRef, String categoryName, CategoryNode categoryNode) {
         String tagId = tagRef.substring(1);
-        Id tagLocation = Id.tryParse(tagId);
+        Identifier tagLocation = Identifier.tryParse(tagId);
         if (tagLocation == null) {
             LOGGER.warn("Invalid tag reference '{}' in category '{}'", tagRef, categoryName);
             return;
         }
 
-        TagKey<Item> tagKey = TagKey.create(Registries.ITEM, tagLocation.unwrap());
-        List<Id> matchedItems = Id.allItemIds().stream()
+        TagKey<Item> tagKey = TagKey.create(Registries.ITEM, tagLocation);
+        List<Identifier> matchedItems = BuiltInRegistries.ITEM.keySet().stream()
                 .filter(itemId -> {
                     Item item = RegistryHelper.getItemByKey(itemId);
                     return item != null && BuiltInRegistries.ITEM.wrapAsHolder(item).is(tagKey);
@@ -488,12 +488,12 @@ public final class CategoryLoader {
     }
 
     private static void addExplicitItem(String itemName, String categoryName, CategoryNode categoryNode) {
-        Id id = Id.tryParse(itemName);
+        Identifier id = Identifier.tryParse(itemName);
         if (id == null) {
             LOGGER.warn("Invalid item identifier '{}' in category '{}'", itemName, categoryName);
             return;
         }
-        if (!BuiltInRegistries.ITEM.containsKey(id.unwrap())) {
+        if (!BuiltInRegistries.ITEM.containsKey(id)) {
             LOGGER.warn("Unknown item '{}' in category '{}' - item does not exist in registry", itemName, categoryName);
         }
         categoryNode.itemIds.add(id);
@@ -539,10 +539,10 @@ public final class CategoryLoader {
         }
 
         // Build local item-to-category map
-        Map<Id, Set<CategoryNode>> localItemCategoryMap = new HashMap<>();
+        Map<Identifier, Set<CategoryNode>> localItemCategoryMap = new HashMap<>();
         for (CategoryNode category : localCategories.values()) {
             if (category.flattenedItemIds != null) {
-                for (Id itemId : category.flattenedItemIds) {
+                for (Identifier itemId : category.flattenedItemIds) {
                     localItemCategoryMap.computeIfAbsent(itemId, k -> new HashSet<>()).add(category);
                 }
             }
@@ -580,12 +580,12 @@ public final class CategoryLoader {
     /**
      * Flattens a single category within a local categories map (does not touch global state).
      */
-    private static Set<Id> flattenCategoryIn(String categoryName, Set<String> visitedCategories,
+    private static Set<Identifier> flattenCategoryIn(String categoryName, Set<String> visitedCategories,
                                               Map<String, CategoryNode> sourceCategories) {
         CategoryNode category = sourceCategories.get(categoryName);
         if (category == null) throw new IllegalArgumentException("Unknown category: " + categoryName);
 
-        Set<Id> items = category.flattenedItemIds;
+        Set<Identifier> items = category.flattenedItemIds;
         if (items != null) return items;
 
         if (visitedCategories.contains(categoryName))

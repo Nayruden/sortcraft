@@ -8,7 +8,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.sortcraft.compat.IdentifierHelper;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -55,7 +55,7 @@ final class SophisticatedStorageHelper {
     private SophisticatedStorageHelper() {}
 
     static boolean isBlockAvailable(String blockId) {
-        var id = IdentifierHelper.parse(blockId);
+        var id = Identifier.parse(blockId);
         if (!BuiltInRegistries.BLOCK.containsKey(id)) {
             return false;
         }
@@ -77,7 +77,7 @@ final class SophisticatedStorageHelper {
     }
 
     static void placeStorage(GameTestHelper helper, BlockPos pos, String blockId, Direction facing) {
-        Block block = BuiltInRegistries.BLOCK.getValue(IdentifierHelper.parse(blockId));
+        Block block = BuiltInRegistries.BLOCK.getValue(Identifier.parse(blockId));
         if (block == Blocks.AIR) {
             throw new IllegalStateException("Sophisticated Storage block not available for test: " + blockId);
         }

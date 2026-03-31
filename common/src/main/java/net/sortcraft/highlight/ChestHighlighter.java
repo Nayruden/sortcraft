@@ -17,7 +17,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
-import net.sortcraft.compat.EntityHelper;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.sortcraft.mixin.accessor.BlockDisplayAccessor;
 
 import java.util.*;
@@ -132,7 +132,7 @@ public final class ChestHighlighter {
 
     private static void spawnBlockDisplayMarker(ServerLevel world, BlockPos pos, int durationTicks,
                                                  ChatFormatting color, UUID playerUUID) {
-        Display.BlockDisplay marker = EntityHelper.create(EntityType.BLOCK_DISPLAY, world);
+        Display.BlockDisplay marker = EntityType.BLOCK_DISPLAY.create(world, EntitySpawnReason.COMMAND);
         if (marker == null) return;
 
         // Position at the block's corner (block_display uses corner positioning)

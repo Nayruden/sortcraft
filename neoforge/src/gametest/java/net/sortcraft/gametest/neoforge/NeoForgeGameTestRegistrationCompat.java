@@ -14,17 +14,17 @@ final class NeoForgeGameTestRegistrationCompat {
     private NeoForgeGameTestRegistrationCompat() {}
 
     static void register(RegisterGameTestsEvent event,
-                         Holder<TestEnvironmentDefinition> environment,
+                         Holder<TestEnvironmentDefinition<?>> environment,
                          SortCraftNeoForgeGameTestCatalog.TestMethodSpec spec) {
-        TestData<Holder<TestEnvironmentDefinition>> testData = new TestData<>(
+        TestData<Holder<TestEnvironmentDefinition<?>>> testData = new TestData<>(
                 environment,
-                spec.structureId().unwrap(),
+                spec.structureId(),
                 DEFAULT_MAX_TICKS,
                 DEFAULT_SETUP_TICKS,
                 true,
                 Rotation.NONE
         );
 
-        event.registerTest(spec.testId().unwrap(), new FunctionGameTestInstance(spec.functionKey(), testData));
+        event.registerTest(spec.testId(), new FunctionGameTestInstance(spec.functionKey(), testData));
     }
 }

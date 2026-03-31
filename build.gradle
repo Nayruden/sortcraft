@@ -1,20 +1,13 @@
 plugins {
-    id 'dev.architectury.loom' version "${architectury_loom_version}" apply false
-    id 'architectury-plugin' version '3.4-SNAPSHOT'
-    id 'com.gradleup.shadow' version '8.3.6' apply false
+    id 'net.fabricmc.fabric-loom' version "${fabric_loom_version}" apply false
+    id 'net.neoforged.moddev' version "${neoforge_moddev_version}" apply false
+    id 'com.gradleup.shadow' version '8.3.10' apply false
 }
 
-// Multi-version support: Load version-specific properties
-// Use -Pmc_version=1.21.4 to build for a specific version
-// Canonical version list is defined in versions.json
-def versionsConfig = new groovy.json.JsonSlurper().parse(file('versions.json'))
-def supportedVersions = versionsConfig.supported as List<String>
-def targetVersion = project.hasProperty('mc_version') ? project.property('mc_version') : versionsConfig['default']
-
-// Load version-specific properties from versions directory
-def versionPropsFile = file("versions/${targetVersion}/gradle.properties")
+// Load version-specific properties from versions/26.1
+def versionPropsFile = file("versions/26.1/gradle.properties")
 if (!versionPropsFile.exists()) {
-    throw new GradleException("Version properties file not found: ${versionPropsFile}. Available versions: ${supportedVersions.join(', ')}")
+    throw new GradleException("Version properties file not found: ${versionPropsFile}")
 }
 
 def versionProps = new Properties()
@@ -22,26 +15,12 @@ versionPropsFile.withInputStream { versionProps.load(it) }
 versionProps.each { key, value ->
     ext.set(key, value)
 }
-println "Building for Minecraft ${targetVersion}"
 
-// Parse version for comparison — centralized for all subprojects
-def versionParts = targetVersion.split('\\.')
-def mcMajor = versionParts[0].toInteger()
-def mcMinor = versionParts[1].toInteger()
-def mcPatch = versionParts.length > 2 ? versionParts[2].toInteger() : 0
-ext.mcVersionCode = mcMajor * 10000 + mcMinor * 100 + mcPatch
-ext.targetMcVersion = targetVersion
-ext.supportedVersions = supportedVersions
-ext.isVersion1_21_4OrLater = (mcMinor > 21) || (mcMinor == 21 && mcPatch >= 4)
-ext.isVersion1_21_5OrLater = (mcMinor > 21) || (mcMinor == 21 && mcPatch >= 5)
-ext.isVersion1_21_10OrLater = (mcMinor > 21) || (mcMinor == 21 && mcPatch >= 10)
-ext.isVersion1_21_11OrLater = (mcMinor > 21) || (mcMinor == 21 && mcPatch >= 11)
-ext.gametestSupported = ext.isVersion1_21_5OrLater
-println "MC Version Code: ${ext.mcVersionCode}, isVersion1_21_4OrLater: ${ext.isVersion1_21_4OrLater}"
+ext.targetMcVersion = '26.1'
+ext.javaVersion = 25
+ext.gametestSupported = true
 
-architectury {
-    minecraft = rootProject.minecraft_version
-}
+println "Building for Minecraft 26.1"
 
 allprojects {
     group = rootProject.mod_group
@@ -49,9 +28,9 @@ allprojects {
     version = "${rootProject.mod_version}+${rootProject.minecraft_version}"
 }
 
-subprojects {
-    apply plugin: 'dev.architectury.loom'
-    apply plugin: 'architectury-plugin'
+// Configure common and fabric modules with Fabric Loom
+configure([project(':common'), project(':fabric')]) {
+    apply plugin: 'net.fabricmc.fabric-loom'
     apply plugin: 'maven-publish'
 
     base {
@@ -60,28 +39,49 @@ subprojects {
 
     repositories {
         mavenCentral()
-        maven { url = 'https://maven.architectury.dev/' }
         maven { url = 'https://maven.fabricmc.net/' }
         maven { url = 'https://maven.neoforged.net/releases/' }
     }
 
-    loom {
-        silentMojangMappingsLicense()
-    }
-
+    // MC 26+ is unobfuscated — no mappings or remap needed
     dependencies {
         minecraft "com.mojang:minecraft:${rootProject.minecraft_version}"
-        mappings loom.officialMojangMappings()
     }
 
     java {
-        toolchain.languageVersion = JavaLanguageVersion.of(21)
+        toolchain.languageVersion = JavaLanguageVersion.of(rootProject.ext.javaVersion)
         withSourcesJar()
     }
 
     tasks.withType(JavaCompile).configureEach {
         it.options.encoding = 'UTF-8'
-        it.options.release = 21
+        it.options.release = rootProject.ext.javaVersion
+    }
+}
+
+// Configure NeoForge module with ModDevGradle
+configure(project(':neoforge')) {
+    apply plugin: 'net.neoforged.moddev'
+    apply plugin: 'maven-publish'
+
+    base {
+        archivesName = "${rootProject.archives_base_name}-${project.name}"
+    }
+
+    repositories {
+        mavenCentral()
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://maven.neoforged.net/releases/' }
+    }
+
+    java {
+        toolchain.languageVersion = JavaLanguageVersion.of(rootProject.ext.javaVersion)
+        withSourcesJar()
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        it.options.encoding = 'UTF-8'
+        it.options.release = rootProject.ext.javaVersion
     }
 }
 
@@ -114,160 +114,10 @@ tasks.register('buildAndCollect') {
     }
 }
 
-// Task to build all supported Minecraft versions sequentially
-tasks.register('buildAllVersions') {
-    group = 'build'
-    description = 'Builds all supported Minecraft versions sequentially'
-
-    doLast {
-        def versions = ext.supportedVersions
-        def collectDir = file("${rootProject.layout.buildDirectory.get().asFile}/libs/all-versions")
-        collectDir.mkdirs()
-
-        def failed = []
-        versions.each { ver ->
-            println ""
-            println "=========================================="
-            println "Building for Minecraft ${ver}"
-            println "=========================================="
-            def gradlew = org.gradle.internal.os.OperatingSystem.current().isWindows()
-                ? "${rootDir}/gradlew.bat" : "${rootDir}/gradlew"
-            def result = project.exec {
-                executable = gradlew
-                args = ['clean', 'build', "-Pmc_version=${ver}"]
-                ignoreExitValue = true
-            }
-            if (result.exitValue != 0) {
-                failed << ver
-                println "ERROR: Build failed for Minecraft ${ver}"
-            } else {
-                // Collect JARs
-                ['fabric', 'neoforge'].each { loader ->
-                    def libsDir = file("${loader}/build/libs")
-                    if (libsDir.exists()) {
-                        libsDir.eachFileMatch(~".*\\+${ver}\\.jar") { jar ->
-                            if (!jar.name.contains('-sources') && !jar.name.contains('-dev') && !jar.name.contains('-shadow')) {
-                                project.copy {
-                                    from jar
-                                    into collectDir
-                                }
-                                println "  Collected: ${jar.name}"
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        println ""
-        println "=========================================="
-        if (failed.isEmpty()) {
-            println "All ${versions.size()} versions built successfully!"
-        } else {
-            println "Build complete with ${failed.size()} failure(s): ${failed.join(', ')}"
-        }
-        println "Output JARs in: ${collectDir}"
-        println "=========================================="
-
-        if (!failed.isEmpty()) {
-            throw new GradleException("Build failed for versions: ${failed.join(', ')}")
-        }
-    }
-}
-
-// Task to run GameTests for the current MC version on all supported loaders
+// Task to run GameTests on all supported loaders
 tasks.register('runGameTests') {
     group = 'verification'
-    description = 'Runs GameTests for the current MC version on all supported loaders'
+    description = 'Runs GameTests on all supported loaders'
 
-    def supported = rootProject.ext.gametestSupported
-    def mcVer = rootProject.ext.targetMcVersion
-
-    if (supported) {
-        dependsOn ':fabric:runGameTest', ':neoforge:runGameTestServer'
-    }
-
-    doLast {
-        if (!supported) {
-            println "GameTests not supported for MC ${mcVer} (requires >= 1.21.5)"
-        }
-    }
-}
-
-// Convenience task: run all GameTests across all supported Minecraft versions.
-// Third-party mods are wired at configuration time, so each version spawns a
-// new Gradle invocation with the flag enabled.  Only versions that support
-// GameTests (>= gametestMinVersion from versions.json) are tested.
-tasks.register('runGameTestsAll') {
-    group = 'verification'
-    description = 'Runs all GameTests across all supported MC versions (including third-party mod integration tests)'
-
-    doLast {
-        def versionsCfg = new groovy.json.JsonSlurper().parse(file('versions.json'))
-        def allVersions = versionsCfg.supported as List<String>
-        def minVersion = versionsCfg.gametestMinVersion as String
-
-        // Parse the minimum gametest version for comparison
-        def minParts = minVersion.split('\\.')
-        def minCode = minParts[0].toInteger() * 10000 + minParts[1].toInteger() * 100 +
-                (minParts.length > 2 ? minParts[2].toInteger() : 0)
-
-        // Filter to versions that support GameTests
-        def gametestVersions = allVersions.findAll { ver ->
-            def parts = ver.split('\\.')
-            def code = parts[0].toInteger() * 10000 + parts[1].toInteger() * 100 +
-                    (parts.length > 2 ? parts[2].toInteger() : 0)
-            code >= minCode
-        }
-
-        if (gametestVersions.isEmpty()) {
-            println "No supported versions have GameTest support (requires >= ${minVersion})"
-            return
-        }
-
-        // If a specific version was requested, only test that one
-        if (project.hasProperty('mc_version')) {
-            def requested = project.property('mc_version')
-            if (!gametestVersions.contains(requested)) {
-                println "GameTests not supported for MC ${requested} (requires >= ${minVersion})"
-                return
-            }
-            gametestVersions = [requested]
-        }
-
-        def gradlew = org.gradle.internal.os.OperatingSystem.current().isWindows()
-                ? "${rootDir}/gradlew.bat" : "${rootDir}/gradlew"
-
-        def failed = []
-        def passed = []
-        gametestVersions.each { ver ->
-            println ""
-            println "=========================================="
-            println "Running GameTests for Minecraft ${ver}"
-            println "=========================================="
-            def result = project.exec {
-                executable = gradlew
-                args = ['runGameTests', '-PenableThirdPartyGametestMods=true', "-Pmc_version=${ver}"]
-                ignoreExitValue = true
-            }
-            if (result.exitValue != 0) {
-                failed << ver
-                println "ERROR: GameTests failed for Minecraft ${ver}"
-            } else {
-                passed << ver
-                println "GameTests passed for Minecraft ${ver}"
-            }
-        }
-
-        println ""
-        println "=========================================="
-        println "GameTest Results: ${passed.size()} passed, ${failed.size()} failed out of ${gametestVersions.size()} versions"
-        if (!passed.isEmpty()) println "  Passed: ${passed.join(', ')}"
-        if (!failed.isEmpty()) println "  Failed: ${failed.join(', ')}"
-        println "=========================================="
-
-        if (!failed.isEmpty()) {
-            throw new GradleException("GameTests failed for versions: ${failed.join(', ')}")
-        }
-    }
+    dependsOn ':fabric:runGameTest', ':neoforge:runGameTestServer'
 }

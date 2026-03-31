@@ -6,6 +6,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.BundleContents;
+import net.sortcraft.compat.BundleHelper;
 import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.block.WallSignBlock;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
@@ -14,9 +15,10 @@ import net.sortcraft.audit.AuditConfig;
 import net.sortcraft.audit.SortAuditLog;
 import net.sortcraft.category.CategoryNode;
 import net.sortcraft.category.CategorySet;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.sortcraft.config.ConfigManager;
 import net.sortcraft.command.CommandHandler;
-import net.sortcraft.compat.Id;
 import net.sortcraft.container.ChestRef;
 import net.sortcraft.container.ContainerHelper;
 import net.sortcraft.container.SortContext;
@@ -119,7 +121,7 @@ public final class SortingEngine {
 
                     // Use the uniform item's categories, but record the actual container in the audit
                     List<CategoryNode> cats = context.getCategorySet().getMatchingCategoriesNoFilter(uniformCheck.uniformItemId());
-                    Id containerItemId = Id.ofItem(stack.getItem());
+                    Identifier containerItemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
 
                     // Create uniform contents info for audit
                     net.sortcraft.audit.UniformContainerContents uniformContents =
@@ -144,9 +146,7 @@ public final class SortingEngine {
 
                 if (!preview) {
                     if (ContainerHelper.isBundle(stack)) {
-                        BundleContents bundleContents;
-                        if (innerResults.leftovers.isEmpty()) bundleContents = new BundleContents(List.of());
-                        else bundleContents = new BundleContents(innerResults.leftovers);
+                        BundleContents bundleContents = BundleHelper.create(innerResults.leftovers);
                         stack.set(DataComponents.BUNDLE_CONTENTS, bundleContents);
                     } else {
                         NonNullList<ItemStack> restored = NonNullList.withSize(ContainerHelper.SHULKER_BOX_SIZE, ItemStack.EMPTY);
@@ -164,7 +164,7 @@ public final class SortingEngine {
                 }
             }
 
-            Id itemId = Id.ofItem(stack.getItem());
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
             List<CategoryNode> cats = context.getCategorySet().getMatchingCategories(stack);
             sortSingleStack(context, world, preview, stack, cats, itemId, results, audit);
         }
@@ -179,7 +179,7 @@ public final class SortingEngine {
      * @param totalItemCount  Total number of items across all stacks
      */
     private record UniformContainerCheckResult(
-            Id uniformItemId,
+            Identifier uniformItemId,
             int stackCount,
             int totalItemCount
     ) {
@@ -193,13 +193,13 @@ public final class SortingEngine {
      * Returns detailed information about the contents for audit purposes.
      */
     private static UniformContainerCheckResult checkUniformContainerContents(Iterable<ItemStack> stacks, int threshold) {
-        Id singleItem = null;
+        Identifier singleItem = null;
         int stackCount = 0;
         int totalItemCount = 0;
 
         for (ItemStack stack : stacks) {
             if (stack.isEmpty()) continue;
-            Id itemId = Id.ofItem(stack.getItem());
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
 
             if (singleItem == null) {
                 singleItem = itemId;
@@ -218,13 +218,13 @@ public final class SortingEngine {
     }
 
     private static void sortSingleStack(SortContext context, ServerLevel world, boolean preview, ItemStack stack,
-                                        List<CategoryNode> cats, Id itemId, SortingResults results,
+                                        List<CategoryNode> cats, Identifier itemId, SortingResults results,
                                         SortAuditLog audit) {
         sortSingleStack(context, world, preview, stack, cats, itemId, results, audit, null);
     }
 
     private static void sortSingleStack(SortContext context, ServerLevel world, boolean preview, ItemStack stack,
-                                        List<CategoryNode> cats, Id itemId, SortingResults results,
+                                        List<CategoryNode> cats, Identifier itemId, SortingResults results,
                                         SortAuditLog audit, net.sortcraft.audit.UniformContainerContents uniformContents) {
         if (cats.isEmpty()) {
             LOGGER.debug("[sortinput] No categories found for item: {}", itemId);

@@ -4,7 +4,8 @@ import net.minecraft.world.item.Items;
 import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.category.CategoryNode;
 import net.sortcraft.category.CategorySet;
-import net.sortcraft.compat.Id;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -75,7 +76,7 @@ public class IsolatedCategoryLoadingTest extends SortCraftBootstrapTestBase {
         assertNotNull(set);
 
         // Weapons should include swords' items via flattening
-        Id swordId = Id.ofItem(Items.DIAMOND_SWORD);
+        Identifier swordId = BuiltInRegistries.ITEM.getKey(Items.DIAMOND_SWORD);
         List<CategoryNode> matches = set.getMatchingCategoriesNoFilter(swordId);
         assertTrue(matches.size() >= 2, "Expected diamond_sword to match both swords and weapons");
     }
@@ -122,9 +123,9 @@ public class IsolatedCategoryLoadingTest extends SortCraftBootstrapTestBase {
             """);
         assertNotNull(set);
 
-        assertFalse(set.getMatchingCategoriesNoFilter(Id.ofItem(Items.DIAMOND)).isEmpty());
-        assertFalse(set.getMatchingCategoriesNoFilter(Id.ofItem(Items.EMERALD)).isEmpty());
-        assertTrue(set.getMatchingCategoriesNoFilter(Id.ofItem(Items.IRON_INGOT)).isEmpty());
+        assertFalse(set.getMatchingCategoriesNoFilter(BuiltInRegistries.ITEM.getKey(Items.DIAMOND)).isEmpty());
+        assertFalse(set.getMatchingCategoriesNoFilter(BuiltInRegistries.ITEM.getKey(Items.EMERALD)).isEmpty());
+        assertTrue(set.getMatchingCategoriesNoFilter(BuiltInRegistries.ITEM.getKey(Items.IRON_INGOT)).isEmpty());
     }
 
     @Test
@@ -143,8 +144,8 @@ public class IsolatedCategoryLoadingTest extends SortCraftBootstrapTestBase {
         assertNotNull(set1);
         assertNotNull(set2);
 
-        Id swordId = Id.ofItem(Items.DIAMOND_SWORD);
-        Id pickaxeId = Id.ofItem(Items.DIAMOND_PICKAXE);
+        Identifier swordId = BuiltInRegistries.ITEM.getKey(Items.DIAMOND_SWORD);
+        Identifier pickaxeId = BuiltInRegistries.ITEM.getKey(Items.DIAMOND_PICKAXE);
 
         // set1 should only know about swords
         assertFalse(set1.getMatchingCategoriesNoFilter(swordId).isEmpty());

@@ -10,9 +10,9 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.sortcraft.compat.Id;
 import net.sortcraft.compat.RegistryHelper;
 import net.sortcraft.config.ConfigManager;
 import net.sortcraft.container.ContainerHelper;
@@ -45,8 +45,8 @@ public final class WhereIsCommand {
         BlockPos playerPos = player.blockPosition();
         String itemName = StringArgumentType.getString(context, "item");
 
-        Id itemId = Id.tryParse(itemName);
-        if (itemId == null || !BuiltInRegistries.ITEM.containsKey(itemId.unwrap())) {
+        Identifier itemId = Identifier.tryParse(itemName);
+        if (itemId == null || !BuiltInRegistries.ITEM.containsKey(itemId)) {
             source.sendFailure(Component.literal("Unknown item: " + itemName));
             return 0;
         }

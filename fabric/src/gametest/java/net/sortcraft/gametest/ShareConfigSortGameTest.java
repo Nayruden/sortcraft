@@ -12,7 +12,7 @@ import net.sortcraft.audit.SortAuditEntry;
 import net.sortcraft.audit.SortAuditLog;
 import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.category.CategorySet;
-import net.sortcraft.compat.IdentifierHelper;
+
 import net.sortcraft.container.ChestRef;
 import net.sortcraft.container.ContainerHelper;
 import net.sortcraft.container.SortContext;
@@ -99,7 +99,7 @@ public class ShareConfigSortGameTest {
 
         SortAuditLog audit = SortAuditLog.startForTest(
                 "TestPlayer", UUID.fromString("00000000-0000-0000-0000-000000000001"),
-                IdentifierHelper.keyToString(level.dimension()), absInputPos, 10, false
+                level.dimension().identifier().toString(), absInputPos, 10, false
         );
         audit.setShareId("AbCd1234");
 

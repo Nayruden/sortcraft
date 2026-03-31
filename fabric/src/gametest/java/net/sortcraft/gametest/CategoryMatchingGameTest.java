@@ -9,7 +9,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.category.CategoryNode;
-import net.sortcraft.compat.Id;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 
@@ -128,7 +129,7 @@ public class CategoryMatchingGameTest {
     public void itemCategoryMapIsPopulated(GameTestHelper helper) {
         TestHelper.setupCategories(TestCategories.SWORDS_REGEX);
 
-        Id diamondSwordId = Id.ofItem(Items.DIAMOND_SWORD);
+        Identifier diamondSwordId = BuiltInRegistries.ITEM.getKey(Items.DIAMOND_SWORD);
 
         if (!CategoryLoader.getItemCategoryMap().containsKey(diamondSwordId)) {
             helper.fail(Component.literal("Item category map should contain diamond_sword"));
