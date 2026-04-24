@@ -4,8 +4,18 @@ plugins {
     id 'com.gradleup.shadow' version '8.3.10' apply false
 }
 
-// Load version-specific properties from versions/26.1
-def versionPropsFile = file("versions/26.1/gradle.properties")
+// Multi-version support: Load version-specific properties
+// Use -Pmc_version=26.1.1 to build for a specific version
+// Canonical version list is defined in versions.json
+def versionsConfig = new groovy.json.JsonSlurper().parse(file('versions.json'))
+def supportedVersions = versionsConfig.supported as List<String>
+def targetVersion = project.hasProperty('mc_version') ? project.property('mc_version') : versionsConfig['default']
+
+if (!supportedVersions.contains(targetVersion)) {
+    throw new GradleException("Unsupported mc_version: ${targetVersion}. Available versions: ${supportedVersions.join(', ')}")
+}
+
+def versionPropsFile = file("versions/${targetVersion}/gradle.properties")
 if (!versionPropsFile.exists()) {
     throw new GradleException("Version properties file not found: ${versionPropsFile}")
 }
@@ -16,11 +26,12 @@ versionProps.each { key, value ->
     ext.set(key, value)
 }
 
-ext.targetMcVersion = '26.1'
+ext.targetMcVersion = targetVersion
+ext.supportedVersions = supportedVersions
 ext.javaVersion = 25
 ext.gametestSupported = true
 
-println "Building for Minecraft 26.1"
+println "Building for Minecraft ${targetVersion}"
 
 allprojects {
     group = rootProject.mod_group
@@ -121,3 +132,65 @@ tasks.register('runGameTests') {
 
     dependsOn ':fabric:runGameTest', ':neoforge:runGameTestServer'
 }
+
+// Task to build all supported Minecraft versions sequentially
+tasks.register('buildAllVersions') {
+    group = 'build'
+    description = 'Builds all supported Minecraft versions sequentially'
+
+    doLast {
+        def versions = ext.supportedVersions
+        def collectDir = file("${rootProject.layout.buildDirectory.get().asFile}/libs/all-versions")
+        collectDir.mkdirs()
+
+        def failed = []
+        versions.each { ver ->
+            println ""
+            println "=========================================="
+            println "Building for Minecraft ${ver}"
+            println "=========================================="
+            def gradlew = org.gradle.internal.os.OperatingSystem.current().isWindows()
+                ? "${rootDir}/gradlew.bat" : "${rootDir}/gradlew"
+            def result = project.exec {
+                executable = gradlew
+                args = ['clean', 'build', "-Pmc_version=${ver}"]
+                ignoreExitValue = true
+            }
+            if (result.exitValue != 0) {
+                failed << ver
+                println "ERROR: Build failed for Minecraft ${ver}"
+            } else {
+                // Collect JARs
+                ['fabric', 'neoforge'].each { loader ->
+                    def libsDir = file("${loader}/build/libs")
+                    if (libsDir.exists()) {
+                        libsDir.eachFileMatch(~".*\\+${ver}\\.jar") { jar ->
+                            if (!jar.name.contains('-sources') && !jar.name.contains('-dev') && !jar.name.contains('-shadow')) {
+                                project.copy {
+                                    from jar
+                                    into collectDir
+                                }
+                                println "  Collected: ${jar.name}"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        println ""
+        println "=========================================="
+        if (failed.isEmpty()) {
+            println "All ${versions.size()} versions built successfully!"
+        } else {
+            println "Build complete with ${failed.size()} failure(s): ${failed.join(', ')}"
+        }
+        println "Output JARs in: ${collectDir}"
+        println "=========================================="
+
+        if (!failed.isEmpty()) {
+            throw new GradleException("Build failed for versions: ${failed.join(', ')}")
+        }
+    }
+}
+

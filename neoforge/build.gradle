@@ -100,12 +100,24 @@ dependencies {
     // Common module
     gametestImplementation project(path: ':common')
 
-    // Sophisticated Storage + Core for integration tests (NeoForge 26.1)
-    // JARs live in third-party/ which is .gitignored, so guard with .exists()
-    def ssCoreJar = rootProject.file('third-party/sophisticatedcore-26.1-1.4.11.1563.jar')
-    def ssJar = rootProject.file('third-party/neoforge-sophisticatedstorage-26.1-1.5.36.1543.jar')
-    if (ssCoreJar.exists() && ssJar.exists()) {
+    // Sophisticated Storage + Core for integration tests.
+    // JARs live in third-party/ (.gitignored) and must match the target MC version
+    // because NeoForge removes/renames classes between 26.1.x patches.
+    // Filenames vary across releases; match by exact MC version segment.
+    def thirdParty = rootProject.file('third-party')
+    def targetVer = rootProject.minecraft_version
+    def ssCoreJar = null
+    def ssJar = null
+    if (thirdParty.isDirectory()) {
+        def quoted = java.util.regex.Pattern.quote(targetVer)
+        thirdParty.eachFileMatch(~/sophisticatedcore-${quoted}-.*\.jar/) { ssCoreJar = it }
+        thirdParty.eachFileMatch(~/.*sophisticatedstorage-${quoted}-.*\.jar/) { ssJar = it }
+    }
+    if (ssCoreJar != null && ssJar != null) {
         gametestRuntimeOnly files(ssCoreJar, ssJar)
+        logger.lifecycle("Third-party gametest mods for MC ${targetVer}: ${ssCoreJar.name}, ${ssJar.name}")
+    } else {
+        logger.lifecycle("No Sophisticated Storage JARs matching MC ${targetVer} found in third-party/ — integration tests requiring them will be skipped")
     }
 }
 
