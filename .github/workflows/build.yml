@@ -2,6 +2,9 @@ name: Build
 
 on: [push, pull_request]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # Read supported versions from versions.json so the matrix is always in sync
   setup:
