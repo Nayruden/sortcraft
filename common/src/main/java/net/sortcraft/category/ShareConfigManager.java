@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -14,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.zip.Inflater;
@@ -42,6 +44,11 @@ public final class ShareConfigManager {
     private static final Pattern SHARE_ID_PATTERN = Pattern.compile("^[A-Za-z0-9_-]{8}$");
     private static final String API_BASE_URL = "https://categories.craftlabs.nexus/api/share/";
     private static final Duration HTTP_TIMEOUT = Duration.ofSeconds(10);
+
+    /** Reject compressed payloads larger than this before attempting to inflate. */
+    private static final int MAX_COMPRESSED_BYTES = 1024 * 1024; // 1 MiB
+    /** Cap on decompressed output to guard against zlib decompression bombs. */
+    private static final int MAX_DECOMPRESSED_BYTES = 8 * 1024 * 1024; // 8 MiB
 
     /** Reusable HTTP client — avoids leaking threads/selectors on every download. */
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
@@ -179,7 +186,7 @@ public final class ShareConfigManager {
                     .build();
 
             LOGGER.debug("Downloading share config '{}' from CategoryCraft API", shareId);
-            HttpResponse<byte[]> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            HttpResponse<InputStream> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
             int status = response.statusCode();
             if (status == 404) {
@@ -191,8 +198,29 @@ public final class ShareConfigManager {
                 return null;
             }
 
-            byte[] compressed = response.body();
-            if (compressed == null || compressed.length == 0) {
+            // Reject oversized responses up front when the server advertises Content-Length,
+            // so we never allocate buffers for payloads we already know we will discard.
+            Optional<String> contentLengthHeader = response.headers().firstValue("Content-Length");
+            if (contentLengthHeader.isPresent()) {
+                try {
+                    long contentLength = Long.parseLong(contentLengthHeader.get());
+                    if (contentLength > MAX_COMPRESSED_BYTES) {
+                        LOGGER.error("Share config '{}' response too large (Content-Length {} bytes, limit {})",
+                                shareId, contentLength, MAX_COMPRESSED_BYTES);
+                        return null;
+                    }
+                } catch (NumberFormatException ignored) {
+                    // Malformed Content-Length: fall through to the streaming cap below.
+                }
+            }
+
+            byte[] compressed = readCapped(response.body(), MAX_COMPRESSED_BYTES);
+            if (compressed == null) {
+                LOGGER.error("Share config '{}' response exceeded compressed-byte limit of {}",
+                        shareId, MAX_COMPRESSED_BYTES);
+                return null;
+            }
+            if (compressed.length == 0) {
                 LOGGER.error("Empty response body for share config '{}'", shareId);
                 return null;
             }
@@ -209,19 +237,55 @@ public final class ShareConfigManager {
     }
 
     /**
+     * Reads up to {@code maxBytes} from {@code body}, closing the stream when done.
+     * Returns {@code null} if the stream produces more than {@code maxBytes}, so the
+     * caller can reject oversized payloads without buffering them in full.
+     */
+    private static byte[] readCapped(InputStream body, int maxBytes) throws IOException {
+        try (InputStream in = body) {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int total = 0;
+            int n;
+            while ((n = in.read(buffer)) != -1) {
+                if (total + n > maxBytes) {
+                    return null;
+                }
+                out.write(buffer, 0, n);
+                total += n;
+            }
+            return out.toByteArray();
+        }
+    }
+
+    /**
      * Decompresses zlib-wrapped data (standard deflate with zlib header).
      */
     private static String decompressZlib(byte[] compressed, String shareId) {
         Inflater inflater = new Inflater(); // default = zlib-wrapped (not raw)
         try {
             inflater.setInput(compressed);
-            ByteArrayOutputStream out = new ByteArrayOutputStream(compressed.length * 4);
+            ByteArrayOutputStream out = new ByteArrayOutputStream(Math.min(compressed.length * 4, MAX_DECOMPRESSED_BYTES));
             byte[] buffer = new byte[4096];
 
             while (!inflater.finished()) {
                 int count = inflater.inflate(buffer);
-                if (count == 0 && inflater.needsInput()) {
-                    LOGGER.error("Incomplete zlib data for share config '{}'", shareId);
+                if (count == 0) {
+                    // No progress: fail fast rather than spinning. All input was supplied
+                    // up front, so needsInput() implies truncation; needsDictionary() is
+                    // unsupported; any other zero return means the stream is stuck.
+                    if (inflater.needsDictionary()) {
+                        LOGGER.error("Share config '{}' requires a preset zlib dictionary (unsupported)", shareId);
+                    } else if (inflater.needsInput()) {
+                        LOGGER.error("Incomplete zlib data for share config '{}'", shareId);
+                    } else {
+                        LOGGER.error("Zlib decompression stalled for share config '{}'", shareId);
+                    }
+                    return null;
+                }
+                if (out.size() + count > MAX_DECOMPRESSED_BYTES) {
+                    LOGGER.error("Share config '{}' exceeded decompression limit of {} bytes (possible zlib bomb)",
+                            shareId, MAX_DECOMPRESSED_BYTES);
                     return null;
                 }
                 out.write(buffer, 0, count);
