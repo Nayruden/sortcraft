@@ -20,49 +20,10 @@ public final class PermissionHelper {
      * @return true if the source has the required permission level
      */
     public static boolean hasOpLevel(CommandSourceStack source, int level) {
-        // In 1.21.11+, use the new permissions API
-        // Map legacy int levels to Permissions constants
-        // Note: Only COMMANDS_MODERATOR is commonly used; for other levels we approximate
-        return switch (level) {
-            case 0 -> true; // Everyone has level 0
-            case 1, 2 -> source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR);
-            case 3, 4 -> source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR);
-            default -> level <= 0 || source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR);
-        };
-    }
-
-    /**
-     * Check if the command source has moderator permissions (level 2).
-     * This is the most common permission check for operator commands.
-     *
-     * @param source The command source to check
-     * @return true if the source has moderator permissions
-     */
-    public static boolean isModerator(CommandSourceStack source) {
-        return source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR);
-    }
-
-    /**
-     * Check if the command source has admin permissions (level 3).
-     * In 1.21.11+, we use COMMANDS_MODERATOR as the closest equivalent.
-     *
-     * @param source The command source to check
-     * @return true if the source has admin permissions
-     */
-    public static boolean isAdmin(CommandSourceStack source) {
-        // Use COMMANDS_MODERATOR as the closest available permission level
-        return source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR);
-    }
-
-    /**
-     * Check if the command source has owner permissions (level 4).
-     * In 1.21.11+, we use COMMANDS_MODERATOR as the closest equivalent.
-     *
-     * @param source The command source to check
-     * @return true if the source has owner permissions
-     */
-    public static boolean isOwner(CommandSourceStack source) {
-        // Use COMMANDS_MODERATOR as the closest available permission level
+        // Level 0 is available to everyone. All operator-gated SortCraft commands
+        // use level 2, which maps to COMMANDS_MODERATOR — the only operator-tier
+        // permission the 1.21.11+ API exposes for this mod's needs.
+        if (level <= 0) return true;
         return source.permissions().hasPermission(Permissions.COMMANDS_MODERATOR);
     }
 }

@@ -43,6 +43,11 @@ public final class ShareConfigManager {
     private static final String API_BASE_URL = "https://categories.craftlabs.nexus/api/share/";
     private static final Duration HTTP_TIMEOUT = Duration.ofSeconds(10);
 
+    /** Reject compressed payloads larger than this before attempting to inflate. */
+    private static final int MAX_COMPRESSED_BYTES = 1024 * 1024; // 1 MiB
+    /** Cap on decompressed output to guard against zlib decompression bombs. */
+    private static final int MAX_DECOMPRESSED_BYTES = 8 * 1024 * 1024; // 8 MiB
+
     /** Reusable HTTP client — avoids leaking threads/selectors on every download. */
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
             .connectTimeout(HTTP_TIMEOUT)
@@ -196,6 +201,11 @@ public final class ShareConfigManager {
                 LOGGER.error("Empty response body for share config '{}'", shareId);
                 return null;
             }
+            if (compressed.length > MAX_COMPRESSED_BYTES) {
+                LOGGER.error("Share config '{}' response too large ({} bytes, limit {})",
+                        shareId, compressed.length, MAX_COMPRESSED_BYTES);
+                return null;
+            }
 
             return decompressZlib(compressed, shareId);
         } catch (InterruptedException e) {
@@ -215,13 +225,18 @@ public final class ShareConfigManager {
         Inflater inflater = new Inflater(); // default = zlib-wrapped (not raw)
         try {
             inflater.setInput(compressed);
-            ByteArrayOutputStream out = new ByteArrayOutputStream(compressed.length * 4);
+            ByteArrayOutputStream out = new ByteArrayOutputStream(Math.min(compressed.length * 4, MAX_DECOMPRESSED_BYTES));
             byte[] buffer = new byte[4096];
 
             while (!inflater.finished()) {
                 int count = inflater.inflate(buffer);
                 if (count == 0 && inflater.needsInput()) {
                     LOGGER.error("Incomplete zlib data for share config '{}'", shareId);
+                    return null;
+                }
+                if (out.size() + count > MAX_DECOMPRESSED_BYTES) {
+                    LOGGER.error("Share config '{}' exceeded decompression limit of {} bytes (possible zlib bomb)",
+                            shareId, MAX_DECOMPRESSED_BYTES);
                     return null;
                 }
                 out.write(buffer, 0, count);
