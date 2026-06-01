@@ -16,7 +16,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - id: set-matrix
         run: |
           echo "matrix=$(jq -c '{mc_version: .supported}' versions.json)" >> "$GITHUB_OUTPUT"
@@ -30,7 +30,7 @@ jobs:
       matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
