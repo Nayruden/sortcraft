@@ -4,6 +4,12 @@ All notable changes to SortCraft will be documented in this file.
 
 ---
 
+## [1.3.2] - 2026-06-19
+
+### Added
+
+- **Minecraft 26.2 support** — SortCraft now works on Minecraft 26.2
+
 ## [1.3.1] - 2026-04-24
 
 ### Added

@@ -4,6 +4,21 @@ loom {
     // No remapping needed for unobfuscated 26.x
 }
 
+// Version-specific source set. Minecraft 26.2 introduced breaking API changes
+// relative to 26.1.x (see net.sortcraft.compat.HighlightCompat), so the matching
+// compat implementation is compiled in based on the target version.
+sourceSets {
+    main {
+        java {
+            if (rootProject.ext.isVersion26_2OrLater) {
+                srcDir 'src/main/java-26.2'
+            } else {
+                srcDir 'src/main/java-26.1'
+            }
+        }
+    }
+}
+
 dependencies {
     // SnakeYAML for config parsing
     implementation "org.yaml:snakeyaml:${rootProject.snakeyaml_version}"

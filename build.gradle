@@ -31,6 +31,22 @@ ext.supportedVersions = supportedVersions
 ext.javaVersion = 25
 ext.gametestSupported = true
 
+// Numeric version comparison (e.g. "26.1.2" vs "26.2") for selecting
+// version-specific source sets where Minecraft's API diverges between releases.
+def compareMcVersions = { String a, String b ->
+    def pa = a.split('\\.').collect { it.toInteger() }
+    def pb = b.split('\\.').collect { it.toInteger() }
+    for (int i = 0; i < Math.max(pa.size(), pb.size()); i++) {
+        int x = i < pa.size() ? pa[i] : 0
+        int y = i < pb.size() ? pb[i] : 0
+        if (x != y) return x <=> y
+    }
+    return 0
+}
+// MC 26.2 introduced breaking API changes (stained glass ColorCollection,
+// EntityTypes, PlayerTeam#setColor). Source set is selected in common/build.gradle.
+ext.isVersion26_2OrLater = compareMcVersions(targetVersion, '26.2') >= 0
+
 println "Building for Minecraft ${targetVersion}"
 
 allprojects {
