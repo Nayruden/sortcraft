@@ -117,7 +117,7 @@ Put diamonds, iron, gold, or copper in the input chest, then **right-click the `
 
 SortCraft targets both Fabric and NeoForge. This is the **`26.x` branch**, which
 builds for the Minecraft versions listed in [`versions.json`](versions.json)
-(currently **26.1, 26.1.1, 26.1.2**). Support for the 1.21.x series lives on the
+(currently **26.1, 26.1.1, 26.1.2, 26.2**). Support for the 1.21.x series lives on the
 `1.21.x` branch.
 
 This project requires **JDK 25** (configured via the Gradle toolchain).

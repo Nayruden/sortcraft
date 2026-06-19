@@ -8,16 +8,15 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
-import net.minecraft.world.entity.EntitySpawnReason;
+import net.sortcraft.compat.HighlightCompat;
 import net.sortcraft.mixin.accessor.BlockDisplayAccessor;
 
 import java.util.*;
@@ -103,36 +102,41 @@ public final class ChestHighlighter {
     }
 
     /**
-     * Maps ChatFormatting colors to corresponding stained glass blocks.
+     * Maps ChatFormatting colors to the corresponding stained glass block state.
+     * The block lookup itself is version-specific (see {@link HighlightCompat}):
+     * MC 26.2 exposes stained glass as a single {@code ColorCollection} keyed by
+     * {@link DyeColor}, whereas earlier 26.x versions expose individual blocks.
      */
     private static BlockState getGlassForColor(ChatFormatting color) {
+        return HighlightCompat.glassForDye(dyeColorForFormatting(color));
+    }
+
+    /** Maps a ChatFormatting glow color to the closest dye color for the glass block. */
+    private static DyeColor dyeColorForFormatting(ChatFormatting color) {
         if (color == null) {
-            return Blocks.WHITE_STAINED_GLASS.defaultBlockState();
+            return DyeColor.WHITE;
         }
         return switch (color) {
-            case AQUA -> Blocks.LIGHT_BLUE_STAINED_GLASS.defaultBlockState();
-            case RED -> Blocks.RED_STAINED_GLASS.defaultBlockState();
-            case YELLOW -> Blocks.YELLOW_STAINED_GLASS.defaultBlockState();
-            case GREEN -> Blocks.LIME_STAINED_GLASS.defaultBlockState();
-            case BLUE -> Blocks.BLUE_STAINED_GLASS.defaultBlockState();
-            case LIGHT_PURPLE -> Blocks.MAGENTA_STAINED_GLASS.defaultBlockState();
-            case DARK_PURPLE -> Blocks.PURPLE_STAINED_GLASS.defaultBlockState();
-            case GOLD -> Blocks.ORANGE_STAINED_GLASS.defaultBlockState();
-            case GRAY -> Blocks.GRAY_STAINED_GLASS.defaultBlockState();
-            case DARK_GRAY -> Blocks.GRAY_STAINED_GLASS.defaultBlockState();
-            case DARK_AQUA -> Blocks.CYAN_STAINED_GLASS.defaultBlockState();
-            case DARK_GREEN -> Blocks.GREEN_STAINED_GLASS.defaultBlockState();
-            case DARK_RED -> Blocks.RED_STAINED_GLASS.defaultBlockState();
-            case DARK_BLUE -> Blocks.BLUE_STAINED_GLASS.defaultBlockState();
-            case BLACK -> Blocks.BLACK_STAINED_GLASS.defaultBlockState();
-            case WHITE -> Blocks.WHITE_STAINED_GLASS.defaultBlockState();
-            default -> Blocks.WHITE_STAINED_GLASS.defaultBlockState();
+            case AQUA -> DyeColor.LIGHT_BLUE;
+            case RED, DARK_RED -> DyeColor.RED;
+            case YELLOW -> DyeColor.YELLOW;
+            case GREEN -> DyeColor.LIME;
+            case BLUE, DARK_BLUE -> DyeColor.BLUE;
+            case LIGHT_PURPLE -> DyeColor.MAGENTA;
+            case DARK_PURPLE -> DyeColor.PURPLE;
+            case GOLD -> DyeColor.ORANGE;
+            case GRAY, DARK_GRAY -> DyeColor.GRAY;
+            case DARK_AQUA -> DyeColor.CYAN;
+            case DARK_GREEN -> DyeColor.GREEN;
+            case BLACK -> DyeColor.BLACK;
+            case WHITE -> DyeColor.WHITE;
+            default -> DyeColor.WHITE;
         };
     }
 
     private static void spawnBlockDisplayMarker(ServerLevel world, BlockPos pos, int durationTicks,
                                                  ChatFormatting color, UUID playerUUID) {
-        Display.BlockDisplay marker = EntityType.BLOCK_DISPLAY.create(world, EntitySpawnReason.COMMAND);
+        Display.BlockDisplay marker = HighlightCompat.createBlockDisplay(world);
         if (marker == null) return;
 
         // Position at the block's corner (block_display uses corner positioning)
@@ -161,11 +165,11 @@ public final class ChestHighlighter {
     private static void applyTeamColor(ServerLevel world, Entity marker, ChatFormatting color) {
         if (color != null) {
             Scoreboard scoreboard = world.getScoreboard();
-            String teamName = "SortCraft_" + color.getName();
+            String teamName = "SortCraft_" + color.name();
             PlayerTeam team = scoreboard.getPlayerTeam(teamName);
             if (team == null) {
                 team = scoreboard.addPlayerTeam(teamName);
-                team.setColor(color);
+                HighlightCompat.setTeamColor(team, color);
             }
             scoreboard.addPlayerToTeam(marker.getStringUUID(), team);
         }
