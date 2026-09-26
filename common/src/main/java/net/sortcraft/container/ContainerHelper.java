@@ -9,6 +9,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.BundleContents;
 import net.sortcraft.compat.BundleHelper;
+import net.sortcraft.compat.SignCompat;
 import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.WallSignBlock;
@@ -214,8 +215,8 @@ public final class ContainerHelper {
      */
     private static String findCategoryTextOnSign(SignBlockEntity sign) {
         for (int i = 0; i < 4; i++) {
-            String frontLine = sign.getFrontText().getMessage(i, false).getString().trim();
-            String backLine = sign.getBackText().getMessage(i, false).getString().trim();
+            String frontLine = SignCompat.getFrontLine(sign, i).trim();
+            String backLine = SignCompat.getBackLine(sign, i).trim();
 
             if (CATEGORY_SIGN_PATTERN.matcher(frontLine).find()) return frontLine;
             if (CATEGORY_SIGN_PATTERN.matcher(backLine).find()) return backLine;

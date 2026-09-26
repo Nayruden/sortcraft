@@ -11,6 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.BundleContents;
 import net.sortcraft.compat.BundleHelper;
+import net.sortcraft.compat.SignCompat;
 import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.WallSignBlock;
@@ -290,7 +291,7 @@ public final class TestHelper {
         SignBlockEntity sign = helper.getBlockEntity(signPos, SignBlockEntity.class);
         if (sign != null && lines != null) {
             for (int i = 0; i < Math.min(lines.length, 4); i++) {
-                sign.setText(sign.getFrontText().setMessage(i, Component.literal(lines[i])), true);
+                SignCompat.setFrontLine(sign, i, Component.literal(lines[i]));
             }
         }
         return sign;

@@ -14,6 +14,7 @@ import net.sortcraft.gametest.ContainerTypeGameTest;
 import net.sortcraft.gametest.FilterFeatureGameTest;
 import net.sortcraft.gametest.InputStackGameTest;
 import net.sortcraft.gametest.ItemDistributionGameTest;
+import net.sortcraft.gametest.NeoForgeItemHandlerStorageGameTest;
 import net.sortcraft.gametest.NestedContainerGameTest;
 import net.sortcraft.gametest.OverflowGameTest;
 import net.sortcraft.gametest.PerformanceGameTest;
@@ -70,6 +71,7 @@ final class SortCraftNeoForgeGameTestCatalog {
                 FilterFeatureGameTest.class,
                 InputStackGameTest.class,
                 ItemDistributionGameTest.class,
+                NeoForgeItemHandlerStorageGameTest.class,
                 NestedContainerGameTest.class,
                 OverflowGameTest.class,
                 PerformanceGameTest.class,

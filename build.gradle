@@ -46,6 +46,9 @@ def compareMcVersions = { String a, String b ->
 // MC 26.2 introduced breaking API changes (stained glass ColorCollection,
 // EntityTypes, PlayerTeam#setColor). Source set is selected in common/build.gradle.
 ext.isVersion26_2OrLater = compareMcVersions(targetVersion, '26.2') >= 0
+// MC 26.3 replaced SignBlockEntity#getFrontText/getBackText with getText(SignTextSlot)
+// and SignText#getMessage with getMessages. Source set is selected in common/build.gradle.
+ext.isVersion26_3OrLater = compareMcVersions(targetVersion, '26.3') >= 0
 
 println "Building for Minecraft ${targetVersion}"
 

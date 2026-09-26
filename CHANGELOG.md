@@ -4,6 +4,16 @@ All notable changes to SortCraft will be documented in this file.
 
 ---
 
+## [1.3.3] - 2026-09-26
+
+### Added
+
+- **Minecraft 26.3 support** — SortCraft now works on Minecraft 26.3 (Fabric builds for 26.3 require Fabric Loader 0.19.5+)
+
+### Changed
+
+- **NeoForge modded storage** — SortCraft now talks to NeoForge's item capability (`ResourceHandler<ItemResource>`) directly instead of through the legacy `IItemHandler` wrapper, which NeoForge 26.3 removed. Behavior is unchanged on all supported versions
+
 ## [1.3.2] - 2026-06-19
 
 ### Added

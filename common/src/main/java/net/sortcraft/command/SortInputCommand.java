@@ -13,6 +13,7 @@ import net.sortcraft.audit.SortAuditLog;
 import net.sortcraft.audit.SortAuditLogger;
 import net.sortcraft.category.CategorySet;
 import net.sortcraft.category.ShareConfigManager;
+import net.sortcraft.compat.SignCompat;
 import net.sortcraft.config.ConfigManager;
 import net.sortcraft.container.ChestRef;
 import net.sortcraft.container.ContainerHelper;
@@ -224,8 +225,8 @@ public final class SortInputCommand {
      */
     private static String extractShareId(SignBlockEntity sign) {
         for (int i = 0; i < 4; i++) {
-            String frontLine = sign.getFrontText().getMessage(i, false).getString().trim();
-            String backLine = sign.getBackText().getMessage(i, false).getString().trim();
+            String frontLine = SignCompat.getFrontLine(sign, i).trim();
+            String backLine = SignCompat.getBackLine(sign, i).trim();
 
             if (!frontLine.isEmpty() && !frontLine.equalsIgnoreCase(CommandHandler.getInputSignText())
                     && ShareConfigManager.isValidShareId(frontLine)) {

@@ -1,7 +1,10 @@
 package net.sortcraft.container.neoforge;
 
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.neoforged.neoforge.transfer.item.ItemUtil;
+import net.neoforged.neoforge.transfer.transaction.Transaction;
 import net.sortcraft.container.SortCraftStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,40 +13,67 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * SortCraftStorage implementation wrapping a NeoForge {@link IItemHandler}.
+ * SortCraftStorage implementation wrapping a NeoForge item {@link ResourceHandler}
+ * (the {@code Capabilities.Item.BLOCK} capability).
  *
- * <p>IItemHandler is slot-based and supports simulate mode natively.
+ * <p>The handler is slot-based. Simulate mode is implemented by running each
+ * per-slot operation in its own root {@link Transaction} and only committing it
+ * when not simulating — the same semantics as NeoForge's former
+ * {@code IItemHandler.of()} adapter (removed in NeoForge 26.3), which this class
+ * previously wrapped.
  * Uses the same snapshot-based {@link #allStacks()}/{@link #cleanup()} pattern
  * as FabricTransferStorage: allStacks() returns mutable copies that the sorting
  * engine can shrink, and cleanup() extracts the consumed amounts.
- *
- * <p>NeoForge convention: {@link IItemHandler#getStackInSlot(int)} returns a reference
- * that MUST NOT be modified directly. All mutations go through insertItem/extractItem.
  */
 public class NeoForgeItemHandlerStorage implements SortCraftStorage {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("sortcraft");
 
-    private final IItemHandler handler;
+    private final ResourceHandler<ItemResource> handler;
 
     // Tracking for allStacks()/cleanup() pattern (per-slot):
     // allStacks() snapshots each slot; cleanup() extracts the difference.
     private List<ItemStack> trackedStacks;
     private int[] originalCounts;
 
-    public NeoForgeItemHandlerStorage(IItemHandler handler) {
+    public NeoForgeItemHandlerStorage(ResourceHandler<ItemResource> handler) {
         this.handler = handler;
+    }
+
+    /** Returns a new stack holding the contents of the given slot (never a live reference). */
+    private ItemStack getStackInSlot(int slot) {
+        return ItemUtil.getStack(handler, slot);
+    }
+
+    /** Inserts into a single slot, returning the stack that did not fit. */
+    private ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+        return ItemUtil.insertItemReturnRemaining(handler, slot, stack, simulate, null);
+    }
+
+    /** Extracts up to {@code amount} of whatever is in the slot, returning how many were extracted. */
+    private int extractItem(int slot, int amount, boolean simulate) {
+        if (amount <= 0) return 0;
+        ItemResource resource = handler.getResource(slot);
+        if (resource.isEmpty()) return 0;
+        amount = Math.min(amount, resource.getMaxStackSize());
+        try (Transaction tx = Transaction.openRoot()) {
+            int extracted = handler.extract(slot, resource, amount, tx);
+            if (!simulate) {
+                tx.commit();
+            }
+            return extracted;
+        }
     }
 
     @Override
     public int getSlotCount() {
-        return handler.getSlots();
+        return handler.size();
     }
 
     @Override
     public ItemStack getStack(int slot) {
-        if (slot < 0 || slot >= handler.getSlots()) return ItemStack.EMPTY;
-        return handler.getStackInSlot(slot).copy();
+        if (slot < 0 || slot >= handler.size()) return ItemStack.EMPTY;
+        return getStackInSlot(slot);
     }
 
     @Override
@@ -54,21 +84,21 @@ public class NeoForgeItemHandlerStorage implements SortCraftStorage {
         ItemStack toInsert = stack.copy();
 
         // First pass: merge with existing stacks of the same item type
-        for (int slot = 0; slot < handler.getSlots() && remaining > 0; slot++) {
-            ItemStack existing = handler.getStackInSlot(slot);
+        for (int slot = 0; slot < handler.size() && remaining > 0; slot++) {
+            ItemStack existing = getStackInSlot(slot);
             if (existing.isEmpty() || !ItemStack.isSameItemSameComponents(stack, existing)) continue;
 
             toInsert.setCount(remaining);
-            ItemStack remainder = handler.insertItem(slot, toInsert, simulate);
+            ItemStack remainder = insertItem(slot, toInsert, simulate);
             remaining = remainder.isEmpty() ? 0 : remainder.getCount();
         }
 
         // Second pass: fill empty slots
-        for (int slot = 0; slot < handler.getSlots() && remaining > 0; slot++) {
-            if (!handler.getStackInSlot(slot).isEmpty()) continue;
+        for (int slot = 0; slot < handler.size() && remaining > 0; slot++) {
+            if (!getStackInSlot(slot).isEmpty()) continue;
 
             toInsert.setCount(remaining);
-            ItemStack remainder = handler.insertItem(slot, toInsert, simulate);
+            ItemStack remainder = insertItem(slot, toInsert, simulate);
             remaining = remainder.isEmpty() ? 0 : remainder.getCount();
         }
 
@@ -82,13 +112,12 @@ public class NeoForgeItemHandlerStorage implements SortCraftStorage {
         int maxExtract = stack.getCount();
         int extracted = 0;
 
-        for (int slot = 0; slot < handler.getSlots() && extracted < maxExtract; slot++) {
-            ItemStack slotStack = handler.getStackInSlot(slot);
+        for (int slot = 0; slot < handler.size() && extracted < maxExtract; slot++) {
+            ItemStack slotStack = getStackInSlot(slot);
             if (slotStack.isEmpty() || !ItemStack.isSameItemSameComponents(stack, slotStack)) continue;
 
             int toExtract = Math.min(slotStack.getCount(), maxExtract - extracted);
-            ItemStack result = handler.extractItem(slot, toExtract, simulate);
-            extracted += result.getCount();
+            extracted += extractItem(slot, toExtract, simulate);
         }
 
         return extracted;
@@ -96,20 +125,20 @@ public class NeoForgeItemHandlerStorage implements SortCraftStorage {
 
     @Override
     public boolean isItemValid(int slot, ItemStack stack) {
-        if (slot < 0 || slot >= handler.getSlots()) return false;
-        return handler.isItemValid(slot, stack);
+        if (slot < 0 || slot >= handler.size()) return false;
+        return handler.isValid(slot, ItemResource.of(stack));
     }
 
     @Override
     public Iterable<ItemStack> allStacks() {
-        int slots = handler.getSlots();
+        int slots = handler.size();
         trackedStacks = new ArrayList<>(slots);
         originalCounts = new int[slots];
 
         for (int slot = 0; slot < slots; slot++) {
-            ItemStack slotStack = handler.getStackInSlot(slot);
+            ItemStack slotStack = getStackInSlot(slot);
             originalCounts[slot] = slotStack.getCount();
-            trackedStacks.add(slotStack.copy()); // Mutable copy the engine can shrink
+            trackedStacks.add(slotStack); // Fresh copy the engine can shrink
         }
 
         return trackedStacks;
@@ -123,8 +152,7 @@ public class NeoForgeItemHandlerStorage implements SortCraftStorage {
             ItemStack current = trackedStacks.get(slot);
             int consumed = originalCounts[slot] - current.getCount();
             if (consumed > 0) {
-                ItemStack extracted = handler.extractItem(slot, consumed, false);
-                int actualExtracted = extracted.isEmpty() ? 0 : extracted.getCount();
+                int actualExtracted = extractItem(slot, consumed, false);
                 if (actualExtracted != consumed) {
                     LOGGER.warn("Extraction mismatch during cleanup at slot {}: expected {}, got {}",
                             slot, consumed, actualExtracted);

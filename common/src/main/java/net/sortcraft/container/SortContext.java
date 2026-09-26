@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.category.CategorySet;
+import net.sortcraft.compat.SignCompat;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -100,12 +101,12 @@ public class SortContext {
             signEntitiesFound++;
 
             LOGGER.trace("[SortContext] Found sign at {}: front line 0 = '{}'",
-                    pos, sign.getFrontText().getMessage(0, false).getString().trim());
+                    pos, SignCompat.getFrontLine(sign, 0).trim());
 
             // Get all text lines from the sign
             for (int i = 0; i < 4; i++) {
-                String frontLine = sign.getFrontText().getMessage(i, false).getString().trim();
-                String backLine = sign.getBackText().getMessage(i, false).getString().trim();
+                String frontLine = SignCompat.getFrontLine(sign, i).trim();
+                String backLine = SignCompat.getBackLine(sign, i).trim();
 
                 cacheSignText(frontLine, sign, pos);
                 cacheSignText(backLine, sign, pos);

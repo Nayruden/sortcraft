@@ -230,7 +230,7 @@ Items that are successfully sorted are removed from the container. Any items tha
 SortCraft works with modded storage blocks as both **input** and **destination** chests. Any block that exposes a storage API can be used — label it with an `[input]` sign to sort from it, or a category sign to sort into it:
 
 - **Fabric:** Blocks exposing a `Storage<ItemVariant>` via the Transfer API (e.g., Storage Drawers)
-- **NeoForge:** Blocks exposing an `IItemHandler` capability (e.g., Sophisticated Storage)
+- **NeoForge:** Blocks exposing the item capability (`Capabilities.Item.BLOCK`) (e.g., Sophisticated Storage)
 
 ---
 
