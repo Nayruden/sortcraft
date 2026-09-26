@@ -15,6 +15,7 @@ import net.sortcraft.audit.SortAuditLogger;
 import net.sortcraft.category.CategoryLoader;
 import net.sortcraft.command.CommandHandler;
 import net.sortcraft.command.SortInputCommand;
+import net.sortcraft.compat.SignCompat;
 import net.sortcraft.config.ConfigManager;
 import net.sortcraft.highlight.ChestHighlighter;
 import org.slf4j.Logger;
@@ -104,7 +105,7 @@ public class SortCraft {
         String normalizedText = text.toLowerCase();
 
         for (int i = 0; i < 4; i++) {
-            String frontLine = sign.getFrontText().getMessage(i, false).getString().trim().toLowerCase();
+            String frontLine = SignCompat.getFrontLine(sign, i).trim().toLowerCase();
             if (frontLine.contains(normalizedText)) return frontLine;
         }
         return null;

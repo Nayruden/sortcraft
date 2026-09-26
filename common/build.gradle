@@ -4,9 +4,11 @@ loom {
     // No remapping needed for unobfuscated 26.x
 }
 
-// Version-specific source set. Minecraft 26.2 introduced breaking API changes
-// relative to 26.1.x (see net.sortcraft.compat.HighlightCompat), so the matching
-// compat implementation is compiled in based on the target version.
+// Version-specific source sets. Minecraft 26.2 and 26.3 each introduced breaking API
+// changes, so the matching compat implementation of each seam is compiled in based on
+// the target version:
+// - net.sortcraft.compat.HighlightCompat: 26.1.x vs 26.2+
+// - net.sortcraft.compat.SignCompat: pre-26.3 vs 26.3+
 sourceSets {
     main {
         java {
@@ -14,6 +16,11 @@ sourceSets {
                 srcDir 'src/main/java-26.2'
             } else {
                 srcDir 'src/main/java-26.1'
+            }
+            if (rootProject.ext.isVersion26_3OrLater) {
+                srcDir 'src/main/java-26.3'
+            } else {
+                srcDir 'src/main/java-pre26.3'
             }
         }
     }
