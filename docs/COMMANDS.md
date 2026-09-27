@@ -73,7 +73,7 @@ Generates JSON files containing all item tags from the registry. Useful for debu
 
 ## `/sort shareconfig <id>`
 
-Tests a [CategoryCraft](https://categorycraft.com) share config by ID. Downloads and parses the shared category configuration, then reports how many categories and unique items it contains.
+Tests a [CategoryCraft](https://categories.craftlabs.nexus/) share config by ID. Downloads and parses the shared category configuration, then reports how many categories and unique items it contains.
 
 Use this to verify a share ID works before putting it on an `[input]` sign.
 

@@ -39,13 +39,13 @@ searchRadius: 64
 
 ## Share Configs
 
-Share configs let you use a [CategoryCraft](https://categorycraft.com) category configuration on a per-sorter basis, overriding the global categories defined in your YAML files.
+Share configs let you use a [CategoryCraft](https://categories.craftlabs.nexus/) category configuration on a per-sorter basis, overriding the global categories defined in your YAML files.
 
 ### Getting a Share ID
 
-1. Go to [CategoryCraft](https://categorycraft.com) and set up your categories the way you want them. **Make sure you are not in chest mode** — chest mode (in settings) won't work with SortCraft.
+1. Go to [CategoryCraft](https://categories.craftlabs.nexus/) and set up your categories the way you want them. **Make sure you are not in chest mode** — chest mode (in settings) won't work with SortCraft.
 2. Click **Export → Share Link**.
-3. Copy the generated link. Everything after the `/s/` in the URL is your share ID. For example, if the link is `https://categorycraft.com/s/ksJgx-mb`, the share ID is `ksJgx-mb`.
+3. Copy the generated link. Everything after the `/s/` in the URL is your share ID. For example, if the link is `https://categories.craftlabs.nexus/s/ksJgx-mb`, the share ID is `ksJgx-mb`.
 
 Share IDs are exactly 8 characters long, consisting of letters, digits, hyphens, and underscores.
 
